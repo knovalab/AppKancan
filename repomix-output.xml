@@ -1,0 +1,3523 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+The content has been processed where content has been compressed (code blocks are separated by ⋮---- delimiter).
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Content has been compressed - code blocks are separated by ⋮---- delimiter
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+api/
+  directus/
+    create.ts
+    read.ts
+    readBulk.ts
+    reports.ts
+    rules.ts
+components/
+  admin/
+    DialogEditarEmpleado.tsx
+    DialogNuevoEmpleado.tsx
+    DialogPerfilEmpleado.tsx
+  cierre-masivo/
+    ConfirmCierreMasivoDialog.tsx
+  detalle-tienda/
+    ConfirmClosedDayDialogs.tsx
+    CreateHourModal.tsx
+    EmpleadosTable.tsx
+    ModalDetalleTiendaHeader.tsx
+  employee-card/
+    EmployeeCardHeader.tsx
+    EmployeeCardModals.tsx
+    EmployeeCardTimeSlots.tsx
+    EmployeeCardUtils.tsx
+  historial/
+    HistorialTimelineView.tsx
+  reportes/
+    AreaManagerStoreTable.tsx
+    DateRangeFilter.tsx
+    ExportEventosDialog.tsx
+    ExportHistorialDialog.tsx
+    ExportNovedadesDialog.tsx
+    ExportSemanalDialog.tsx
+    ExportUnificadoDialog.tsx
+    FestivosDetalleModal.tsx
+    ReporteSemanalAreaManager.tsx
+  tour/
+    AdminTour.tsx
+    FakeExportDialog.tsx
+    FakeExportModal.tsx
+    fakeExportModals.tsx
+    FakeHistorialModal.tsx
+    fakeTourModals.tsx
+    GenericTourModal.tsx
+    HorariosTour.tsx
+    HorariosTourContext.tsx
+    MonitoreoTour.tsx
+    monitoreoTourSteps.tsx
+    tourSteps.tsx
+    TourTooltip.tsx
+    TutorialButton.tsx
+  CalendarioMensualTienda.tsx
+  EditHourModal.tsx
+  EmployeeCard.tsx
+  FestivoDay.tsx
+  HistorialHorasModal.tsx
+  HorariosLayout.tsx
+  ModalCierreMasivo.tsx
+  ModalDetalleTienda.tsx
+  ModalDetalleTiendaUtils.tsx
+  ModalRankingTiendas.tsx
+  NavbarHorarios.tsx
+  NormasModal.tsx
+  NovedadDetalleModal.tsx
+  NovedadesTab.tsx
+  ObservationModal.tsx
+hooks/
+  useAdminEmpleados.ts
+  useHistorial.ts
+  useHorarios.ts
+  useHorariosPolicies.ts
+  useNormas.ts
+  useParseNombreIA.ts
+interfaces/
+  horarios.interface.ts
+pages/
+  monitoreo/
+    MonitoreoComponents.tsx
+    MonitoreoUtils.ts
+    useTiendasResumen.ts
+  planilla/
+    DetallePlanillaTabla.tsx
+    DetallePlanillaUtils.ts
+  reporte/
+    ReportePausasTab.tsx
+    ReporteSemanalTab.tsx
+    ReporteSemanalTabla.tsx
+    ReporteTourConfig.tsx
+    ReporteUtils.ts
+  AdminEmpleadosPage.tsx
+  DetallePlanillaPage.tsx
+  HistorialPage.tsx
+  MonitoreoPage.tsx
+  RegistrosPage.tsx
+  ReportePage.tsx
+utils/
+  exportarEventos.ts
+  exportarHistorial.ts
+  exportarNovedades.ts
+  exportarSemanal.ts
+  format.ts
+  novedadVisual.tsx
+  timeSync.ts
+routes.tsx
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="api/directus/create.ts">
+import directus from "@/services/directus/directus";
+import { createItem, createItems, updateItem, readItems, deleteItem } from "@directus/sdk";
+import { withAutoRefresh } from "@/auth/services/directusInterceptor";
+⋮----
+export async function createNovedad(data: { 
+  employee_id: number; 
+  newness_id: number;
+  report_date: string; 
+  observations?: string; 
+  store_id?: number; 
+})
+⋮----
+export async function createNovedades(items: { 
+  employee_id: number; 
+  newness_id: number; 
+  report_date: string; 
+  observations?: string; 
+  store_id?: number; 
+}[])
+⋮----
+export async function createEventReport(data: {
+  employee_id: number;
+  store_id?: number;
+  event_type: string;
+  observations?: string;
+  date?: string;
+  hour?: string;
+})
+⋮----
+export async function createTimeRecord(data: {
+  employee_id: number;
+  store_id?: number;
+  log_type: string;
+  record_date: string;
+  record_time: string;
+  observations?: string;
+})
+⋮----
+export async function updateTimeRecord(id: number, data:
+⋮----
+export async function upsertRecordReason(recordId: number, reasonId: number)
+⋮----
+export async function crearEmpleado(data: {
+  document_type: string;
+  document_number: string;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  second_last_name?: string;
+  store_id: number;
+  position_id: number;
+})
+⋮----
+export async function actualizarEmpleado(
+  id: number,
+  data: {
+    store_id?: number;
+    position_id?: number;
+    status?: string;
+    first_name?: string;
+    middle_name?: string;
+    last_name?: string;
+    second_last_name?: string;
+  }
+)
+⋮----
+export async function eliminarNovedad(id: number)
+⋮----
+export async function setStoreClosedDayStatus(
+  storeId: number,
+  date: string,
+  newStatus: boolean,
+  providedId?: number
+): Promise<any>
+⋮----
+export async function createStoreClosedDay(storeId: number, date: string): Promise<any>
+⋮----
+export async function deleteStoreClosedDay(id: number): Promise<void>
+</file>
+
+<file path="api/directus/read.ts">
+import dayjs from "dayjs";
+import directus from "@/services/directus/directus";
+import { withAutoRefresh } from "@/auth/services/directusInterceptor";
+import { readItems, readMe } from "@directus/sdk";
+import { EmpleadoAsistencia, TipoNovedad, Tienda, Cargo, EmpleadoAdmin, Motivo } from "../../interfaces/horarios.interface";
+import { getEmpleadosBulk, getStoreClosedDays } from "./readBulk";
+⋮----
+// Tienda "Oficina" usada para pruebas.
+⋮----
+export async function getStoreIdUsuarioActual(): Promise<number | null>
+⋮----
+/**
+ * Reutiliza getEmpleadosBulk([storeId]) para evitar duplicar código de mapeo de empleados.
+ */
+export async function getEmpleados(storeId: number): Promise<EmpleadoAsistencia[]>
+⋮----
+export async function getTiposNovedad(): Promise<TipoNovedad[]>
+⋮----
+export async function getReasons(): Promise<Motivo[]>
+⋮----
+export async function getReasonNamesForRecords(recordIds: number[]): Promise<Map<number, string>>
+⋮----
+export async function getRecordReasonId(recordId: number): Promise<number | null>
+⋮----
+/**
+ * Reutiliza getStoreNovedades para evitar duplicar código de la tabla com_newness_reports.
+ */
+export async function getNovedades(storeId: number): Promise<any[]>
+⋮----
+export async function getStoreNovedades(storeId: number | number[] | null): Promise<any[]>
+⋮----
+export interface TimeRecord {
+  id: number;
+  record_date: string;
+  record_time: string;
+  original_record_time: string | null;
+  log_type: string;
+  employee_id: {
+    id?: number | string;
+    document_number?: string | number | null;
+    first_name: string;
+    middle_name: string | null;
+    last_name: string;
+    second_last_name: string | null;
+  } | null;
+  store_id: { id: number; name: string } | string | null;
+  observations: string | null;
+}
+⋮----
+export const fetchTimeRecords = async (
+  fechaInicio?: string,
+  fechaFin?: string,
+  storeId?: number | number[],
+  employeeId?: number | string
+): Promise<TimeRecord[]> =>
+⋮----
+/**
+ * Reutiliza fetchTimeRecords(date, date, storeId) para evitar duplicar peticiones a com_time_records.
+ */
+export async function getTimeRecords(storeId: number, date: string): Promise<any[]>
+⋮----
+export async function getStores(): Promise<Tienda[]>
+⋮----
+export async function getCargos(): Promise<Cargo[]>
+⋮----
+const idRelacion = (val: any): number | null =>
+⋮----
+const mapEmpleadoAdmin = (emp: any): EmpleadoAdmin => (
+⋮----
+export async function listarEmpleadosTienda(storeId: number): Promise<EmpleadoAdmin[]>
+⋮----
+export async function listarTodosEmpleados(): Promise<EmpleadoAdmin[]>
+⋮----
+export async function buscarEmpleados(query: string): Promise<EmpleadoAdmin[]>
+⋮----
+export async function existeDocumentoEmpleado(documentNumber: string): Promise<boolean>
+⋮----
+export async function getEditedTimeRecords(storeIds: number[], startDate: string, endDate: string): Promise<any[]>
+⋮----
+export async function getPrimerPeriodoRegistro(): Promise<
+⋮----
+// Reexportar todas las consultas bulk y reportes
+</file>
+
+<file path="api/directus/readBulk.ts">
+import directus from '@/services/directus/directus';
+import { readItems } from '@directus/sdk';
+import { withAutoRefresh } from '@/auth/services/directusInterceptor';
+import { EmpleadoAsistencia } from '../../interfaces/horarios.interface';
+⋮----
+export interface StoreClosedDay {
+  id: number;
+  store_id: number;
+  date: string;
+  status?: boolean;
+  user_created?: string;
+  date_created?: string;
+}
+⋮----
+/**
+ * Obtiene empleados activos en lote (bulk) para un listado de tiendas
+ */
+export const getEmpleadosBulk = async (storeIds?: number[]): Promise<EmpleadoAsistencia[]> =>
+⋮----
+/**
+ * Obtiene registros de asistencia en lote para un rango de fechas
+ */
+export const getTimeRecordsBulkRange = async (storeIds: number[], startDate: string, endDate: string): Promise<any[]> =>
+⋮----
+/**
+ * Obtiene registros de asistencia en lote para un día específico (reutiliza getTimeRecordsBulkRange)
+ */
+export const getTimeRecordsBulk = async (storeIds: number[], date: string): Promise<any[]> =>
+⋮----
+/**
+ * Obtiene novedades en lote para un rango de fechas
+ */
+export const getNovedadesBulkRange = async (storeIds: number[], startDate: string, endDate: string): Promise<any[]> =>
+⋮----
+/**
+ * Obtiene los días de tienda cerrada para una o varias tiendas
+ */
+export const getStoreClosedDays = async (
+  storeIds?: number | number[],
+  startDate?: string,
+  endDate?: string
+): Promise<StoreClosedDay[]> =>
+</file>
+
+<file path="api/directus/reports.ts">
+import directus from "@/services/directus/directus";
+import { withAutoRefresh } from "@/auth/services/directusInterceptor";
+import { readItems } from "@directus/sdk";
+import { STORE_PRUEBAS, TimeRecord } from "./read";
+⋮----
+export interface NewnessReport {
+  id: number;
+  report_date: string | null;
+  date_created: string | null;
+  observations: string | null;
+  newness_id: { name?: string | null } | null;
+  store_id: string | number | null;
+  employee_id: {
+    document_number?: string | number | null;
+    first_name: string;
+    middle_name: string | null;
+    last_name: string;
+    second_last_name: string | null;
+  } | null;
+}
+⋮----
+export const fetchTimeRecordsExport = async (
+  fechaInicio?: string,
+  fechaFin?: string,
+  storeIds?: number[],
+  incluirPruebas = false
+): Promise<TimeRecord[]> =>
+⋮----
+export const fetchNewnessReportsExport = async (
+  fechaInicio?: string,
+  fechaFin?: string,
+  storeIds?: number[],
+  incluirPruebas = false
+): Promise<NewnessReport[]> =>
+⋮----
+export interface EventReportExport {
+  event_type: string;
+  date: string | null;
+  hour: string | null;
+  observations: string | null;
+  store_id: string | number | null;
+  employee_id: {
+    document_number?: string | number | null;
+    first_name: string;
+    middle_name: string | null;
+    last_name: string;
+    second_last_name: string | null;
+  } | null;
+}
+⋮----
+export const fetchEventReportsExport = async (
+  fechaInicio?: string,
+  fechaFin?: string,
+  storeIds?: number[],
+  incluirPruebas = false
+): Promise<EventReportExport[]> =>
+⋮----
+export async function getEmployeeTimeRecords(
+  employeeId: number,
+  fechaInicio: string,
+  fechaFin: string
+): Promise<any[]>
+⋮----
+export async function getEmployeeNovedades(employeeId: number, limit = 10): Promise<any[]>
+⋮----
+export async function getEmployeeEventReports(
+  employeeId: number,
+  fechaInicio: string,
+  fechaFin: string
+): Promise<any[]>
+⋮----
+export async function getStoreEventReportsToday(
+  storeId: number,
+  date: string
+): Promise<any[]>
+⋮----
+export async function getStoreEventReports(
+  storeId: number | number[] | null,
+  fechaInicio?: string,
+  fechaFin?: string
+): Promise<any[]>
+</file>
+
+<file path="api/directus/rules.ts">
+import directus from "@/services/directus/directus";
+import { withAutoRefresh } from "@/auth/services/directusInterceptor";
+import { readItems, createItem } from "@directus/sdk";
+⋮----
+export interface Normas {
+  id: number;
+  version: number;
+  title: string;
+  content: string;
+}
+⋮----
+// Normas vigentes (la fila activa de com_rules con la mayor versión).
+export async function getNormasActivas(): Promise<Normas | null>
+⋮----
+// ¿El usuario ya aceptó esta versión de las normas?
+// employee_id es la relación (M2O) al usuario logueado.
+export async function yaAceptoNormas(userId: string, version: number): Promise<boolean>
+⋮----
+// Ante error de lectura, no forzamos el modal repetidamente.
+⋮----
+export async function registrarAceptacionNormas(userId: string, version: number)
+⋮----
+// date_created lo asigna Directus automáticamente.
+⋮----
+export async function yaAceptoNormasEmpleado(employeeId: number, ruleId: number, version?: number): Promise<boolean>
+⋮----
+// En caso de error (permisos, campo inexistente, etc.) asumimos que ya aceptó
+// para no mostrar el botón innecesariamente a todos los colaboradores.
+⋮----
+export async function registrarAceptacionNormasEmpleado(employeeId: number, version: number, ruleId: number)
+</file>
+
+<file path="components/admin/DialogEditarEmpleado.tsx">
+import { useState, useEffect } from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography,
+  Autocomplete, TextField, FormControl, InputLabel, Select, MenuItem, Chip, Divider,
+  CircularProgress,
+} from '@mui/material';
+import BadgeIcon from '@mui/icons-material/Badge';
+import { Tienda, Cargo, EmpleadoAdmin } from '../../interfaces/horarios.interface';
+import { useParseNombreIA } from '../../hooks/useParseNombreIA';
+import { formatDocumentNumber, formatNombrePropio } from '../../utils/format';
+⋮----
+interface Props {
+  open: boolean;
+  empleado: EmpleadoAdmin | null;
+  tiendas: Tienda[];
+  cargos: Cargo[];
+  guardando: boolean;
+  onClose: () => void;
+  onGuardar: (
+    id: number,
+    data: {
+      store_id?: number;
+      position_id?: number;
+      status?: string;
+      first_name?: string;
+      middle_name?: string;
+      last_name?: string;
+      second_last_name?: string;
+    }
+  ) => Promise<unknown>;
+}
+⋮----
+function splitNombreLocal(nombre: string)
+⋮----
+const guardar = async () =>
+</file>
+
+<file path="components/admin/DialogNuevoEmpleado.tsx">
+import { useState, useEffect, ReactNode } from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, Box,
+  TextField, FormControl, InputLabel, Select, MenuItem, Autocomplete,
+  Typography, Divider, FormHelperText, CircularProgress,
+} from '@mui/material';
+⋮----
+import { sileo } from 'sileo';
+import PersonIcon from '@mui/icons-material/Person';
+import BadgeIcon from '@mui/icons-material/Badge';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import WorkIcon from '@mui/icons-material/Work';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import { Tienda, Cargo, NuevoEmpleadoPayload } from '../../interfaces/horarios.interface';
+import { useParseNombreIA } from '../../hooks/useParseNombreIA';
+import { SILEO_STATE_FILL } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { existeDocumentoEmpleado } from '../../api/directus/read';
+import { formatDocumentNumber, formatNombrePropio } from '../../utils/format';
+⋮----
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  tiendas: Tienda[];
+  cargos: Cargo[];
+  tiposDocumento: string[];
+  guardando: boolean;
+  onGuardar: (data: NuevoEmpleadoPayload) => Promise<unknown>;
+}
+⋮----
+const initialForm = (tipoDocDefault: string) => (
+⋮----
+function splitNombreLocal(nombre: string)
+⋮----
+interface EmpleadoCreado {
+  nombre: string;
+  documento: string;
+  tienda: string;
+  cargo: string;
+  email: string;
+  phone: string;
+}
+⋮----
+const setCampo = (campo: string, valor: any) => setForm((f) => (
+⋮----
+const handleGuardar = async () =>
+⋮----
+value={formatDocumentNumber(form.document_number)}
+onChange=
+⋮----
+renderInput=
+⋮----
+onChange=
+</file>
+
+<file path="components/admin/DialogPerfilEmpleado.tsx">
+import { useState } from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography,
+  Avatar, Chip, CircularProgress, Divider, Collapse, IconButton,
+} from '@mui/material';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import BadgeIcon from '@mui/icons-material/Badge';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import EventNoteIcon from '@mui/icons-material/EventNote';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import dayjs from 'dayjs';
+import {
+  getEmployeeTimeRecords, getEmployeeNovedades, getEmployeeEventReports,
+} from '../../api/directus/read';
+import { eliminarNovedad } from '../../api/directus/create';
+import { EmpleadoAdmin } from '../../interfaces/horarios.interface';
+import { getIconForTipo, getChipColor } from '../../utils/novedadVisual';
+import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
+import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { formatDocumentNumber } from '../../utils/format';
+⋮----
+const colorAvatar = (t: string) =>
+⋮----
+const hhmm = (t: string | null | undefined)
+⋮----
+onClick=
+⋮----
+const buscar = (tipo: string)
+⋮----
+if (confirmDeleteId != null)
+⋮----
+<Typography sx=
+</file>
+
+<file path="components/cierre-masivo/ConfirmCierreMasivoDialog.tsx">
+import React from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Typography, Alert,
+  Button, CircularProgress
+} from '@mui/material';
+import {
+  Block as BlockIcon,
+  CheckCircle as CheckCircleIcon
+} from '@mui/icons-material';
+⋮----
+interface ConfirmCierreMasivoDialogProps {
+  open: boolean;
+  onClose: () => void;
+  guardando: boolean;
+  isCerrar: boolean;
+  diasCount: number;
+  tiendasCount: number;
+  totalOperaciones: number;
+  mainColor: string;
+  mainColorHover: string;
+  onConfirm: () => void;
+}
+</file>
+
+<file path="components/detalle-tienda/ConfirmClosedDayDialogs.tsx">
+import {
+  Typography, Dialog, DialogTitle, DialogContent, DialogActions,
+  Button, Alert, CircularProgress, List, ListItem, ListItemText
+} from '@mui/material';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import dayjs from 'dayjs';
+⋮----
+interface ConfirmClosedDayDialogsProps {
+  confirmClosedModalOpen: boolean;
+  setConfirmClosedModalOpen: (open: boolean) => void;
+  fechaDisplay: string;
+  recordsDiaCount: number;
+  guardandoDiaCerrado: boolean;
+  executeToggleDiaCerrado: (actualmenteCerrado: boolean) => Promise<void>;
+
+  confirmMasivoOpen: boolean;
+  setConfirmMasivoOpen: (open: boolean) => void;
+  diasSeleccionadosSet: Set<string>;
+  tiendaNombre: string;
+  registrosPorFechaSeleccionada: Record<string, number>;
+  guardandoMasivo: boolean;
+  handleGuardarMasivo: () => Promise<void>;
+}
+⋮----
+onClick=
+</file>
+
+<file path="components/detalle-tienda/CreateHourModal.tsx">
+import { useState } from 'react';
+import {
+  Box, Typography, CircularProgress, TextField, Dialog, DialogContent,
+  IconButton, Button, Avatar, DialogActions, Alert
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import dayjs from 'dayjs';
+⋮----
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+⋮----
+export interface CreateHourModalProps {
+  open: boolean;
+  onClose: () => void;
+  employeeName: string;
+  eventName: string;
+  onConfirm: (hora: string, observacion: string) => Promise<void>;
+}
+⋮----
+const handleGuardar = async () =>
+</file>
+
+<file path="components/detalle-tienda/EmpleadosTable.tsx">
+import {
+  Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Chip, CircularProgress, Pagination, TextField, InputAdornment, IconButton, Tooltip, Avatar
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import HistoryIcon from '@mui/icons-material/History';
+import EditIcon from '@mui/icons-material/Edit';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import { EmpleadoFila, getNovedadIcon } from '../ModalDetalleTiendaUtils';
+⋮----
+interface EmpleadosTableProps {
+  loading: boolean;
+  search: string;
+  setSearch: (val: string) => void;
+  page: number;
+  setPage: (p: number) => void;
+  rowsPerPage: number;
+  empleadosPagina: EmpleadoFila[];
+  empleadosFiltrados: EmpleadoFila[];
+  fechaSeleccionada: string;
+  esAdminUser: boolean;
+  getRecordId: (empId: string | number, logType: string) => number | null;
+  handleOpenEditHour: (empleadoId: string, empleadoNombre: string, evento: string, recordId: number) => void;
+  handleOpenCreateHour: (empleadoId: string, empleadoNombre: string, evento: string) => void;
+  handleOpenHistorial: (fila: EmpleadoFila) => void;
+  handleNovedadClick: (fila: EmpleadoFila) => void;
+}
+⋮----
+onChange=
+⋮----
+if (recordId)
+handleOpenEditHour(fila.id, fila.nombre, label, recordId);
+⋮----
+handleOpenCreateHour(fila.id, fila.nombre, label);
+⋮----
+<IconButton size="small" onClick=
+⋮----
+<Chip size="small" label=
+</file>
+
+<file path="components/detalle-tienda/ModalDetalleTiendaHeader.tsx">
+import React from 'react';
+import { Box, Typography, Button, Chip, IconButton, CircularProgress } from '@mui/material';
+import {
+  DateRange as DateRangeIcon,
+  Cancel as CancelIcon,
+  Block as BlockIcon,
+  CheckCircle as CheckCircleIcon,
+  CalendarMonth as CalendarMonthIcon,
+  Refresh as RefreshIcon
+} from '@mui/icons-material';
+import dayjs from 'dayjs';
+⋮----
+interface ModalDetalleTiendaHeaderProps {
+  modoSeleccion: boolean;
+  diasSeleccionadosSet: Set<string>;
+  handleCancelarSeleccion: () => void;
+  handleAbrirConfirmMasivo: () => void;
+  fechaDisplay: string;
+  esDiaCerrado: boolean;
+  puedeGestionarDiasCerrados: boolean;
+  handleActivarModoSeleccion: () => void;
+  handleToggleDiaCerradoClick: () => void;
+  guardandoDiaCerrado: boolean;
+  fechaSeleccionada: string;
+  handleClearFilters: () => void;
+}
+</file>
+
+<file path="components/employee-card/EmployeeCardHeader.tsx">
+import React from 'react';
+import { Box, Typography, Button, IconButton, Chip, Tooltip } from '@mui/material';
+import WarningIcon from '@mui/icons-material/Warning';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import { EmpleadoAsistencia } from '../../interfaces/horarios.interface';
+import { NombreEmpleado } from './EmployeeCardUtils';
+⋮----
+interface EmployeeCardHeaderProps {
+  empleado: EmpleadoAsistencia;
+  estadoActual: string;
+  pausasActivasCount: number;
+  pausasAgotadas: boolean;
+  novedadActiva: boolean;
+  reporteActivo: boolean;
+  finalizado: boolean;
+  showAceptarNormasButton: boolean;
+  maxPausas: number;
+  onOpenNovedadModal: () => void;
+  onOpenEventoModal: () => void;
+  onOpenEmployeeNormasModal: () => void;
+}
+</file>
+
+<file path="components/employee-card/EmployeeCardModals.tsx">
+import React from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Typography, Alert,
+  Button, TextField, FormControl, InputLabel, Select, MenuItem, Box,
+  Divider, CircularProgress
+} from '@mui/material';
+import WarningIcon from '@mui/icons-material/Warning';
+import NoFoodIcon from '@mui/icons-material/NoFood';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import { FestivoDay } from '../FestivoDay';
+⋮----
+interface EmployeeCardObsModalProps {
+  open: boolean;
+  onClose: () => void;
+  eventoActualObs: string;
+  nombre: string;
+  maxLength: number;
+  observacionTexto: string;
+  setObservacionTexto: (val: string) => void;
+  obsInicialModal: string;
+  onGuardar: () => void;
+}
+⋮----
+onYearChange=
+</file>
+
+<file path="components/employee-card/EmployeeCardTimeSlots.tsx">
+import React from 'react';
+import { Box, Typography, Button, IconButton, Stack, Tooltip, CircularProgress } from '@mui/material';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import NoFoodIcon from '@mui/icons-material/NoFood';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import { getIcon, formatTo12Hour } from './EmployeeCardUtils';
+⋮----
+interface BotonSlot {
+  etiqueta: string;
+  activo: boolean;
+  hora: string | null;
+}
+⋮----
+interface EmployeeCardTimeSlotsProps {
+  idEmpleado: string;
+  tiempoRestante: number | null;
+  finalizado: boolean;
+  almuerzoOmitidoLocal: boolean;
+  guardandoRegistro: string | null;
+  botones: BotonSlot[];
+  getObservacion: (evento: string) => string;
+  getEditadoStatus: (evento: string) => boolean;
+  onOpenHoraModal: (evento: string) => void;
+  onRegistrarEvento: (evento: string) => void;
+  onOpenObsModal: (evento: string) => void;
+  onOpenOmitirAlmuerzoModal: () => void;
+  onTerminarDemoPausa: () => void;
+}
+⋮----
+</file>
+
+<file path="components/employee-card/EmployeeCardUtils.tsx">
+import { useState, useEffect, useRef } from 'react';
+import { Typography, Tooltip } from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import DiningIcon from '@mui/icons-material/Dining';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import dayjs from 'dayjs';
+⋮----
+export const getIcon = (etiqueta: string) =>
+⋮----
+export const formatTo12Hour = (timeStr: string | null): string =>
+⋮----
+export function NombreEmpleado(
+⋮----
+const checkActiveBreak = () =>
+⋮----
+if (String(id) === '99999')
+</file>
+
+<file path="components/historial/HistorialTimelineView.tsx">
+import React from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography,
+  IconButton as MuiIconButton, Avatar, Chip, Button
+} from '@mui/material';
+import {
+  AccessTime as AccessTimeIcon,
+  Close as CloseIcon,
+  Comment as CommentIcon,
+  Assignment as AssignmentIcon
+} from '@mui/icons-material';
+import { REGISTRO_META } from '../HistorialHorasModal';
+import { formatearHoras } from '../ModalDetalleTiendaUtils';
+⋮----
+interface HistorialTimelineViewProps {
+  diaSeleccionado: any | null;
+  onCloseDia: () => void;
+  onCloseMain: () => void;
+  onDayClick?: (date: string, employeeName: string) => void;
+  empleadoNombre: string;
+}
+</file>
+
+<file path="components/reportes/AreaManagerStoreTable.tsx">
+import React from 'react';
+import {
+  Paper, TableContainer, Table, TableHead, TableRow, TableCell, TableBody,
+  Box, Avatar, Typography, Tooltip, Chip, IconButton, Alert
+} from '@mui/material';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import HistoryIcon from '@mui/icons-material/History';
+⋮----
+interface AreaManagerStoreTableProps {
+  empleadosFiltrados: any[];
+  empleados: any[];
+  semanas: any[];
+  records: any[];
+  holidayMap: Record<string, string>;
+  selectedYear: number;
+  selectedMonth: number;
+  LIMITE_HORAS_SEMANALES: number;
+  calcularMinutosSemanales: (empId: number, start: string, end: string, records: any[]) => number;
+  contarDomingosEmp: (empId: number, records: any[]) => number;
+  obtenerFestivosTrabajadosEmp: (empId: number, records: any[], holidayMap: Record<string, string>, year: number, month: number) => any[];
+  totalDomingosMes: number;
+  totalFestivosMes: number;
+  getAvatarColor: (name: string) => string;
+  formatMinutes: (min: number) => string;
+  DomingosChip: React.ComponentType<any>;
+  FestivosChip: React.ComponentType<any>;
+  setFestivosModalData: (data: any) => void;
+  tourRun: boolean;
+  tourStepIndex: number;
+  setTourStepIndex: (idx: number) => void;
+  setEmpleadoSeleccionado: (emp: any) => void;
+  setHistorialOpen: (open: boolean) => void;
+}
+⋮----
+onClick=
+</file>
+
+<file path="components/reportes/DateRangeFilter.tsx">
+import { useState } from 'react';
+import {
+  Box, Popover, Button, Divider, Typography, Stack, InputAdornment, TextField, Tooltip,
+} from '@mui/material';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
+import { PickersDay, PickersDayProps } from '@mui/x-date-pickers/PickersDay';
+import dayjs, { Dayjs } from 'dayjs';
+⋮----
+import { useHolidays } from '../../../reservas/hooks/useHolidays';
+⋮----
+interface DateRangeFilterProps {
+  fechaInicio: Dayjs | null;
+  fechaFin: Dayjs | null;
+  onChange: (inicio: Dayjs | null, fin: Dayjs | null) => void;
+}
+⋮----
+const buildPresets = () =>
+⋮----
+const handleOpen = (e: React.MouseEvent<HTMLElement>) =>
+const handleClose = ()
+⋮----
+const aplicarPreset = (inicio: Dayjs | null, fin: Dayjs | null) =>
+⋮----
+const presetActivo = (inicio: Dayjs | null, fin: Dayjs | null) =>
+⋮----
+const handlePickInicio = (value: Dayjs) =>
+⋮----
+const handlePickFin = (value: Dayjs) =>
+⋮----
+const handleAplicar = () =>
+⋮----
+const handleLimpiar = () =>
+⋮----
+{/* Presets */}
+⋮----
+{/* Calendarios */}
+⋮----
+onYearChange=
+</file>
+
+<file path="components/reportes/ExportEventosDialog.tsx">
+import { useState, useEffect } from 'react';
+import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, CircularProgress,
+  Autocomplete, TextField, FormControlLabel, Checkbox
+} from '@mui/material';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import { useQuery } from '@tanstack/react-query';
+import dayjs, { Dayjs } from 'dayjs';
+import { getStores, getStoreIdUsuarioActual, fetchEventReportsExport } from '../../api/directus/read';
+import { exportarEventosExcel } from '../../utils/exportarEventos';
+import { Tienda } from '../../interfaces/horarios.interface';
+import DateRangeFilter from './DateRangeFilter';
+import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
+⋮----
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  storeId: number | null;
+  fechaInicio?: string;
+  fechaFin?: string;
+}
+⋮----
+export default function ExportEventosDialog(
+⋮----
+const esAdmin = ()
+⋮----
+const handleExportar = async () =>
+⋮----
+if (e.target.checked)
+setTiendasSel(tiendasFiltradas);
+</file>
+
+<file path="components/reportes/ExportHistorialDialog.tsx">
+import { useState, useEffect } from 'react';
+import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography,
+  Autocomplete, TextField, Checkbox, FormControlLabel, Divider, CircularProgress,
+} from '@mui/material';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { useQuery } from '@tanstack/react-query';
+import dayjs, { Dayjs } from 'dayjs';
+import { getStores, fetchTimeRecordsExport, getReasonNamesForRecords } from '../../api/directus/read';
+import { exportarHistorialExcel } from '../../utils/exportarHistorial';
+import { Tienda } from '../../interfaces/horarios.interface';
+import DateRangeFilter from './DateRangeFilter';
+import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
+import { useAuth } from '@/auth/hooks/useAuth';
+⋮----
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  fechaInicio?: string;
+  fechaFin?: string;
+  tiendaDefault?: number | null;
+  searchNombre?: string;
+}
+⋮----
+export default function ExportHistorialDialog(
+⋮----
+const esAdmin = ()
+⋮----
+const handleExportar = async () =>
+⋮----
+const normalizar = (texto: string)
+⋮----
+if (e.target.checked)
+setTiendasSel(tiendasFiltradas);
+</file>
+
+<file path="components/reportes/ExportNovedadesDialog.tsx">
+import { useState, useEffect } from 'react';
+import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography,
+  Autocomplete, TextField, Checkbox, FormControlLabel, CircularProgress,
+} from '@mui/material';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { useQuery } from '@tanstack/react-query';
+import dayjs, { Dayjs } from 'dayjs';
+import { getStores, fetchNewnessReportsExport } from '../../api/directus/read';
+import { exportarNovedadesExcel } from '../../utils/exportarNovedades';
+import { Tienda } from '../../interfaces/horarios.interface';
+import DateRangeFilter from './DateRangeFilter';
+import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
+import { useAuth } from '@/auth/hooks/useAuth';
+⋮----
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  fechaInicio?: string;
+  fechaFin?: string;
+  tiendaDefault?: number | null;
+  searchNombre?: string;
+}
+⋮----
+export default function ExportNovedadesDialog(
+⋮----
+const esAdmin = ()
+⋮----
+const ejecutarExport = async (fIni?: string, fFin?: string, storeIds?: number[]) =>
+⋮----
+const normalizar = (texto: string)
+⋮----
+const handleExportar = async () =>
+⋮----
+setTiendasSel(tiendasFiltradas);
+⋮----
+onChange=
+</file>
+
+<file path="components/reportes/ExportSemanalDialog.tsx">
+import { useState, useEffect } from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography,
+  Autocomplete, TextField, Checkbox, FormControlLabel, CircularProgress,
+  FormControl, InputLabel, Select, MenuItem, Chip
+} from '@mui/material';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import DateRangeIcon from '@mui/icons-material/DateRange';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { useQuery } from '@tanstack/react-query';
+import dayjs, { Dayjs } from 'dayjs';
+import { getStores, getEmpleadosBulk, getTimeRecordsBulkRange, fetchNewnessReportsExport, getStoreClosedDays } from '../../api/directus/read';
+import { exportarSemanalExcel } from '../../utils/exportarSemanal';
+import { Tienda } from '../../interfaces/horarios.interface';
+import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import DateRangeFilter from './DateRangeFilter';
+import { DIAS_DE_LA_SEMANA } from '../../pages/reporte/ReporteUtils';
+⋮----
+interface ExportSemanalDialogProps {
+  open: boolean;
+  onClose: () => void;
+  fechaInicioDefault?: Dayjs | null;
+  fechaFinDefault?: Dayjs | null;
+  tiendasPermitidas?: Tienda[];
+  diaInicioSemana?: number;
+  diaFinSemana?: number;
+}
+⋮----
+export default function ExportSemanalDialog({
+  open,
+  onClose,
+  fechaInicioDefault,
+  fechaFinDefault,
+  tiendasPermitidas,
+  diaInicioSemana = 1,
+  diaFinSemana = 0,
+}: ExportSemanalDialogProps)
+⋮----
+// Solo al abrir el diálogo inicializamos las tiendas y fechas
+⋮----
+const handleExport = async () =>
+⋮----
+{/* Selección Múltiple de Tiendas */}
+⋮----
+setTiendasSel(tiendas);
+⋮----
+{/* Rango de Fechas (ej: 11/07/2026 - 25/07/2026) */}
+⋮----
+{/* Formato de Detalle y Estructura */}
+</file>
+
+<file path="components/reportes/ExportUnificadoDialog.tsx">
+import { useState, useEffect } from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography,
+  Autocomplete, TextField, Checkbox, FormControlLabel, CircularProgress,
+  FormControl, InputLabel, Select, MenuItem, Chip, Tabs, Tab, IconButton
+} from '@mui/material';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import DateRangeIcon from '@mui/icons-material/DateRange';
+import HistoryIcon from '@mui/icons-material/History';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import PauseCircleIcon from '@mui/icons-material/PauseCircle';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import CloseIcon from '@mui/icons-material/Close';
+import { useQuery } from '@tanstack/react-query';
+import dayjs, { Dayjs } from 'dayjs';
+import {
+  getStores,
+  getEmpleadosBulk,
+  getTimeRecordsBulkRange,
+  fetchTimeRecordsExport,
+  getReasonNamesForRecords,
+  fetchNewnessReportsExport,
+  fetchEventReportsExport,
+  getStoreClosedDays
+} from '../../api/directus/read';
+import { exportarSemanalExcel } from '../../utils/exportarSemanal';
+import { exportarHistorialExcel } from '../../utils/exportarHistorial';
+import { exportarNovedadesExcel } from '../../utils/exportarNovedades';
+import { exportarEventosExcel } from '../../utils/exportarEventos';
+import { Tienda } from '../../interfaces/horarios.interface';
+import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import DateRangeFilter from './DateRangeFilter';
+import { DIAS_DE_LA_SEMANA } from '../../pages/reporte/ReporteUtils';
+import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
+import { useAuth } from '@/auth/hooks/useAuth';
+import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
+⋮----
+export interface ExportUnificadoDialogProps {
+  open: boolean;
+  onClose: () => void;
+  tabInicial?: 'semanal' | 'registros' | 'novedades' | 'pausas';
+  storeSel?: number | null;
+  rangoInicioDefault?: Dayjs | null;
+  rangoFinDefault?: Dayjs | null;
+  searchNombre?: string;
+  tiendasPermitidas?: Tienda[];
+  diaInicioSemana?: number;
+  diaFinSemana?: number;
+}
+⋮----
+export default function ExportUnificadoDialog({
+  open,
+  onClose,
+  tabInicial = 'registros',
+  storeSel,
+  rangoInicioDefault,
+  rangoFinDefault,
+  searchNombre = '',
+  tiendasPermitidas,
+  diaInicioSemana = 1,
+  diaFinSemana = 0,
+}: ExportUnificadoDialogProps)
+⋮----
+const esAdmin = ()
+⋮----
+const getTabIndexFromNombre = (nombre: string): number =>
+⋮----
+// Estados de Filtros
+⋮----
+// Opciones específicas por pestaña
+⋮----
+// --- Exportar Horas Semanales ---
+const handleExportSemanal = async () =>
+⋮----
+// --- Exportar Historial de Registros ---
+const handleExportRegistros = async () =>
+⋮----
+// --- Exportar Novedades ---
+const handleExportNovedades = async () =>
+⋮----
+// --- Exportar Pausas Activas ---
+const handleExportPausas = async () =>
+⋮----
+const handleExportarActual = () =>
+⋮----
+{/* Pestañas dentro del Modal */}
+⋮----
+{/* Selección Múltiple de Tiendas */}
+⋮----
+setTiendasSel(tiendas);
+⋮----
+{/* Contenido Específico por Pestaña */}
+</file>
+
+<file path="components/reportes/FestivosDetalleModal.tsx">
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Box,
+  Typography,
+  IconButton,
+  Tooltip,
+  Paper,
+  Divider,
+  Button,
+  Chip
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import CelebrationIcon from '@mui/icons-material/Celebration';
+import dayjs from 'dayjs';
+⋮----
+// Utilidad para formatear minutos laborados
+const formatMinutes = (min: number): string =>
+⋮----
+// Obtener festivos trabajados por empleado
+export const obtenerFestivosTrabajadosEmp = (
+  empId: unknown,
+  records: any[],
+  holidayMap: Record<string, string>,
+  anio: number,
+  mes: number
+) =>
+⋮----
+// ─── Componente FestivosChip ──────────────────────────────────────────────────
+interface FestivosChipProps {
+  count: number;
+  total: number;
+  onClick?: () => void;
+}
+⋮----
+// ─── Componente FestivosDetalleModal ──────────────────────────────────────────
+⋮----
+
+⋮----
+onClick=
+</file>
+
+<file path="components/reportes/ReporteSemanalAreaManager.tsx">
+import { useMemo, useState, useEffect } from 'react';
+import {
+  Box, Typography, Paper, CircularProgress,
+  FormControl, Select, MenuItem, TextField, InputAdornment, Tooltip, Chip,
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import WarningIcon from '@mui/icons-material/Warning';
+import { useQuery } from '@tanstack/react-query';
+import dayjs from 'dayjs';
+⋮----
+import { getEmpleadosBulk, getTimeRecordsBulkRange, getPrimerPeriodoRegistro, getNovedades } from '../../api/directus/read';
+import HistorialHorasModal from '../HistorialHorasModal';
+import { ObservationModal } from '../ObservationModal';
+import { AreaManagerStoreTable } from './AreaManagerStoreTable';
+import { useHolidays } from '../../../reservas/hooks/useHolidays';
+import FestivosDetalleModal, { FestivosChip, obtenerFestivosTrabajadosEmp } from './FestivosDetalleModal';
+import { MonitoreoTourProvider, TutorialMonitoreoButton, useMonitoreoTour } from '../tour/MonitoreoTour';
+⋮----
+const getAvatarColor = (texto: string) =>
+⋮----
+function getSemanasDelMes(anio: number, mes: number)
+⋮----
+const calcularMinutosSemanales = (
+  empId: unknown,
+  startStr: string,
+  endStr: string,
+  records: any[],
+): number =>
+⋮----
+const formatMinutes = (min: number): string =>
+⋮----
+const contarDomingosEmp = (empId: unknown, records: any[]): number =>
+⋮----
+setHistorialOpen(false);
+setEmpleadoSeleccionado(null);
+⋮----
+setFestivosModalData(prev => (
+</file>
+
+<file path="components/tour/AdminTour.tsx">
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  ReactNode,
+} from "react";
+import Joyride, {
+  CallBackProps,
+  STATUS,
+  ACTIONS,
+  EVENTS,
+  Step,
+} from "react-joyride";
+import { Box, Typography, Button, TextField, Divider } from "@mui/material";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import { CustomTooltip } from "./TourTooltip";
+⋮----
+/* ============================================================
+ * 1. STEPS
+ * ============================================================ */
+⋮----
+/* ============================================================
+ * 2. FAKE MODAL GENÉRICO
+ * ============================================================ */
+⋮----
+/* ============================================================
+ * 3. CONTENIDO ESPECÍFICO
+ * ============================================================ */
+⋮----
+/* ============================================================
+ * 4. CONTEXT Y COMPONENTE PRINCIPAL
+ * ============================================================ */
+⋮----
+export const useAdminTour = (): AdminTourCtx =>
+</file>
+
+<file path="components/tour/FakeExportDialog.tsx">
+import React from "react";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+⋮----
+interface FakeExportDialogProps {
+  open: boolean;
+  activeField: string | null;
+  title: string;
+  subtitle: string;
+  idPrefix: string;
+  showDetalladaOption?: boolean;
+  maxWidth?: number;
+}
+</file>
+
+<file path="components/tour/FakeExportModal.tsx">
+import {
+  Box, Typography, Chip, Checkbox, FormControlLabel, TextField,
+  FormControl, InputLabel, Select, MenuItem, Button, IconButton, Tabs, Tab
+} from '@mui/material';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import DateRangeIcon from '@mui/icons-material/DateRange';
+import HistoryIcon from '@mui/icons-material/History';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import PauseCircleIcon from '@mui/icons-material/PauseCircle';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import CloseIcon from '@mui/icons-material/Close';
+</file>
+
+<file path="components/tour/fakeExportModals.tsx">
+import React from "react";
+import { FakeExportDialog, buildExportModalTargets } from "./FakeExportDialog";
+⋮----
+export const FakeExportModal: React.FC<{ open: boolean; activeField: string | null }> = (props) => (
+  <FakeExportDialog
+    {...props}
+    title="Exportar pausas activas"
+    subtitle="Reportes de pausas y eventos de la tienda"
+    idPrefix="tour-export"
+  />
+);
+⋮----
+export const FakeExportNovedadesModal: React.FC<{ open: boolean; activeField: string | null }> = (props) => (
+  <FakeExportDialog
+    {...props}
+    title="Exportar novedades"
+    subtitle="Selecciona el rango de fechas"
+    idPrefix="tour-nov-export"
+  />
+);
+</file>
+
+<file path="components/tour/FakeHistorialModal.tsx">
+import React from "react";
+import { GenericTourModal, FakePrimaryButton } from "./GenericTourModal";
+⋮----
+interface FakeHistorialModalProps {
+  open: boolean;
+}
+</file>
+
+<file path="components/tour/fakeTourModals.tsx">
+import React from "react";
+import { GenericTourModal, fakeFieldStyle, FakeCancelButton, FakePrimaryButton } from "./GenericTourModal";
+⋮----
+const rowIconBox = (enabled: boolean): React.CSSProperties => (
+⋮----
+const rowStyle = (variant: "outlined" | "filled" | "plain"): React.CSSProperties => (
+⋮----
+<div style=
+</file>
+
+<file path="components/tour/GenericTourModal.tsx">
+import React from "react";
+⋮----
+export const fakeFieldStyle = (
+  isActive: boolean,
+  extraStyles?: React.CSSProperties
+): React.CSSProperties => (
+⋮----
+export const FakeCancelButton: React.FC<{ label?: string }> = ({ label = "Cancelar" }) => (
+  <div
+    style={{
+      padding: "6px 16px",
+      borderRadius: 8,
+      border: "1px solid #cbd5e1",
+      color: "#475569",
+      fontWeight: 600,
+      fontSize: "0.875rem",
+      letterSpacing: "0.02857em",
+      cursor: "not-allowed",
+      textTransform: "uppercase",
+      userSelect: "none",
+    }}
+  >
+    {label}
+  </div>
+);
+⋮----
+export const FakePrimaryButton: React.FC<{ label?: string }> = ({ label = "Guardar" }) => (
+  <div
+    style={{
+      padding: "6px 22px",
+      borderRadius: 8,
+      backgroundColor: AZUL_INSTITUCIONAL,
+      color: "#fff",
+      fontWeight: 600,
+      fontSize: "0.875rem",
+      letterSpacing: "0.02857em",
+      cursor: "not-allowed",
+      textTransform: "uppercase",
+      boxShadow:
+        "0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14), 0px 1px 5px 0px rgba(0,0,0,0.12)",
+      userSelect: "none",
+    }}
+  >
+    {label}
+  </div>
+);
+⋮----
+interface GenericTourModalProps {
+  title: string;
+  subtitle?: string;
+  avatar?: string;
+  headerBg?: string;
+  maxWidth?: number;
+  dimContent?: boolean;
+  dimFooter?: boolean;
+  footer?: React.ReactNode;
+  children: React.ReactNode;
+}
+⋮----
+onWheel=
+</file>
+
+<file path="components/tour/HorariosTour.tsx">
+import React, { useCallback, useEffect, useState, ReactNode } from "react";
+import Joyride, {
+  CallBackProps,
+  STATUS,
+  ACTIONS,
+  EVENTS,
+} from "react-joyride";
+import { useHorariosTour } from "./HorariosTourContext";
+import { STEPS_BY_PHASE } from "./tourSteps";
+import { CustomTooltip } from "./TourTooltip";
+import {
+  FakeNovedadModal,
+  FakeEventoModal,
+  FakeCountdownCard,
+  novedadModalTargets,
+  eventoModalTargets,
+  countdownTargets,
+} from "./fakeTourModals";
+import {
+  FakeExportModal,
+  FakeExportNovedadesModal,
+  FakeExportHistorialModal,
+  exportModalTargets,
+  exportNovedadesModalTargets,
+  exportHistorialModalTargets,
+} from "./fakeExportModals";
+⋮----
+type OverlayKind =
+  | "novedad"
+  | "evento"
+  | "countdown"
+  | "exportar"
+  | "exportarNov"
+  | "exportarHist"
+  | null;
+⋮----
+const getOverlayForTarget = (target?: string | null): OverlayKind =>
+⋮----
+interface HorariosTourProps {
+  children: ReactNode;
+}
+</file>
+
+<file path="components/tour/HorariosTourContext.tsx">
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  ReactNode,
+} from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+⋮----
+export type HorariosTab = 0 | 1 | 2 | 3;
+⋮----
+export type TourPhase =
+  | "IDLE"
+  | "REGISTROS"
+  | "NOVEDADES"
+  | "HISTORIAL"
+  | "COMPLETED";
+⋮----
+interface TourContextType {
+  tourPhase: TourPhase;
+  isFullTourRunning: boolean;
+  stepIndex: number;
+
+  startTour: (phase?: TourPhase) => void;
+  nextPhase: () => void;
+  setStepIndex: (index: number) => void;
+  stopTour: () => void;
+
+  setTabChangeCallback: (callback: (tab: HorariosTab) => void) => void;
+}
+⋮----
+interface TourProviderProps {
+  children: ReactNode;
+}
+⋮----
+export const HorariosTourProvider: React.FC<TourProviderProps> = (
+⋮----
+// Mientras el tour corre (cualquier fase), anulamos el sticky del header
+// general para que no tape los targets al hacer scroll. Se retira al
+// terminar, cancelar, o pasar a COMPLETED/IDLE.
+⋮----
+export const useHorariosTour = (): TourContextType =>
+</file>
+
+<file path="components/tour/MonitoreoTour.tsx">
+import React, { useState, useCallback, createContext, useContext } from "react";
+import Joyride, { CallBackProps, STATUS, ACTIONS, EVENTS } from "react-joyride";
+import { Button } from "@mui/material";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import { CustomTooltip } from "./TourTooltip";
+import { STEPS_CONTROL_HORAS } from "./monitoreoTourSteps";
+import { FakeHistorialModal } from "./FakeHistorialModal";
+⋮----
+// ============================================================
+// CONTEXT
+// ============================================================
+interface MonitoreoTourContextType {
+  run: boolean;
+  stepIndex: number;
+  startTour: () => void;
+  stopTour: () => void;
+  setStepIndex: (index: number) => void;
+}
+⋮----
+export const useMonitoreoTour = () =>
+⋮----
+// ============================================================
+// PROVIDER (monta Joyride siempre, controlado por run)
+// ============================================================
+⋮----
+// ============================================================
+// BOTÓN para iniciar el tour (usa el contexto)
+// ============================================================
+⋮----
+// ============================================================
+// COMPONENTE WRAPPER (para usar como <MonitoreoTour>)
+// ============================================================
+</file>
+
+<file path="components/tour/monitoreoTourSteps.tsx">
+import { Box, Typography } from "@mui/material";
+import { Step } from "react-joyride";
+</file>
+
+<file path="components/tour/tourSteps.tsx">
+import { Step } from "react-joyride";
+import { Box, Typography, Chip } from "@mui/material";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import NoFoodIcon from "@mui/icons-material/NoFood";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import PauseCircleOutlineIcon from "@mui/icons-material/PauseCircleOutline";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import { TourPhase } from "./HorariosTourContext";
+</file>
+
+<file path="components/tour/TourTooltip.tsx">
+import React from "react";
+import { TooltipRenderProps } from "react-joyride";
+import { Box, Button, Typography } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+</file>
+
+<file path="components/tour/TutorialButton.tsx">
+import React, { useState } from "react";
+import {
+  Button,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Typography,
+} from "@mui/material";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import EventNoteIcon from "@mui/icons-material/EventNote";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import HistoryIcon from "@mui/icons-material/History";
+import { useHorariosTour, TourPhase } from "./HorariosTourContext";
+⋮----
+const TutorialButton: React.FC = () =>
+⋮----
+const handleClick = (e: React.MouseEvent<HTMLElement>) =>
+⋮----
+const handleClose = ()
+⋮----
+const handleSelect = (phase?: TourPhase) =>
+⋮----
+<MenuItem onClick=
+</file>
+
+<file path="components/CalendarioMensualTienda.tsx">
+import { useState, useEffect } from 'react';
+import {
+    Box, Typography, Paper, Tooltip, CircularProgress,
+    IconButton as MuiIconButton,
+} from '@mui/material';
+import {
+    CalendarMonth as CalendarMonthIcon,
+    InfoOutlined as InfoOutlinedIcon,
+    NavigateBefore as NavigateBeforeIcon,
+    NavigateNext as NavigateNextIcon,
+} from '@mui/icons-material';
+import { useQuery } from '@tanstack/react-query';
+import dayjs from 'dayjs';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+⋮----
+import { fetchTimeRecords, getStoreClosedDays, StoreClosedDay } from '../api/directus/read';
+import { EstadoDia } from './ModalDetalleTiendaUtils';
+import { useHolidays } from '../../reservas/hooks/useHolidays';
+⋮----
+interface CalendarioMensualTiendaProps {
+    tiendaId: number;
+    totalEmpleados: number;
+    fechaSeleccionada: string;
+    onDateSelect: (fecha: string) => void;
+    todasNovedades: any[];
+    puedeGestionar?: boolean;
+    // Props de multiselección
+    modoSeleccion?: boolean;
+    diasSeleccionados?: Set<string>;
+    onToggleDia?: (fecha: string) => void;
+}
+⋮----
+// Props de multiselección
+⋮----
+// Agrupar registros en memoria por fecha
+⋮----
+// Agrupar novedades en memoria por fecha
+⋮----
+const colorPorEstado = (estado?: EstadoDia, esFuturo?: boolean) =>
+⋮----
+const handleDateClick = (fecha: string, esCerrado: boolean) =>
+⋮----
+// En modo selección: no se pueden seleccionar días ya cerrados
+⋮----
+const handleMesAnterior = ()
+const handleMesSiguiente = ()
+⋮----
+// --- Modo selección múltiple ---
+⋮----
+// Días cerrados no son seleccionables en modo selección
+⋮----
+// --- Modo normal ---
+</file>
+
+<file path="components/EditHourModal.tsx">
+import { useState, useEffect } from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  Button, Box, Divider, Typography, FormControl, InputLabel, Select, MenuItem, Alert
+} from '@mui/material';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import dayjs from 'dayjs';
+⋮----
+import { Motivo } from '../interfaces/horarios.interface';
+⋮----
+const formatTo12Hour = (timeStr: string | null): string =>
+⋮----
+interface EditHourModalProps {
+  open: boolean;
+  onClose: () => void;
+  employeeName: string;
+  eventName: string;
+  initialTimeStr: string | null;
+  initialObservation: string;
+  reasons: Motivo[];
+  initialReasonId: number | null;
+  registros?: {
+    inicioJornada?: string | null;
+    inicioAlmuerzo?: string | null;
+    finAlmuerzo?: string | null;
+    finJornada?: string | null;
+  };
+  onConfirm: (timeFormatted: string, observation: string, reasonId: number | null) => Promise<void> | void;
+  motivoRequerido?: boolean;
+}
+⋮----
+const [reasonId, setReasonId] = useState<number>(0); // 👈 0 = sin motivo
+⋮----
+setReasonId(initialReasonId ?? 0); // 👈 0 si no hay motivo
+⋮----
+const checkMin = (targetTime: string | null | undefined, label: string) =>
+⋮----
+const checkMax = (targetTime: string | null | undefined, label: string) =>
+⋮----
+const handleConfirmarHora = async () =>
+⋮----
+// 👈 Si reasonId es 0, enviamos null (sin motivo)
+</file>
+
+<file path="components/EmployeeCard.tsx">
+import { useState } from 'react';
+import { Card, Typography, CircularProgress } from '@mui/material';
+import { EmpleadoAsistencia, Motivo } from '../interfaces/horarios.interface';
+import EditHourModal from './EditHourModal';
+import NormasModal from './NormasModal';
+import {
+  EmployeeCardObsModal,
+  EmployeeCardNovedadModal,
+  EmployeeCardEventoModal,
+  EmployeeCardOmitirAlmuerzoModal
+} from './employee-card/EmployeeCardModals';
+import { EmployeeCardHeader } from './employee-card/EmployeeCardHeader';
+import { EmployeeCardTimeSlots } from './employee-card/EmployeeCardTimeSlots';
+import {
+  EVENTOS_PAUSA,
+  novedadSchema,
+  getObservacion,
+  getHoraEvento,
+  getEditadoStatus,
+  getRecordIdEvento,
+  useActiveBreak
+} from './employee-card/EmployeeCardUtils';
+import { getRecordReasonId } from '../api/directus/read';
+import { getNormasActivas, yaAceptoNormasEmpleado, registrarAceptacionNormasEmpleado, Normas } from '../api/directus/rules';
+import { useQuery } from '@tanstack/react-query';
+import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
+import dayjs from 'dayjs';
+⋮----
+import { useHolidays } from '../../reservas/hooks/useHolidays';
+⋮----
+interface EmployeeCardProps {
+  empleado: EmpleadoAsistencia;
+  tiposNovedad: { id: number; name?: string; nombre?: string }[];
+  reasons: Motivo[];
+  onRegistrarEvento: (idEmpleado: string, tipoEvento: string, horaOverride?: string, observacionOverride?: string, reasonId?: number | null) => Promise<void> | void;
+  onEliminarEmpleado: (idEmpleado: string) => void;
+  onGuardarObservacion: (idEmpleado: string, evento: string, texto: string) => void;
+  onAgregarNovedad: (novedad: {
+    empleadoId: string;
+    empleadoNombre: string;
+    tipo: string;
+    fechaInicio: string;
+    fechaFin: string;
+    observaciones: string;
+    fechaRegistro: string;
+  }) => Promise<boolean> | boolean | any;
+  onReportarEvento: (idEmpleado: string, eventType: string, observaciones?: string) => Promise<boolean> | boolean | any;
+}
+⋮----
+const handleOpenNovedadModal = () =>
+⋮----
+const handleGuardarNovedad = async () =>
+⋮----
+const handleGuardarEvento = async () =>
+⋮----
+const handleGuardarObservacion = async () =>
+⋮----
+const handleOpenHoraModal = (evento: string) =>
+⋮----
+const handleRegistrarEvento = async (tipoEvento: string) =>
+⋮----
+getEditadoStatus=
+⋮----
+initialObservation=
+⋮----
+onConfirm=
+await onRegistrarEvento(id, eventoActualHora, horaFormateada, observacion, reasonId);
+</file>
+
+<file path="components/FestivoDay.tsx">
+import { Tooltip, Box } from "@mui/material";
+import { PickersDay, PickersDayProps } from "@mui/x-date-pickers/PickersDay";
+import dayjs from "dayjs";
+import type { HolidayMap } from "../../reservas/hooks/useHolidays";
+⋮----
+interface FestivoDayProps extends PickersDayProps {
+  holidays?: HolidayMap;
+}
+</file>
+
+<file path="components/HistorialHorasModal.tsx">
+import React, { useState } from 'react';
+import {
+    Box, Typography, Paper, Button, CircularProgress, Dialog, DialogTitle,
+    DialogContent, DialogActions, IconButton as MuiIconButton, Tooltip, Badge,
+    Grid, Avatar, Chip
+} from '@mui/material';
+import {
+    Close as CloseIcon,
+    NavigateBefore as NavigateBeforeIcon,
+    NavigateNext as NavigateNextIcon,
+    PlayArrow as PlayIcon,
+    Coffee as CoffeeIcon,
+    Restaurant as RestaurantIcon,
+    ExitToApp as LogoutIcon,
+    AccessTime as AccessTimeIcon,
+    Lock as LockIcon,
+} from '@mui/icons-material';
+import { useQuery } from '@tanstack/react-query';
+import dayjs, { Dayjs } from 'dayjs';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+⋮----
+import { fetchTimeRecords } from '../api/directus/read';
+import { getStoreClosedDays } from '../api/directus/readBulk';
+import DateRangeFilter from './reportes/DateRangeFilter';
+import { HistorialTimelineView } from './historial/HistorialTimelineView';
+import {
+    EmpleadoFila,
+    getNovedadIcon,
+    calcularMinutosDia,
+    formatearHoras,
+} from './ModalDetalleTiendaUtils';
+⋮----
+interface HistorialHorasModalProps {
+    open: boolean;
+    onClose: () => void;
+    empleado: EmpleadoFila | null;
+    tiendaId: number;
+    todasNovedades: any[];
+    onDayClick?: (fecha: string, empleadoNombre: string) => void;
+}
+⋮----
+// Meta para los tipos de registro en el timeline
+⋮----
+// Agrupar registros en memoria por fecha
+⋮----
+// Consultar días cerrados de la tienda del mes activo
+⋮----
+const semanaInicio = dayObj.startOf('week'); // Lunes
+⋮----
+const handleMesAnterior = () =>
+const handleMesSiguiente = () =>
+⋮----
+const getNovedadDelDia = (fecha: string) =>
+⋮----
+{/* Header del Diálogo */}
+⋮----
+{/* Contenido Principal */}
+⋮----
+{/* Selector de Mes y Filtro de Rango de Fechas (A la par) */}
+⋮----
+{/* Selector de Mes */}
+⋮----
+{/* Filtro de Rango de Fechas */}
+⋮----
+const fin = inicio.add(6, 'day'); // Lunes a Domingo
+⋮----
+{/* Grid de Tarjetas Diarias */}
+⋮----
+// Estilos para novedades en días sin marcas
+const getNovedadEstilo = (tipo: string) =>
+⋮----
+const capitalizar = (str: string)
+⋮----
+// --- TIENDA CERRADA ---
+⋮----
+onClick=
+⋮----
+// --- FIN TIENDA CERRADA ---
+⋮----
+setDiaSeleccionado(dia);
+⋮----
+{/* Total Horas / Novedad del Día */}
+⋮----
+{/* Acciones del Diálogo Principal */}
+⋮----
+{/* DIÁLOGO HIJO: Detalle Diario Premium (Timeline) */}
+</file>
+
+<file path="components/HorariosLayout.tsx">
+import { Outlet } from 'react-router-dom';
+import { Box } from '@mui/material';
+⋮----
+export default function HorariosLayout()
+</file>
+
+<file path="components/ModalCierreMasivo.tsx">
+import { useState, useMemo, useEffect } from 'react';
+import {
+    Dialog, DialogContent, DialogActions,
+    Box, Typography, Button, IconButton, TextField, InputAdornment,
+    Checkbox, FormControlLabel, Chip, Divider, Tooltip,
+    Tabs, Tab,
+} from '@mui/material';
+import {
+    Close as CloseIcon,
+    Search as SearchIcon,
+    Storefront as StorefrontIcon,
+    Block as BlockIcon,
+    CheckCircle as CheckCircleIcon,
+    LockOpen as LockOpenIcon,
+} from '@mui/icons-material';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { StaticDatePicker } from '@mui/x-date-pickers/StaticDatePicker';
+import { PickersDay, PickersDayProps } from '@mui/x-date-pickers/PickersDay';
+⋮----
+import { ConfirmCierreMasivoDialog } from './cierre-masivo/ConfirmCierreMasivoDialog';
+import { setStoreClosedDayStatus } from '../api/directus/create';
+import { getStoreClosedDays, StoreClosedDay } from '../api/directus/read';
+import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+⋮----
+interface Tienda {
+    id: number;
+    nombre: string;
+}
+⋮----
+interface ModalCierreMasivoProps {
+    open: boolean;
+    onClose: () => void;
+    tiendas: Tienda[];
+}
+⋮----
+// ─── Hook de festivos (reutilizado de reservas) ────────────────────────────────
+interface HolidayMap { [date: string]: string; }
+async function fetchHolidaysCO(year: number): Promise<HolidayMap>
+function useHolidaysCO(year: number)
+⋮----
+// ─── Day slot personalizado: festivos + multiselección ────────────────────────
+interface MultiSelectDayProps extends PickersDayProps {
+    holidays?: HolidayMap;
+    selectedDates?: Set<string>;
+    modoAccion?: 'cerrar' | 'reabrir';
+    tiendasCerradasPorFecha?: Map<string, string[]>;
+}
+⋮----
+// ─── Calendario con festivos y multiselección ─────────────────────────────────
+⋮----
+/** Convierte Dayjs, Date o cualquier valor a Date nativo sin error de tipos */
+⋮----
+const handleChange = (value: unknown) =>
+⋮----
+return; // Ignorar clic en fechas no cerradas en modo reabrir
+⋮----
+{/* Leyenda */}
+⋮----
+// ─── Componente principal ─────────────────────────────────────────────────────
+⋮----
+// Consulta de todos los días cerrados para las tiendas
+⋮----
+// Mapeo: storeId -> Set<fecha> (Días cerrados SOLO en el mes que se está mostrando en el calendario)
+⋮----
+// Al abrir el modal, resetear al mes actual
+⋮----
+// Al abrir el modal o cambiar la acción a 'reabrir', activar filtro y auto-seleccionar tiendas con cierres en este mes
+⋮----
+const handleToggleFiltroSoloConCierres = () =>
+⋮----
+// Mapeo: fecha -> lista de nombres de tiendas cerradas en esa fecha (para las tiendas seleccionadas y del mes actual)
+⋮----
+const handleToggleTienda = (id: number) =>
+⋮----
+const handleToggleTodas = () =>
+⋮----
+const handleToggleDia = (fecha: string) =>
+⋮----
+const handleGuardar = async () =>
+⋮----
+const handleCerrar = () =>
+⋮----
+{/* Cabecera */}
+⋮----
+{/* ── Columna izquierda: Tiendas ── */}
+⋮----
+checked=
+⋮----
+{/* ── Columna derecha: Calendario ── */}
+⋮----
+{/* Modal de confirmación final */}
+</file>
+
+<file path="components/ModalDetalleTienda.tsx">
+import { useState, useCallback } from 'react';
+import {
+  Box, Typography, Dialog, DialogTitle, DialogContent, IconButton
+} from '@mui/material';
+import {
+  Close as CloseIcon,
+  Storefront as StorefrontIcon,
+} from '@mui/icons-material';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import dayjs, { Dayjs } from 'dayjs';
+⋮----
+import { getNovedades, fetchTimeRecords, getRecordReasonId, getStoreClosedDays, StoreClosedDay } from '../api/directus/read';
+import { createTimeRecord, updateTimeRecord, upsertRecordReason, setStoreClosedDayStatus } from '../api/directus/create';
+import { useHorarios } from '../hooks/useHorarios';
+import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
+import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+⋮----
+import {
+  EmpleadoFila,
+  calcularMinutosDia,
+  formatearHoras,
+  calcularHorasSemana,
+} from './ModalDetalleTiendaUtils';
+⋮----
+import NovedadDetalleModal from './NovedadDetalleModal';
+import HistorialHorasModal from './HistorialHorasModal';
+import CalendarioMensualTienda from './CalendarioMensualTienda';
+import EditHourModal from './EditHourModal';
+⋮----
+// Componentes extraídos
+import EmpleadosTable from './detalle-tienda/EmpleadosTable';
+import ConfirmClosedDayDialogs from './detalle-tienda/ConfirmClosedDayDialogs';
+import { ModalDetalleTiendaHeader } from './detalle-tienda/ModalDetalleTiendaHeader';
+import CreateHourModal from './detalle-tienda/CreateHourModal';
+⋮----
+// ============================================================
+//  COMPONENTE PRINCIPAL
+// ============================================================
+⋮----
+// ============================================================
+// ESTADO: MODO SELECCIÓN MÚLTIPLE
+// ============================================================
+⋮----
+// Registros por fecha para el modal masivo (cargados solo al confirmar)
+⋮----
+const handleActivarModoSeleccion = () =>
+⋮----
+const handleCancelarSeleccion = () =>
+⋮----
+const handleAbrirConfirmMasivo = async () =>
+⋮----
+const handleGuardarMasivo = async () =>
+⋮----
+// Estados para EditHourModal (edición)
+⋮----
+// Estados para CreateHourModal (creación)
+⋮----
+const handleToggleDiaCerradoClick = () =>
+⋮----
+const executeToggleDiaCerrado = async (actualmenteCerrado: boolean) =>
+⋮----
+const getHora = (empId: string | number, logType: string) =>
+⋮----
+const getRecordId = (empId: string | number, logType: string) =>
+⋮----
+const getNovedadEmpleado = (empId: string | number) =>
+⋮----
+// Construir la unión de empleados para la fecha seleccionada
+⋮----
+const handleNovedadClick = (fila: EmpleadoFila) =>
+⋮----
+const handleOpenHistorial = (fila: EmpleadoFila) =>
+⋮----
+const handleDayClick = (fecha: string, empleadoNombre: string) =>
+⋮----
+const handleClearFilters = () =>
+⋮----
+// ============================================================
+// FUNCIÓN PARA ABRIR MODAL DE EDICIÓN
+// ============================================================
+const handleOpenEditHour = async (empleadoId: string, empleadoNombre: string, evento: string, recordId: number) =>
+⋮----
+const handleCloseEditHour = () =>
+⋮----
+const handleConfirmEdit = async (horaFormateada: string, observacion: string, reasonId: number | null) =>
+⋮----
+// ============================================================
+// FUNCIÓN PARA ABRIR MODAL DE CREACIÓN
+// ============================================================
+const handleOpenCreateHour = (empleadoId: string, empleadoNombre: string, evento: string) =>
+⋮----
+const handleCloseCreateHour = () =>
+⋮----
+const handleConfirmCreate = async (horaFormateada: string, observacion: string) =>
+⋮----
+setFechaSeleccionada(fecha);
+setSearch('');
+setPage(0);
+⋮----
+onClose=
+⋮----
+{/* DIÁLOGOS DE CONFIRMACIÓN EXTRAÍDOS */}
+</file>
+
+<file path="components/ModalDetalleTiendaUtils.tsx">
+import {
+    LocalHospital as LocalHospitalIcon,
+    BeachAccess as BeachAccessIcon,
+    EventAvailable as EventAvailableIcon,
+    ReportProblem as ReportProblemIcon,
+    FlightTakeoff as FlightTakeoffIcon,
+    WarningAmber as WarningAmberIcon,
+    FamilyRestroom as FamilyRestroomIcon,
+    School as SchoolIcon,
+    Gavel as GavelIcon,
+    Assignment as AssignmentIcon,
+} from '@mui/icons-material';
+⋮----
+export type EstadoDia = 'completo' | 'parcial' | 'sin_registro' | 'tienda_cerrada';
+⋮----
+export interface EmpleadoFila {
+    id: string;
+    nombre: string;
+    documento: string;
+    cargo: string;
+    inicioJornada: string | null;
+    inicioAlmuerzo: string | null;
+    finAlmuerzo: string | null;
+    finJornada: string | null;
+    estado: string;
+    tieneNovedad: boolean;
+    novedadTipo?: string;
+    novedadObservacion?: string;
+    novedadId?: string;
+    horasDia: string;
+    horasSemana: string;
+}
+⋮----
+// Restar el tiempo de almuerzo si ambos registros existen
+⋮----
+export const calcularHorasSemana = (empId: string | number, records: any[]): string =>
+⋮----
+// Restar almuerzo diario
+</file>
+
+<file path="components/ModalRankingTiendas.tsx">
+import { useState, useMemo, useEffect } from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions,
+  Box, Typography, IconButton, TextField, InputAdornment,
+  Button, Chip, Avatar, List, ListItem, ListItemAvatar,
+  ListItemText, Badge, Tooltip, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Paper, FormControl,
+  InputLabel, Select, MenuItem, OutlinedInput, CircularProgress
+} from '@mui/material';
+import {
+  Storefront as StorefrontIcon,
+  Close as CloseIcon,
+  Search as SearchIcon,
+  Sort as SortIcon,
+  ArrowUpward as ArrowUpwardIcon,
+  ArrowDownward as ArrowDownwardIcon,
+  CalendarToday as CalendarTodayIcon,
+  ArrowBackIos as ArrowBackIosIcon,
+  ArrowForwardIos as ArrowForwardIosIcon,
+  Visibility as VisibilityIcon,
+  Message as MessageIcon,
+  CheckCircle as CheckCircleIcon
+} from '@mui/icons-material';
+import dayjs, { Dayjs } from 'dayjs';
+import { COLUMNAS_EDICIONES, rowsPerPage, getColorForMotivo } from '../pages/monitoreo/MonitoreoUtils';
+import { Paginador } from '../pages/monitoreo/MonitoreoComponents';
+⋮----
+interface EditedRecord {
+  id: number;
+  fecha: string;
+  empleadoId: number;
+  empleadoNombre: string;
+  tiendaId: number;
+  tiendaNombre: string;
+  tipoRegistro: string;
+  horaOriginal: string | null;
+  horaModificada: string | null;
+  motivo: string;
+  observaciones: string;
+}
+⋮----
+interface ModalRankingTiendasProps {
+  open: boolean;
+  onClose: () => void;
+  editedRecords: EditedRecord[];
+  rankingMesTiendas: Dayjs;
+  setRankingMesTiendas: (date: Dayjs) => void;
+  isLoading?: boolean;
+}
+⋮----
+// Al cerrar el modal o cambiar de mes, resetear la tienda seleccionada y regresar al listado principal
+⋮----
+// Motivos únicos globales (filtrados estrictamente por el mes actual)
+⋮----
+// Ranking de tiendas (con filtro de motivos y cuenta exacta)
+⋮----
+// Ediciones de la tienda seleccionada (con filtro exacto de motivos)
+⋮----
+// Desglose riguroso por MOTIVO
+⋮----
+const handleCambiarMes = (nuevoMes: Dayjs) =>
+⋮----
+<IconButton onClick=
+⋮----
+// ---- VISTA LISTADO DE TIENDAS ----
+⋮----
+onChange=
+⋮----
+<IconButton size="small" onClick=
+⋮----
+{/* Fila reorganizada: Calendario -> Filtro de Motivos -> Conteo Total */}
+⋮----
+input=
+⋮----
+return <Box key=
+⋮----
+onClick=
+⋮----
+// ---- VISTA DETALLE DE TIENDA (con desglose exacto de motivos filtrados) ----
+</file>
+
+<file path="components/NavbarHorarios.tsx">
+import { useNavigate, useLocation } from 'react-router-dom';
+import { AppBar, Toolbar, Tabs, Tab, Button, Box, IconButton } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import LogoutIcon from '@mui/icons-material/Logout';
+</file>
+
+<file path="components/NormasModal.tsx">
+import { useState, useEffect } from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography,
+  Checkbox, FormControlLabel, CircularProgress,
+} from '@mui/material';
+import GavelIcon from '@mui/icons-material/Gavel';
+import { Normas } from '../api/directus/rules';
+⋮----
+// Da formato al texto plano de las normas en una columna vertical con estilos condicionales.
+⋮----
+// Unimos líneas partidas accidentalmente
+⋮----
+// Checkboxes ☐
+⋮----
+// Highlight keywords
+⋮----
+// Cualquier elemento que no sea bullet: vaciar el grupo acumulado antes
+⋮----
+const handleCheck = (idx: number, val: boolean) =>
+⋮----
+background: 'linear-gradient(135deg, #004680 0%, #0a5aa0 100%)', // Gradiente azul corporativo original
+⋮----
+{/* Cuerpo de las normas en una columna */}
+</file>
+
+<file path="components/NovedadDetalleModal.tsx">
+import React from 'react';
+import {
+    Box, Typography, Paper, Button,
+    Dialog, DialogTitle, DialogContent,
+    IconButton as MuiIconButton,
+} from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
+import dayjs from 'dayjs';
+import { getNovedadIcon } from './ModalDetalleTiendaUtils';
+⋮----
+interface NovedadDetalleModalProps {
+    open: boolean;
+    onClose: () => void;
+    tipo: string;
+    observacion: string;
+    empleadoNombre: string;
+}
+</file>
+
+<file path="components/NovedadesTab.tsx">
+import { useState } from 'react';
+import {
+  Box, Typography, IconButton, Paper, Avatar, Chip, TextField, InputAdornment, Button,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Select, MenuItem,
+} from '@mui/material';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import ClearIcon from '@mui/icons-material/Clear';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { useHolidays } from '../../reservas/hooks/useHolidays';
+import { FestivoDay } from './FestivoDay';
+import dayjs, { Dayjs } from 'dayjs';
+⋮----
+import { getIconForTipo, getChipColor } from '../utils/novedadVisual';
+import ExportNovedadesDialog from './reportes/ExportNovedadesDialog';
+import { formatDocumentNumber } from '../utils/format';
+⋮----
+const getAvatarColor = (texto: string) =>
+⋮----
+interface Props {
+  novedades: any[];
+  esAdmin: boolean;
+  storeOverride?: number;
+  rowsPerPage?: number;
+  esReporte?: boolean;
+}
+⋮----
+{/* Cabecera con filtros */}
+⋮----
+<IconButton size="small" onClick=
+⋮----
+{/* DATE PICKER */}
+⋮----
+onYearChange=
+⋮----
+onClick=
+⋮----
+{/* Tabla */}
+</file>
+
+<file path="components/ObservationModal.tsx">
+import { X, Clock, Play, Coffee, UtensilsCrossed, LogOut, FileText } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { createPortal } from 'react-dom';
+import { ObservacionEvento } from '../interfaces/horarios.interface';
+⋮----
+interface ObservationModalProps {
+  open: boolean;
+  onClose: () => void;
+  empleado: string;
+  fecha: string;
+  observaciones: ObservacionEvento[];
+}
+⋮----
+const inicial = (nombre: string)
+⋮----
+export function ObservationModal({
+  open,
+  onClose,
+  empleado,
+  fecha,
+  observaciones,
+}: ObservationModalProps)
+⋮----
+{/* Header */}
+⋮----
+{/* Info del empleado */}
+⋮----
+{/* Timeline de observaciones */}
+⋮----
+{/* Columna timeline: ícono + conector */}
+⋮----
+{/* Contenido */}
+</file>
+
+<file path="hooks/useAdminEmpleados.ts">
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getStores, getCargos, buscarEmpleados, listarEmpleadosTienda } from '../api/directus/read';
+import { crearEmpleado, actualizarEmpleado } from '../api/directus/create';
+import { Tienda, Cargo, EmpleadoAdmin } from '../interfaces/horarios.interface';
+import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+⋮----
+export const useAdminEmpleados = (tiendaSel: number | null, setTiendaSel: (id: number | null) => void) =>
+⋮----
+const buscar = async (query: string) =>
+⋮----
+const seleccionar = (emp: EmpleadoAdmin | null)
+⋮----
+const limpiarBusqueda = () =>
+⋮----
+const invalidarEmpleados = () =>
+</file>
+
+<file path="hooks/useHistorial.ts">
+import { useQuery } from '@tanstack/react-query';
+import { fetchTimeRecords, getStoreIdUsuarioActual, TimeRecord } from '../api/directus/read';
+import { HistorialRow } from '../interfaces/horarios.interface';
+⋮----
+const agruparRegistros = (records: TimeRecord[]): HistorialRow[] =>
+⋮----
+const buscar = (tipo: string) =>
+⋮----
+export const useHistorial = (fechaInicio?: string, fechaFin?: string, overrideStoreId?: number | number[] | null) =>
+</file>
+
+<file path="hooks/useHorarios.ts">
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { EmpleadoAsistencia, TipoNovedad, NovedadMapeada, RegistrosAsistencia, Motivo } from '../interfaces/horarios.interface';
+import { getEmpleados, getNovedades, getTiposNovedad, getTimeRecords, getStoreIdUsuarioActual, getReasons, getStoreEventReportsToday } from '../api/directus/read';
+import { createNovedades, createTimeRecord, updateTimeRecord, upsertRecordReason, createEventReport } from '../api/directus/create';
+import dayjs from 'dayjs';
+import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { getRealColombiaTime } from '../utils/timeSync';
+⋮----
+export const useHorarios = (storeOverride?: number | null) =>
+⋮----
+const registrarEvento = async (
+    idEmpleado: string,
+    tipoEvento: string,
+    horaOverride?: string,
+    observacionOverride?: string,
+    reasonId?: number | null
+) =>
+⋮----
+const guardarObservacion = async (idEmpleado: string, tipoEvento: string, texto: string) =>
+⋮----
+const eliminarEmpleado = (_idEmpleado: string) =>
+⋮----
+const resetHorarios = async () =>
+⋮----
+const agregarNovedad = async (novedad: {
+    empleadoId: string;
+    empleadoNombre: string;
+    tipo: string;
+    fechaInicio: string;
+    fechaFin: string;
+    observaciones: string;
+    fechaRegistro: string;
+}) =>
+⋮----
+const reportarEvento = async (idEmpleado: string, eventType: string, observaciones?: string) =>
+</file>
+
+<file path="hooks/useHorariosPolicies.ts">
+import { useAuth } from '@/auth/hooks/useAuth';
+⋮----
+interface HorariosPolicies {
+  hasPolicy: (policyName: string) => boolean;
+  esAdmin: () => boolean;
+  esAreaManager: () => boolean;
+  esReport: () => boolean;
+  tieneTemporal: () => boolean;
+  puedeVerDemo: () => boolean;
+}
+⋮----
+export const useHorariosPolicies = (): HorariosPolicies =>
+⋮----
+const hasPolicy = (policyName: string): boolean
+⋮----
+const esAdmin = (): boolean
+⋮----
+const esAreaManager = (): boolean
+⋮----
+const esReport = (): boolean
+⋮----
+const tieneTemporal = (): boolean
+⋮----
+const puedeVerDemo = (): boolean
+</file>
+
+<file path="hooks/useNormas.ts">
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/auth/hooks/useAuth';
+import { getNormasActivas, Normas } from '../api/directus/rules';
+⋮----
+export function useNormas()
+⋮----
+const aceptar = async () =>
+</file>
+
+<file path="hooks/useParseNombreIA.ts">
+import { useState, useCallback } from 'react';
+import { useAuth } from '@/auth/hooks/useAuth';
+import { cargarTokenStorage } from '@/auth/services/tokenDirectus';
+import { ensureValidToken } from '@/auth/services/directusInterceptor';
+import { formatNombrePropio } from '../utils/format';
+⋮----
+export interface NombreSeparado {
+  first_name: string;
+  middle_name: string;
+  last_name: string;
+  second_last_name: string;
+}
+⋮----
+function obtenerModelosIA(modelosIA: any): string[]
+⋮----
+const PROMPT = (nombre: string)
+⋮----
+function parsearJSON(texto: string): NombreSeparado
+⋮----
+export const useParseNombreIA = () =>
+</file>
+
+<file path="interfaces/horarios.interface.ts">
+export interface RegistrosAsistencia {
+  inicioJornada: string | null;
+  inicioAlmuerzo: string | null;
+  finAlmuerzo: string | null;
+  finJornada: string | null;
+  observaciones: Record<string, string>;
+  ids?: Record<string, number>;
+  horasOriginales?: Record<string, string | null>;
+  horasEditadas?: Record<string, string | null>;
+}
+⋮----
+export interface EmpleadoAsistencia {
+  id: string;
+  documento: string;
+  nombre: string;
+  cargo?: string;
+  estadoActual: string;
+  registros: RegistrosAsistencia;
+  pausasActivasCount?: number;
+  storeId?: number | null;
+}
+⋮----
+export interface ObservacionEvento {
+  evento: string;
+  hora: string | null;
+  observacion: string;
+}
+⋮----
+export interface HistorialRow {
+  fecha: string;
+  empleado: string;
+  documento?: string | null;
+  inicio_turno: string | null;
+  inicio_almuerzo: string | null;
+  fin_almuerzo: string | null;
+  fin_turno: string | null;
+  observaciones_evento: ObservacionEvento[];
+  tiendaNombre?: string;
+}
+⋮----
+export interface Novedad {
+  id: string;
+  empleadoId: string;
+  empleadoNombre: string;
+  empleadoDocumento?: string;
+  tipo: string;
+  fecha: string;
+  description?: string;
+  notes?: string;
+  fechaRegistro: string;
+}
+⋮----
+export interface TipoNovedad {
+  id: number;
+  nombre: string;
+  name: string;
+}
+⋮----
+export interface Motivo {
+  id: number;
+  name: string;
+}
+⋮----
+export interface NovedadMapeada {
+  id: string | number;
+  fecha: string;
+  empleadoNombre: string;
+  tipo: string;
+  observaciones: string;
+  empleadoActivo?: boolean;
+  empleadoDocumento?: string | null;
+  tiendaNombre?: string;
+}
+⋮----
+export interface Tienda {
+  id: number;
+  name: string;
+  ultra_code?: string | number;
+  company?: string;
+}
+⋮----
+export interface Cargo {
+  id: number;
+  name: string;
+}
+⋮----
+export interface EmpleadoAdmin {
+  id: number;
+  document_type: string | null;
+  document_number: string | null;
+  first_name: string | null;
+  middle_name: string | null;
+  last_name: string | null;
+  second_last_name: string | null;
+  store_id: number | null;
+  position_id: number | null;
+  position_name?: string | null;
+  status: string | null;
+  email?: string;              
+  phone_number?: string;       
+}
+⋮----
+export interface NuevoEmpleadoPayload {
+  document_type: string;
+  document_number: string;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  second_last_name?: string;
+  store_id: number;
+  position_id: number;
+  email?: string;        
+  phone?: string;        
+}
+</file>
+
+<file path="pages/monitoreo/MonitoreoComponents.tsx">
+import { forwardRef } from 'react';
+import { Box, Typography, Paper, Pagination } from '@mui/material';
+import { rowsPerPage } from './MonitoreoUtils';
+⋮----
+<Typography variant="body2" fontWeight=
+</file>
+
+<file path="pages/monitoreo/MonitoreoUtils.ts">
+import { EditNote as EditNoteIcon, SupervisorAccount as SupervisorAccountIcon, Warning as WarningIcon } from '@mui/icons-material';
+⋮----
+export const getColorForMotivo = (m: string) =>
+⋮----
+export type SortField = 'nombre' | 'totalEmpleados' | 'personasRegistradas' | 'incompletos' | 'sinRegistro';
+⋮----
+export interface TiendaResumen { id: number; nombre: string; totalEmpleados: number; personasRegistradas: number; completados: number; incompletos: number; sinRegistro: number; }
+export interface MonitoreoPageProps { storeId?: number | null; }
+</file>
+
+<file path="pages/monitoreo/useTiendasResumen.ts">
+import { useState, useEffect } from 'react';
+import dayjs, { Dayjs } from 'dayjs';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+⋮----
+import { getEmpleadosBulk, getTimeRecordsBulkRange, getNovedadesBulkRange, getStoreClosedDays } from '../../api/directus/read';
+import { Tienda } from '../../interfaces/horarios.interface';
+import { TiendaResumen } from './MonitoreoUtils';
+⋮----
+export function useTiendasResumen(tiendas: Tienda[], fechas:
+⋮----
+const cargar = async () =>
+</file>
+
+<file path="pages/planilla/DetallePlanillaTabla.tsx">
+import React from 'react';
+import {
+  Box, Container, Typography, Paper, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Avatar, Chip, CircularProgress,
+  IconButton, Tooltip, TextField, Pagination
+} from '@mui/material';
+import {
+  CheckCircle as CheckCircleIcon,
+  AccessTime as AccessTimeIcon,
+  Storefront as StorefrontIcon,
+  Warning as WarningIcon,
+  AddCircle as AddCircleIcon,
+  Edit as EditIcon,
+} from '@mui/icons-material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs, { Dayjs } from 'dayjs';
+⋮----
+import { FestivoDay } from '../../components/FestivoDay';
+⋮----
+interface DetallePlanillaTablaProps {
+  fechaSeleccionada: Dayjs;
+  handleFechaChange: (newDate: Dayjs | null) => void;
+  setCalendarYear: (year: number) => void;
+  festivosMap: Record<string, string>;
+  CustomActionBar: React.ComponentType<any>;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  isLoading: boolean;
+  filasPagina: any[];
+  recordsPorTienda: Record<number, any[]>;
+  esAdmin: boolean;
+  isAreaMgr: boolean;
+  handleOpenEditHour: (fila: any, label: string, recordId: number, hora: string | null) => void;
+  handleOpenCreateHour: (employeeId: string, nombre: string, label: string, tiendaId: number) => void;
+  filasFiltradasLength: number;
+  rowsPerPage: number;
+  page: number;
+  setPage: (p: number) => void;
+}
+⋮----
+onMonthChange=
+onYearChange=
+⋮----
+handleOpenEditHour(fila, evento.label, evento.recordId, evento.hora);
+</file>
+
+<file path="pages/planilla/DetallePlanillaUtils.ts">
+import dayjs from 'dayjs';
+⋮----
+export const calcularMinutosDia = (records: any[], empleadoId: string | number): number =>
+⋮----
+export const formatearHoras = (minutosTotal: number): string =>
+</file>
+
+<file path="pages/reporte/ReportePausasTab.tsx">
+import React from 'react';
+import {
+  Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, IconButton, Avatar, Chip,
+  Select, MenuItem
+} from '@mui/material';
+import PauseCircleIcon from '@mui/icons-material/PauseCircle';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import dayjs from 'dayjs';
+import { getAvatarColor } from './ReporteUtils';
+import { formatDocumentNumber } from '../../utils/format';
+⋮----
+interface ReportePausasTabProps {
+  paginatedPausas: any[];
+  eventReportsFiltrados: any[];
+  pagePausas: number;
+  setPagePausas: React.Dispatch<React.SetStateAction<number>>;
+  totalPagesPausas: number;
+  rowsPerPagePausas?: number;
+  setRowsPerPagePausas?: (rows: number) => void;
+}
+</file>
+
+<file path="pages/reporte/ReporteSemanalTab.tsx">
+import React, { useState } from 'react';
+import {
+  Box, Typography, Button, FormControl, InputLabel, Select, MenuItem,
+  CircularProgress, Autocomplete, TextField, Chip,
+  ToggleButton, ToggleButtonGroup, Stack, Collapse
+} from '@mui/material';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import TuneIcon from '@mui/icons-material/Tune';
+import { ReporteSemanalTabla } from './ReporteSemanalTabla';
+import HistorialHorasModal from '@/apps/horarios/components/HistorialHorasModal';
+import { getAvatarColor, calcularMinutosSemanales, formatMinutes, DIAS_DE_LA_SEMANA } from './ReporteUtils';
+⋮----
+interface ReporteSemanalTabProps {
+  reporteSemanalModo: 'tienda' | 'empleado';
+  setReporteSemanalModo: (modo: 'tienda' | 'empleado') => void;
+  storeSel: number | null;
+  selectedMonth: number;
+  setSelectedMonth: (month: number) => void;
+  selectedYear: number;
+  setSelectedYear: (year: number) => void;
+  listadoMeses: { value: number; label: string }[];
+  listadoAnios: number[];
+  cargandoRecords: boolean;
+  cargandoEmpleados: boolean;
+  semanasDelMes: { start: string; end: string; label: string }[];
+  paginatedEmpleadosSemanal: any[];
+  empleadosFiltradosSemanales: any[];
+  recordsMensuales: any[];
+  pageSemanal: number;
+  setPageSemanal: React.Dispatch<React.SetStateAction<number>>;
+  totalPagesSemanal: number;
+
+  todosEmpleados: any[];
+  selectedEmpleadoId: number | null;
+  setSelectedEmpleadoId: (id: number | null) => void;
+  recordsSelectedEmp: any[];
+  cargandoTodosEmpleados: boolean;
+  cargandoRecordsGlobal: boolean;
+  storesTrabajadas: { id: number; name: string }[];
+  todasNovedades?: any[];
+
+  diaInicioSemana?: number;
+  setDiaInicioSemana?: (dia: number) => void;
+  diaFinSemana?: number;
+  setDiaFinSemana?: (dia: number) => void;
+  tiendas?: any[];
+}
+⋮----
+const handleOpenHistorial = (emp: any) =>
+⋮----
+onClick=
+⋮----
+filterOptions=
+</file>
+
+<file path="pages/reporte/ReporteSemanalTabla.tsx">
+import React from 'react';
+import {
+  Box, Typography, TableContainer, Table, TableHead, TableRow, TableCell,
+  TableBody, Avatar, Tooltip, IconButton, Select, MenuItem, Alert, Paper
+} from '@mui/material';
+import {
+  History as HistoryIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon
+} from '@mui/icons-material';
+⋮----
+interface ReporteSemanalTablaProps {
+  reporteSemanalModo: 'tienda' | 'empleado';
+  semanasDelMes: any[];
+  empleadosPaginadosFinales: any[];
+  tiendasMap: Map<number, string>;
+  getAvatarColor: (name: string) => string;
+  calcularMinutosSemanales: (empId: number, start: string, end: string, records: any[]) => number;
+  formatMinutes: (minutes: number) => string;
+  recordsMensuales: any[];
+  handleOpenHistorial: (emp: any) => void;
+  empleadosFiltradosSemanales: any[];
+  registrosPorPagina: number;
+  setRegistrosPorPagina: (n: number) => void;
+  pageSemanal: number;
+  setPageSemanal: React.Dispatch<React.SetStateAction<number>>;
+  totalPagesCalculados: number;
+  selectedEmpleadoId: number | null;
+  storesTrabajadas: any[];
+  recordsSelectedEmp: any[];
+}
+</file>
+
+<file path="pages/reporte/ReporteTourConfig.tsx">
+import React from 'react';
+import { Typography } from '@mui/material';
+import { Step } from 'react-joyride';
+</file>
+
+<file path="pages/reporte/ReporteUtils.ts">
+import dayjs from 'dayjs';
+⋮----
+export const getAvatarColor = (texto: string) =>
+⋮----
+export function getSemanasDelMes(
+  anio: number,
+  mes: number,
+  diaInicio: number = 1,
+  diaFin: number = 0
+)
+⋮----
+export const calcularMinutosSemanales = (empId: any, startStr: string, endStr: string, records: any[]): number =>
+⋮----
+export const formatMinutes = (totalMin: number): string =>
+</file>
+
+<file path="pages/AdminEmpleadosPage.tsx">
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Box, Paper, Typography, TextField, InputAdornment, IconButton, Button,
+  Chip, Avatar, CircularProgress, Alert, Autocomplete, Select, MenuItem,
+} from '@mui/material';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import ClearIcon from '@mui/icons-material/Clear';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import BadgeIcon from '@mui/icons-material/Badge';
+import WorkOutlineIcon from '@mui/icons-material/WorkOutline';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import useAdminEmpleados from '../hooks/useAdminEmpleados';
+import { AdminTour, TutorialAdminButton } from '../components/tour/AdminTour';
+import { listarTodosEmpleados } from '../api/directus/read';
+import DialogNuevoEmpleado from '../components/admin/DialogNuevoEmpleado';
+import DialogEditarEmpleado from '../components/admin/DialogEditarEmpleado';
+import DialogPerfilEmpleado from '../components/admin/DialogPerfilEmpleado';
+import { EmpleadoAdmin, Tienda } from '../interfaces/horarios.interface';
+import { formatDocumentNumber } from '../utils/format';
+⋮----
+const colorAvatar = (texto: string) =>
+⋮----
+const nombreDe = (e: EmpleadoAdmin)
+⋮----
+interface Props {
+  storeSel: number | null;
+  onStoreChange: (id: number | null) => void;
+}
+⋮----
+const tiendaNombre = (id: number | null)
+⋮----
+const coincide = (e: EmpleadoAdmin) =>
+⋮----
+const esActivo = (e: EmpleadoAdmin)
+⋮----
+onChange=
+⋮----
+: <>Empleados de <Box component="span" sx=
+⋮----
+onGuardar=
+⋮----
+onEditar=
+</file>
+
+<file path="pages/DetallePlanillaPage.tsx">
+import { useState, useMemo, useEffect } from 'react';
+import { Box, Container, Typography, Button } from '@mui/material';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import dayjs, { Dayjs } from 'dayjs';
+⋮----
+import { useHolidays } from '../../reservas/hooks/useHolidays';
+⋮----
+import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
+import { useHorarios } from '../hooks/useHorarios';
+import { getStores, getEmpleadosBulk, getTimeRecordsBulkRange, getNovedades, getRecordReasonId } from '../api/directus/read';
+import { updateTimeRecord, upsertRecordReason, createTimeRecord } from '../api/directus/create';
+import { Tienda } from '../interfaces/horarios.interface';
+import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
+import EditHourModal from '../components/EditHourModal';
+import { calcularMinutosDia, formatearHoras } from './planilla/DetallePlanillaUtils';
+import { DetallePlanillaTabla } from './planilla/DetallePlanillaTabla';
+import CreateHourModal from '../components/detalle-tienda/CreateHourModal';
+import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+⋮----
+interface EmpleadoFila {
+  id: string;
+  nombre: string;
+  cargo: string;
+  tienda: string;
+  tiendaId: number;
+  inicioJornada: string | null;
+  inicioAlmuerzo: string | null;
+  finAlmuerzo: string | null;
+  finJornada: string | null;
+  recordIdInicioJornada: number | null;
+  recordIdInicioAlmuerzo: number | null;
+  recordIdFinAlmuerzo: number | null;
+  recordIdFinJornada: number | null;
+  tieneNovedad: boolean;
+  novedadTipo?: string;
+  horasDia: string;
+}
+⋮----
+interface DetallePlanillaPageProps {
+  storeId?: number | null;
+}
+⋮----
+const handleFechaChange = (newDate: Dayjs | null) =>
+⋮----
+const handleAyer = () =>
+⋮----
+const handleAnteayer = () =>
+⋮----
+const handleHoy = () =>
+⋮----
+const getHora = (empId: string | number, logType: string) =>
+⋮----
+const getRecordId = (empId: string | number, logType: string) =>
+⋮----
+const getNovedadEmpleado = (empId: string | number) =>
+⋮----
+const handleConfirmCreate = async (horaFormateada: string, observacion: string) =>
+</file>
+
+<file path="pages/HistorialPage.tsx">
+import { useState, useEffect } from 'react';
+import { useHistorial } from '../hooks/useHistorial';
+import dayjs, { Dayjs } from 'dayjs';
+⋮----
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import {
+  Select,
+  MenuItem,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Box,
+  Typography,
+  IconButton,
+  Avatar
+} from '@mui/material';
+import { ObservationModal } from '../components/ObservationModal';
+import DateRangeFilter from '../components/reportes/DateRangeFilter';
+import ExportHistorialDialog from '../components/reportes/ExportHistorialDialog';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { Button } from '@mui/material';
+import { Eye } from 'lucide-react';
+import { HistorialRow } from '../interfaces/horarios.interface';
+import { formatDocumentNumber } from '../utils/format';
+⋮----
+const getAvatarColor = (texto: string) =>
+⋮----
+interface HistorialPageProps {
+  storeIdAdmin?: number | number[] | null;
+  fechaInicioExternal?: Dayjs | null;
+  fechaFinExternal?: Dayjs | null;
+  searchNombreExternal?: string;
+  hideHeader?: boolean;
+  esReporte?: boolean;
+}
+⋮----
+const normalizar = (texto: string)
+⋮----
+const calcularHoras = (
+    inicio_turno: string | null,
+    fin_turno: string | null,
+    inicio_almuerzo: string | null,
+    fin_almuerzo: string | null
+): string =>
+⋮----
+const formatearHora = (hora: string | null): string =>
+⋮----
+const tieneObservacion = (row: HistorialRow, evento: string): boolean =>
+⋮----
+const construirEventosFila = (row: HistorialRow | null) =>
+⋮----
+onClick=
+⋮----
+onClose=
+⋮----
+observaciones=
+⋮----
+fechaInicio=
+</file>
+
+<file path="pages/MonitoreoPage.tsx">
+import { useState, useEffect, useMemo } from 'react';
+import { Box, Container, Typography, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, CircularProgress, Alert, Tabs, Tab, Grid, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Tooltip, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Avatar, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
+import { Storefront as StorefrontIcon, Person as PersonIcon, CheckCircle as CheckCircleIcon, Pending as PendingIcon, Visibility as VisibilityIcon, EditNote as EditNoteIcon, Warning as WarningIcon, Search as SearchIcon, Close as CloseIcon, Assignment as AssignmentIcon, Message as MessageIcon, ArrowUpward as ArrowUpwardIcon, ArrowDownward as ArrowDownwardIcon, CalendarToday as CalendarTodayIcon, ArrowBackIos as ArrowBackIosIcon, ArrowForwardIos as ArrowForwardIosIcon, Today as TodayIcon, Sort as SortIcon, Block as BlockIcon } from '@mui/icons-material';
+import { useQuery } from '@tanstack/react-query';
+import dayjs, { Dayjs } from 'dayjs';
+⋮----
+import { getStores, getEditedTimeRecords } from '../api/directus/read';
+import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
+import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
+import { Tienda } from '../interfaces/horarios.interface';
+import ModalDetalleTienda from '../components/ModalDetalleTienda';
+import ModalCierreMasivo from '../components/ModalCierreMasivo';
+import DateRangeFilter from '../components/reportes/DateRangeFilter';
+import ReporteSemanalAreaManager from '../components/reportes/ReporteSemanalAreaManager';
+import DetallePlanillaPage from '../pages/DetallePlanillaPage';
+import {
+  getColorForMotivo,
+  SortField,
+  OPCIONES_ORDEN,
+  COLUMNAS_TIENDAS,
+  COLUMNAS_EDICIONES,
+  TARJETAS_ESTADISTICAS,
+  MonitoreoPageProps,
+  rowsPerPage
+} from './monitoreo/MonitoreoUtils';
+import { Paginador, TarjetaResumen, TarjetaEstadistica } from './monitoreo/MonitoreoComponents';
+import { useTiendasResumen } from './monitoreo/useTiendasResumen';
+import ModalRankingTiendas from '../components/ModalRankingTiendas';
+⋮----
+// ---------- COMPONENTE PRINCIPAL ----------
+⋮----
+// ---------- ESTADOS PARA CALENDARIO (MODIFICADOS) ----------
+⋮----
+const [calendarioData, setCalendarioData] = useState<any[]>([]); // Datos específicos del empleado para el mes seleccionado
+⋮----
+// ---------- ESTADOS PARA RANKING DE TIENDAS ----------
+⋮----
+// ---------- DECLARACIONES DE useMemo ----------
+⋮----
+// Calendario
+⋮----
+// ---------- EFECTOS PARA REINICIAR PÁGINAS ----------
+⋮----
+const handleOrdenTiendas = (field: SortField) =>
+const handleCambiarMesRanking = (nuevoMes: Dayjs) =>
+const handleCambiarMesRankingTiendas = (nuevoMes: Dayjs) =>
+const handleCambiarMesResumen = (nuevoMes: Dayjs) =>
+⋮----
+// ---------- NUEVOS HANDLERS PARA CALENDARIO (MODIFICADO) ----------
+const cargarRegistrosCalendario = async (empleadoId: number, mes: Dayjs) =>
+⋮----
+const handleAbrirCalendario = (empleadoId: number) =>
+⋮----
+const handleCerrarCalendario = () =>
+⋮----
+const handleCambiarMesCalendario = (nuevoMes: Dayjs) =>
+⋮----
+// ---------- HANDLER PARA RANKING DE TIENDAS ----------
+const handleCambiarMesTiendas = (nuevoMes: Dayjs) =>
+⋮----
+const handleCloseModalTiendas = () =>
+⋮----
+{/* IZQUIERDA: TARJETAS DE ESTADÍSTICAS */}
+⋮----
+{/* DERECHA: FILTROS COMO SE MUESTRA EN LA IMAGEN */}
+⋮----
+{/* Tabla con scroll horizontal para portátil */}
+⋮----
+tiendas=
+⋮----
+input=
+⋮----
+return <Box key=
+⋮----
+slotProps=
+⋮----
+onClose=
+⋮----
+<IconButton onClick=
+⋮----
+<Button onClick=
+⋮----
+{/* Modal Ranking */}
+⋮----
+}} input=
+⋮----
+<Tooltip title="Ver registros"><IconButton edge="end" onClick=
+⋮----
+{/* Modal Ranking Tiendas */}
+⋮----
+{/* Modal Calendario */}
+⋮----
+<IconButton size="small" onClick=
+</file>
+
+<file path="pages/RegistrosPage.tsx">
+import { useState, useEffect, useMemo } from 'react';
+import {
+  Box, Typography, Tooltip, Tabs, Tab, Paper,
+  Chip, CircularProgress, Alert, TextField, InputAdornment, Button, Autocomplete, useMediaQuery, Theme,
+} from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
+import { getStores, getStoreIdUsuarioActual } from '../api/directus/read';
+import { Tienda, EmpleadoAsistencia } from '../interfaces/horarios.interface';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import HistoryIcon from '@mui/icons-material/History';
+import GridViewIcon from '@mui/icons-material/GridView';
+import EventNoteIcon from '@mui/icons-material/EventNote';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import MonitoreoPage from './MonitoreoPage';
+import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
+import EmployeeCard from '../components/EmployeeCard';
+import NovedadesTab from '../components/NovedadesTab';
+import { useHorarios } from '../hooks/useHorarios';
+import dayjs from 'dayjs';
+⋮----
+import HistorialPage from '../pages/HistorialPage';
+import { HorariosTourProvider, useHorariosTour, HorariosTab } from '../components/tour/HorariosTourContext';
+import { HorariosTour } from '../components/tour/HorariosTour';
+import TutorialButton from '../components/tour/TutorialButton';
+import { useTutorial } from '@/shared/hooks/TutorialContext';
+import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
+import AdminEmpleadosPage from './AdminEmpleadosPage';
+import ReportePage from './ReportePage';
+import ExportEventosDialog from '../components/reportes/ExportEventosDialog';
+import NormasModal from '../components/NormasModal';
+import { useNormas } from '../hooks/useNormas';
+import GavelIcon from '@mui/icons-material/Gavel';
+import { useAuth } from '@/auth/hooks/useAuth';
+import { syncTimeWithServer } from '../utils/timeSync';
+⋮----
+interface TabPanelProps {
+  children?: React.ReactNode;
+  value: number;
+  index: number;
+}
+⋮----
+const registrarEventoDemo = (_idEmpleado: string, tipoEvento: string, horaOverride?: string, observacionOverride?: string) =>
+⋮----
+const reportarEventoDemo = (_idEmpleado: string, eventType: string, _observaciones?: string) =>
+⋮----
+const guardarObservacionDemo = (_idEmpleado: string, evento: string, texto: string) =>
+⋮----
+const handleTabChange = (_event: React.SyntheticEvent, newValue: number | 'admin' | 'reporte') =>
+⋮----
+const getTituloPrincipal = () =>
+⋮----
+const getIconoPrincipal = () =>
+⋮----
+onClick=
+⋮----
+onAceptar=
+</file>
+
+<file path="pages/ReportePage.tsx">
+import { useState, useEffect, useMemo } from 'react';
+import {
+  Box, Paper, Button, TextField, InputAdornment, Stack,
+  Autocomplete
+} from '@mui/material';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import Joyride from 'react-joyride';
+import { CustomTooltip } from '../components/tour/TourTooltip';
+import dayjs, { Dayjs } from 'dayjs';
+import { useQuery } from '@tanstack/react-query';
+⋮----
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import DateRangeFilter from '../components/reportes/DateRangeFilter';
+import ExportHistorialDialog from '../components/reportes/ExportHistorialDialog';
+import ExportNovedadesDialog from '../components/reportes/ExportNovedadesDialog';
+import ExportEventosDialog from '../components/reportes/ExportEventosDialog';
+import ExportSemanalDialog from '../components/reportes/ExportSemanalDialog';
+import ExportUnificadoDialog from '../components/reportes/ExportUnificadoDialog';
+import HistorialPage from './HistorialPage';
+import NovedadesTab from '../components/NovedadesTab';
+import { getStores, getStoreEventReports, getStoreNovedades, getEmpleadosBulk, getTimeRecordsBulkRange, getPrimerPeriodoRegistro } from '../api/directus/read';
+import { Tienda } from '../interfaces/horarios.interface';
+⋮----
+import { getSemanasDelMes, NOMBRES_MESES } from './reporte/ReporteUtils';
+import { getTourSteps, STEP_TAB_REGISTROS, STEP_TAB_NOVEDADES, STEP_TAB_PAUSAS, STEP_FAKE_START, STEP_FAKE_END } from './reporte/ReporteTourConfig';
+import FakeExportModal from '../components/tour/FakeExportModal';
+import ReportePausasTab from './reporte/ReportePausasTab';
+import ReporteSemanalTab from './reporte/ReporteSemanalTab';
+⋮----
+interface ReportePageProps {
+  storeSel: number | null;
+  onStoreChange: (id: number | null) => void;
+  novedades: any[];
+  esAdmin: boolean;
+  tiendasPermitidas?: Tienda[];
+}
+⋮----
+// Estados para reporte semanal
+⋮----
+const [selectedMonth, setSelectedMonth] = useState(dayjs().month()); // 0-indexed
+const [diaInicioSemana, setDiaInicioSemana] = useState<number>(1); // 1 = Lunes por defecto
+const [diaFinSemana, setDiaFinSemana] = useState<number>(0); // 0 = Domingo por defecto
+⋮----
+// --- Tour guiado ---
+⋮----
+const block = (e: Event)
+⋮----
+const handleJoyrideCallback = (data: any) =>
+⋮----
+isOptionEqualToValue=
+⋮----
+onClick=
+⋮----
+fechaInicio=
+</file>
+
+<file path="utils/exportarEventos.ts">
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
+import dayjs from "dayjs";
+import { EventReportExport } from "../api/directus/read";
+import { Tienda } from "../interfaces/horarios.interface";
+⋮----
+const nombreEmpleado = (emp: EventReportExport["employee_id"]): string
+⋮----
+interface FilaExport {
+  tienda: string;
+  cc: string;
+  empleado: string;
+  fecha: string;
+  fechaOrden: string;
+  hora: string;
+  evento: string;
+  observacion: string;
+}
+⋮----
+interface ExportarParams {
+  reports: EventReportExport[];
+  stores: Tienda[];
+}
+⋮----
+export const exportarEventosExcel = async ({
+  reports,
+  stores,
+}: ExportarParams): Promise<
+</file>
+
+<file path="utils/exportarHistorial.ts">
+import { saveAs } from "file-saver";
+import dayjs from "dayjs";
+import { TimeRecord } from "../api/directus/read";
+import { Tienda } from "../interfaces/horarios.interface";
+⋮----
+const hhmm = (hora: string | null | undefined): string
+⋮----
+const nombreEmpleado = (emp: TimeRecord["employee_id"]): string
+⋮----
+const calcularHorasLaboradas = (
+  inicioTurno: string | null,
+  finTurno: string | null,
+  inicioAlmuerzo: string | null,
+  finAlmuerzo: string | null
+): string =>
+⋮----
+const calcularDuracionAlmuerzo = (
+  inicioAlmuerzo: string | null,
+  finAlmuerzo: string | null
+): string =>
+⋮----
+interface FilaExport {
+  tienda: string;
+  cc: string;
+  empleado: string;
+  fecha: string;
+  inicioTurno: string;
+  inicioAlmuerzo: string;
+  finAlmuerzo: string;
+  finTurno: string;
+  horasLaboradas: string;
+  duracionAlmuerzo: string;
+  motivo: string;
+  observacion: string;
+  horaInicial: string;
+}
+⋮----
+const agruparParaExport = (
+  records: TimeRecord[],
+  storesMap: Map<number, string>,
+  reasonsMap: Map<number, string>
+): FilaExport[] =>
+⋮----
+const porTipo = (tipo: string)
+⋮----
+const csvCampo = (valor: string): string =>
+⋮----
+interface ExportarParams {
+  records: TimeRecord[];
+  stores: Tienda[];
+  reasonsMap: Map<number, string>;
+  detallada: boolean;
+}
+⋮----
+export const exportarHistorialExcel = async ({
+  records,
+  stores,
+  reasonsMap,
+  detallada,
+}: ExportarParams): Promise<
+</file>
+
+<file path="utils/exportarNovedades.ts">
+import { saveAs } from "file-saver";
+import dayjs from "dayjs";
+import { NewnessReport } from "../api/directus/read";
+import { Tienda } from "../interfaces/horarios.interface";
+⋮----
+const nombreEmpleado = (emp: NewnessReport["employee_id"]): string
+⋮----
+const fechaDayjs = (nov: NewnessReport) =>
+⋮----
+interface FilaExport {
+  tienda: string;
+  cc: string;
+  empleado: string;
+  fecha: string;
+  fechaOrden: string;
+  tipo: string;
+  observacion: string;
+}
+⋮----
+const csvCampo = (valor: string): string =>
+⋮----
+interface ExportarParams {
+  reports: NewnessReport[];
+  stores: Tienda[];
+}
+⋮----
+export const exportarNovedadesExcel = async ({
+  reports,
+  stores,
+}: ExportarParams): Promise<
+</file>
+
+<file path="utils/exportarSemanal.ts">
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import dayjs, { Dayjs } from 'dayjs';
+import { calcularMinutosSemanales } from '../pages/reporte/ReporteUtils';
+import { Tienda } from '../interfaces/horarios.interface';
+⋮----
+const formatMinutesExport = (totalMin: number): string =>
+⋮----
+import { calcularMinutosDia } from '../components/ModalDetalleTiendaUtils';
+⋮----
+export interface TramoSemana {
+  start: string;
+  end: string;
+  label: string;
+}
+⋮----
+export function getSemanasRango(
+  inicio: Dayjs, 
+  fin: Dayjs, 
+  diaInicio: number = 1, 
+  diaFin: number = 0
+): TramoSemana[]
+⋮----
+interface ExportarSemanalParams {
+  tiendaNombre: string;
+  fechaInicio: Dayjs;
+  fechaFin: Dayjs;
+  empleados: any[];
+  records: any[];
+  novedades?: any[];
+  storeClosedDays?: any[];
+  tiendas?: Tienda[];
+  diaInicioSemana?: number;
+  diaFinSemana?: number;
+  modoGranularidad?: 'semanal' | 'diario';
+}
+⋮----
+export async function exportarSemanalExcel({
+  tiendaNombre: _tiendaNombre,
+  fechaInicio,
+  fechaFin,
+  empleados,
+  records,
+  novedades = [],
+  storeClosedDays = [],
+  tiendas = [],
+  diaInicioSemana = 1,
+  diaFinSemana = 0,
+  modoGranularidad = 'semanal',
+}: ExportarSemanalParams)
+</file>
+
+<file path="utils/format.ts">
+export const formatDocumentNumber = (val: string | number | undefined | null): string =>
+⋮----
+export const formatNombrePropio = (str: string | undefined | null): string =>
+</file>
+
+<file path="utils/novedadVisual.tsx">
+// Icono y color por tipo de novedad, reutilizable en las vistas de horarios.
+import FreeBreakfastIcon from '@mui/icons-material/FreeBreakfast';
+import BlockIcon from '@mui/icons-material/Block';
+import WarningIcon from '@mui/icons-material/Warning';
+import SchoolIcon from '@mui/icons-material/School';
+import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom';
+import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import GavelIcon from '@mui/icons-material/Gavel';
+import BeachAccessIcon from '@mui/icons-material/BeachAccess';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+⋮----
+export const getChipColor = (tipo: any, esReporte?: boolean):
+</file>
+
+<file path="utils/timeSync.ts">
+import dayjs from 'dayjs';
+import { resolveNetworkUrl } from '@/shared/utils/network';
+⋮----
+export const syncTimeWithServer = async () =>
+⋮----
+export const getRealColombiaTime = (): dayjs.Dayjs =>
+⋮----
+const getPart = (type: string)
+</file>
+
+<file path="routes.tsx">
+import { RouteObject, Navigate } from 'react-router-dom';
+import HorariosLayout from './components/HorariosLayout';
+import RegistrosPage from './pages/RegistrosPage';
+</file>
+
+</files>
