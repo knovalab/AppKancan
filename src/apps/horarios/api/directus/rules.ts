@@ -62,35 +62,49 @@ export async function registrarAceptacionNormas(userId: string, version: number)
   );
 }
 
-export async function yaAceptoNormasEmpleado(employeeId: number, ruleId: number, version?: number): Promise<boolean> {
-  try {
-    const filter: any = {
-      _and: [
-        { employee_id: { _eq: employeeId } },
-        {
-          _or: [
-            { rule_id: { _eq: ruleId } },
-            ...(version != null ? [{ version: { _eq: version } }] : []),
-          ]
-        }
-      ]
-    };
-    const items = await withAutoRefresh(() =>
-      directus.request(
-        readItems("com_rules_acceptance", {
-          fields: ["id"],
-          filter,
-          limit: 1,
-        })
-      )
-    );
-    return (items || []).length > 0;
-  } catch (error) {
-    console.error("❌ Error verificando aceptación de normas del empleado:", error);
-    // En caso de error (permisos, campo inexistente, etc.) asumimos que ya aceptó
-    // para no mostrar el botón innecesariamente a todos los colaboradores.
-    return true;
+// Empleados (de la lista dada) que ya aceptaron las normas vigentes: una sola request
+// para toda la tienda en lugar de una por tarjeta.
+// El _or por version mantiene la compatibilidad con aceptaciones antiguas sin rule_id.
+// Los errores se propagan para que los gestione la query (retry / isError).
+const MAX_IDS_POR_REQUEST = 200;
+
+export async function getEmpleadosQueAceptaronNormas(
+  employeeIds: number[],
+  ruleId: number,
+  version?: number,
+): Promise<Set<number>> {
+  const bloques: number[][] = [];
+  for (let i = 0; i < employeeIds.length; i += MAX_IDS_POR_REQUEST) {
+    bloques.push(employeeIds.slice(i, i + MAX_IDS_POR_REQUEST));
   }
+
+  const resultados = await Promise.all(
+    bloques.map((ids) =>
+      withAutoRefresh(() =>
+        directus.request(
+          readItems("com_rules_acceptance", {
+            fields: ["employee_id"],
+            filter: {
+              _and: [
+                { employee_id: { _in: ids } },
+                {
+                  _or: [
+                    { rule_id: { _eq: ruleId } },
+                    ...(version != null ? [{ version: { _eq: version } }] : []),
+                  ],
+                },
+              ],
+            },
+            limit: -1,
+          })
+        )
+      )
+    )
+  );
+
+  return new Set(
+    resultados.flat().map((item) => Number((item as { employee_id: number | string }).employee_id))
+  );
 }
 
 export async function registrarAceptacionNormasEmpleado(employeeId: number, version: number, ruleId: number) {

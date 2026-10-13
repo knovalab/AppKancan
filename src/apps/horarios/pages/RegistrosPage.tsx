@@ -2,7 +2,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Alert, Box, Button, Chip, Tooltip, Typography } from '@mui/material';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import { useTutorial } from '@/shared/hooks/TutorialContext';
 import { botonHeaderSx } from '../components/botonHeaderSx';
@@ -10,6 +10,7 @@ import EmployeeCard from '../components/EmployeeCard';
 import { HeaderActions } from '../components/HeaderActions';
 import ExportEventosDialog from '../components/reportes/ExportEventosDialog';
 import { useHorariosTour } from '../components/tour/HorariosTourContext';
+import { useAceptacionNormasEmpleados } from '../hooks/useAceptacionNormasEmpleados';
 import { useHorarios } from '../hooks/useHorarios';
 import { useHorariosLayout } from '../hooks/useHorariosLayout';
 import type { EmpleadoAsistencia } from '../interfaces/horarios.interface';
@@ -37,6 +38,14 @@ export default function RegistrosPage() {
 		agregarNovedad,
 		reportarEvento,
 	} = useHorarios(tienda.storeId);
+
+	// Una sola consulta de aceptación de normas para toda la tienda (antes, una por tarjeta).
+	const empleadoIds = useMemo(() => empleados.map((e) => e.id), [empleados]);
+	const {
+		normas,
+		yaAcepto: yaAceptoNormas,
+		marcarAceptado: marcarNormasAceptadas,
+	} = useAceptacionNormasEmpleados(empleadoIds);
 
 	const [demoEmpleado, setDemoEmpleado] = useState<EmpleadoAsistencia>({
 		id: '99999',
@@ -256,6 +265,9 @@ export default function RegistrosPage() {
 							onGuardarObservacion={guardarObservacionDemo}
 							onAgregarNovedad={async () => true}
 							onReportarEvento={reportarEventoDemo}
+							normas={normas}
+							yaAceptoNormas
+							onNormasAceptadas={marcarNormasAceptadas}
 						/>
 					)}
 					{empleados.map((empleado) => (
@@ -269,6 +281,9 @@ export default function RegistrosPage() {
 							onGuardarObservacion={guardarObservacion}
 							onAgregarNovedad={agregarNovedad}
 							onReportarEvento={reportarEvento}
+							normas={normas}
+							yaAceptoNormas={yaAceptoNormas(empleado.id)}
+							onNormasAceptadas={marcarNormasAceptadas}
 						/>
 					))}
 					{empleados.length === 0 && !modoDemo && (
