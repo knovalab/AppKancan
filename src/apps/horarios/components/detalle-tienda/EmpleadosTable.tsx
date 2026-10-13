@@ -9,6 +9,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import EditIcon from '@mui/icons-material/Edit';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { EmpleadoFila, getNovedadIcon } from '../ModalDetalleTiendaUtils';
+import { ESTADO, LOG_TYPE } from '../../domain/registro';
 
 interface EmpleadosTableProps {
   loading: boolean;
@@ -86,10 +87,10 @@ export default function EmpleadosTable({
               ) : (
                 empleadosPagina.map((fila, idx) => {
                   const eventos = [
-                    { key: 'inicioJornada', label: 'Comenzar Jornada' },
-                    { key: 'inicioAlmuerzo', label: 'Iniciar Almuerzo' },
-                    { key: 'finAlmuerzo', label: 'Finalizar Almuerzo' },
-                    { key: 'finJornada', label: 'Terminar Jornada' },
+                    { key: 'inicioJornada', label: LOG_TYPE.inicioJornada },
+                    { key: 'inicioAlmuerzo', label: LOG_TYPE.inicioAlmuerzo },
+                    { key: 'finAlmuerzo', label: LOG_TYPE.finAlmuerzo },
+                    { key: 'finJornada', label: LOG_TYPE.finJornada },
                   ];
                   return (
                     <TableRow key={fila.id} hover sx={{ bgcolor: idx % 2 === 0 ? '#ffffff' : '#fafbfc' }}>
@@ -169,7 +170,7 @@ export default function EmpleadosTable({
                             labelEstado = 'No Aplica';
                             colorEstado = '#0d47a1';
                             bgEstado = '#e3f2fd';
-                          } else if (fila.estado === 'jornada_finalizada') {
+                          } else if (fila.estado === ESTADO.jornadaFinalizada) {
                             labelEstado = 'Finalizado';
                             colorEstado = '#2e7d32';
                             bgEstado = '#e8f5e9';

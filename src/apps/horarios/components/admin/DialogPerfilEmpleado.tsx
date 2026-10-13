@@ -24,6 +24,7 @@ import { getIconForTipo, getChipColor } from '../../utils/novedadVisual';
 import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 import { formatDocumentNumber } from '../../utils/format';
+import { LOG_TYPE } from '../../domain/registro';
 
 const AZUL = '#004680';
 const AVATAR_COLORS = ['#0284c7', '#7c3aed', '#16a34a', '#ea580c', '#db2777', '#0891b2', '#4f46e5', '#ca8a04', '#dc2626', '#059669', '#2563eb', '#9333ea'];
@@ -84,13 +85,13 @@ interface JornadaDia {
 
 const calcularHoras = (recs: any[]): string => {
   const buscar = (tipo: string) => recs.find((r) => r.log_type === tipo)?.record_time ?? null;
-  const ini = buscar('Comenzar Jornada');
-  const fin = buscar('Terminar Jornada');
+  const ini = buscar(LOG_TYPE.inicioJornada);
+  const fin = buscar(LOG_TYPE.finJornada);
   if (!ini || !fin) return '—';
   const base = '2000-01-01';
   let min = dayjs(`${base} ${fin}`).diff(dayjs(`${base} ${ini}`), 'minute');
-  const ia = buscar('Iniciar Almuerzo');
-  const fa = buscar('Finalizar Almuerzo');
+  const ia = buscar(LOG_TYPE.inicioAlmuerzo);
+  const fa = buscar(LOG_TYPE.finAlmuerzo);
   if (ia && fa) {
     const diffAlmuerzo = dayjs(`${base} ${fa}`).diff(dayjs(`${base} ${ia}`), 'minute');
     if (diffAlmuerzo > 0) {
@@ -160,8 +161,8 @@ export default function DialogPerfilEmpleado({ open, empleado, tiendaNombre, onC
     return Object.entries(grupos)
       .map(([fecha, recs]) => ({
         fecha,
-        entrada: recs.find((r) => r.log_type === 'Comenzar Jornada')?.record_time ?? null,
-        salida: recs.find((r) => r.log_type === 'Terminar Jornada')?.record_time ?? null,
+        entrada: recs.find((r) => r.log_type === LOG_TYPE.inicioJornada)?.record_time ?? null,
+        salida: recs.find((r) => r.log_type === LOG_TYPE.finJornada)?.record_time ?? null,
         horas: calcularHoras(recs),
       }))
       .sort((a, b) => b.fecha.localeCompare(a.fecha));

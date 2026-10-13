@@ -29,6 +29,7 @@ import { Button } from '@mui/material';
 import { Eye } from 'lucide-react';
 import { HistorialRow } from '../interfaces/horarios.interface';
 import { formatDocumentNumber } from '../utils/format';
+import { LOG_TYPE } from '../domain/registro';
 
 const AVATAR_COLORS = [
   '#0284c7', '#7c3aed', '#16a34a', '#ea580c', '#db2777',
@@ -146,10 +147,10 @@ export default function HistorialPage({
   const construirEventosFila = (row: HistorialRow | null) => {
     if (!row) return [];
     const eventos = [
-      { evento: 'Comenzar Jornada', hora: row.inicio_turno },
-      { evento: 'Iniciar Almuerzo', hora: row.inicio_almuerzo },
-      { evento: 'Finalizar Almuerzo', hora: row.fin_almuerzo },
-      { evento: 'Terminar Jornada', hora: row.fin_turno },
+      { evento: LOG_TYPE.inicioJornada, hora: row.inicio_turno },
+      { evento: LOG_TYPE.inicioAlmuerzo, hora: row.inicio_almuerzo },
+      { evento: LOG_TYPE.finAlmuerzo, hora: row.fin_almuerzo },
+      { evento: LOG_TYPE.finJornada, hora: row.fin_turno },
     ];
     return eventos
       .filter((e) => e.hora != null)
@@ -276,7 +277,7 @@ export default function HistorialPage({
                       <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.875rem' }}>
                         {formatearHora(row.inicio_turno)}
                       </Typography>
-                      {tieneObservacion(row, 'Comenzar Jornada') && (
+                      {tieneObservacion(row, LOG_TYPE.inicioJornada) && (
                         <Box
                           component="button"
                           onClick={() => { setFilaSeleccionada(row); setModalOpen(true); }}
@@ -300,7 +301,7 @@ export default function HistorialPage({
                       <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.875rem' }}>
                         {formatearHora(row.inicio_almuerzo)}
                       </Typography>
-                      {tieneObservacion(row, 'Iniciar Almuerzo') && (
+                      {tieneObservacion(row, LOG_TYPE.inicioAlmuerzo) && (
                         <Box
                           component="button"
                           onClick={() => { setFilaSeleccionada(row); setModalOpen(true); }}
@@ -324,7 +325,7 @@ export default function HistorialPage({
                       <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.875rem' }}>
                         {formatearHora(row.fin_almuerzo)}
                       </Typography>
-                      {tieneObservacion(row, 'Finalizar Almuerzo') && (
+                      {tieneObservacion(row, LOG_TYPE.finAlmuerzo) && (
                         <Box
                           component="button"
                           onClick={() => { setFilaSeleccionada(row); setModalOpen(true); }}
@@ -348,7 +349,7 @@ export default function HistorialPage({
                       <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.875rem' }}>
                         {formatearHora(row.fin_turno)}
                       </Typography>
-                      {tieneObservacion(row, 'Terminar Jornada') && (
+                      {tieneObservacion(row, LOG_TYPE.finJornada) && (
                         <Box
                           component="button"
                           onClick={() => { setFilaSeleccionada(row); setModalOpen(true); }}

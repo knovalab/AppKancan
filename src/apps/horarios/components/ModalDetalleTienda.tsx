@@ -33,6 +33,7 @@ import EmpleadosTable from './detalle-tienda/EmpleadosTable';
 import ConfirmClosedDayDialogs from './detalle-tienda/ConfirmClosedDayDialogs';
 import { ModalDetalleTiendaHeader } from './detalle-tienda/ModalDetalleTiendaHeader';
 import CreateHourModal from './detalle-tienda/CreateHourModal';
+import { ESTADO, LOG_TYPE } from '../domain/registro';
 
 // ============================================================
 //  COMPONENTE PRINCIPAL
@@ -295,15 +296,15 @@ export default function ModalDetalleTienda({
     });
 
     const filasEmpleados: EmpleadoFila[] = Array.from(empleadosMap.values()).map((emp) => {
-        const inicioJornada = getHora(emp.id, 'Comenzar Jornada');
-        const inicioAlmuerzo = getHora(emp.id, 'Iniciar Almuerzo');
-        const finAlmuerzo = getHora(emp.id, 'Finalizar Almuerzo');
-        const finJornada = getHora(emp.id, 'Terminar Jornada');
+        const inicioJornada = getHora(emp.id, LOG_TYPE.inicioJornada);
+        const inicioAlmuerzo = getHora(emp.id, LOG_TYPE.inicioAlmuerzo);
+        const finAlmuerzo = getHora(emp.id, LOG_TYPE.finAlmuerzo);
+        const finJornada = getHora(emp.id, LOG_TYPE.finJornada);
         let estado = 'Pendiente';
-        if (finJornada) estado = 'jornada_finalizada';
-        else if (finAlmuerzo) estado = 'regreso_almuerzo';
-        else if (inicioAlmuerzo) estado = 'en_almuerzo';
-        else if (inicioJornada) estado = 'jornada_iniciada';
+        if (finJornada) estado = ESTADO.jornadaFinalizada;
+        else if (finAlmuerzo) estado = ESTADO.regresoAlmuerzo;
+        else if (inicioAlmuerzo) estado = ESTADO.enAlmuerzo;
+        else if (inicioJornada) estado = ESTADO.jornadaIniciada;
         const novedad = getNovedadEmpleado(emp.id);
         const horasSemana = calcularHorasSemana(emp.id, weekRecords);
         const minutosDia = calcularMinutosDia(recordsDia, emp.id);
@@ -369,10 +370,10 @@ export default function ModalDetalleTienda({
             finJornada: empleadoData.finJornada,
             observaciones: empleadoData,
             ids: {
-                inicioJornada: getRecordId(empleadoId, 'Comenzar Jornada'),
-                inicioAlmuerzo: getRecordId(empleadoId, 'Iniciar Almuerzo'),
-                finAlmuerzo: getRecordId(empleadoId, 'Finalizar Almuerzo'),
-                finJornada: getRecordId(empleadoId, 'Terminar Jornada'),
+                inicioJornada: getRecordId(empleadoId, LOG_TYPE.inicioJornada),
+                inicioAlmuerzo: getRecordId(empleadoId, LOG_TYPE.inicioAlmuerzo),
+                finAlmuerzo: getRecordId(empleadoId, LOG_TYPE.finAlmuerzo),
+                finJornada: getRecordId(empleadoId, LOG_TYPE.finJornada),
             },
             horasOriginales: {},
             horasEditadas: {},

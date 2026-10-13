@@ -4,10 +4,12 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import NoFoodIcon from '@mui/icons-material/NoFood';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import { esEmpleadoDemo, LOG_TYPE, type LogType, type Marcacion } from '../../domain/registro';
 import { getIcon, formatTo12Hour } from './EmployeeCardUtils';
 
-interface BotonSlot {
-  etiqueta: string;
+/** Un botón de marcación: la marcación del catálogo, si es la siguiente acción y su hora. */
+export interface BotonSlot {
+  marcacion: Marcacion;
   activo: boolean;
   hora: string | null;
 }
@@ -17,13 +19,13 @@ interface EmployeeCardTimeSlotsProps {
   tiempoRestante: number | null;
   finalizado: boolean;
   almuerzoOmitidoLocal: boolean;
-  guardandoRegistro: string | null;
+  guardandoRegistro: LogType | null;
   botones: BotonSlot[];
-  getObservacion: (evento: string) => string;
-  getEditadoStatus: (evento: string) => boolean;
-  onOpenHoraModal: (evento: string) => void;
-  onRegistrarEvento: (evento: string) => void;
-  onOpenObsModal: (evento: string) => void;
+  getObservacion: (evento: LogType) => string;
+  getEditadoStatus: (evento: LogType) => boolean;
+  onOpenHoraModal: (evento: LogType) => void;
+  onRegistrarEvento: (evento: LogType) => void;
+  onOpenObsModal: (evento: LogType) => void;
   onOpenOmitirAlmuerzoModal: () => void;
   onTerminarDemoPausa: () => void;
 }
@@ -70,7 +72,7 @@ export const EmployeeCardTimeSlots: React.FC<EmployeeCardTimeSlotsProps> = React
           <Typography sx={{ fontSize: '1.25rem', fontWeight: 800, color: '#0891b2', mt: 0.5 }}>
             {Math.floor(tiempoRestante / 60)}:{(tiempoRestante % 60).toString().padStart(2, '0')}
           </Typography>
-          {String(idEmpleado) === '99999' && (
+          {esEmpleadoDemo(idEmpleado) && (
             <Button
               size="small"
               onClick={onTerminarDemoPausa}
@@ -83,13 +85,14 @@ export const EmployeeCardTimeSlots: React.FC<EmployeeCardTimeSlotsProps> = React
       )}
 
       <Stack className="tour-marcacion" spacing={1.5}>
-        {botones.map((btn, idx) => {
-          const esCasillaAlmuerzo = btn.etiqueta === 'Iniciar Almuerzo' || btn.etiqueta === 'Finalizar Almuerzo';
+        {botones.map((btn) => {
+          const logType = btn.marcacion.logType;
+          const esCasillaAlmuerzo = logType === LOG_TYPE.inicioAlmuerzo || logType === LOG_TYPE.finAlmuerzo;
           const yaHecho = !!btn.hora && !(almuerzoOmitidoLocal && esCasillaAlmuerzo);
           const bloqueado = (!btn.activo && !yaHecho) || (almuerzoOmitidoLocal && esCasillaAlmuerzo);
-          const observacionGuardada = getObservacion(btn.etiqueta);
+          const observacionGuardada = getObservacion(logType);
           const obsEnabled = yaHecho;
-          const editado = getEditadoStatus(btn.etiqueta);
+          const editado = getEditadoStatus(logType);
           const relojEnabled = yaHecho && !editado;
           const tooltipTitle = relojEnabled
             ? 'Editar hora'
@@ -98,13 +101,13 @@ export const EmployeeCardTimeSlots: React.FC<EmployeeCardTimeSlotsProps> = React
                 : 'No disponible');
 
           return (
-            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box key={btn.marcacion.key} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Tooltip title={tooltipTitle}>
                 <span>
                   <IconButton
                     size="small"
                     disabled={!relojEnabled}
-                    onClick={() => onOpenHoraModal(btn.etiqueta)}
+                    onClick={() => onOpenHoraModal(logType)}
                     sx={{
                       border: '1px solid',
                       borderColor: relojEnabled ? '#cbd5e1' : '#e2e8f0',
@@ -122,14 +125,14 @@ export const EmployeeCardTimeSlots: React.FC<EmployeeCardTimeSlotsProps> = React
                 fullWidth
                 variant={btn.activo ? 'contained' : yaHecho ? 'outlined' : 'text'}
                 disabled={bloqueado || finalizado || guardandoRegistro !== null || tiempoRestante !== null}
-                onClick={yaHecho ? undefined : () => onRegistrarEvento(btn.etiqueta)}
+                onClick={yaHecho ? undefined : () => onRegistrarEvento(logType)}
                 endIcon={
-                  guardandoRegistro === btn.etiqueta ? (
+                  guardandoRegistro === logType ? (
                     <CircularProgress size={16} sx={{ color: btn.activo ? '#fff' : '#004680' }} />
                   ) : yaHecho ? (
                     <CheckCircleOutlineIcon color="success" />
                   ) : (
-                    getIcon(btn.etiqueta)
+                    getIcon(logType)
                   )
                 }
                 sx={{
@@ -154,11 +157,11 @@ export const EmployeeCardTimeSlots: React.FC<EmployeeCardTimeSlotsProps> = React
                   '&:focus': { boxShadow: 'none' },
                 }}
               >
-                <span>{btn.etiqueta}</span>
+                <span>{btn.marcacion.etiqueta}</span>
                 {btn.hora && <span style={{ fontSize: '12px', fontWeight: 600 }}>{formatTo12Hour(btn.hora)}</span>}
               </Button>
 
-              {btn.etiqueta === 'Iniciar Almuerzo' && btn.activo && !almuerzoOmitidoLocal ? (
+              {logType === LOG_TYPE.inicioAlmuerzo && btn.activo && !almuerzoOmitidoLocal ? (
                 <Tooltip title="Turno sin almuerzo" arrow>
                   <span>
                     <IconButton
@@ -182,7 +185,7 @@ export const EmployeeCardTimeSlots: React.FC<EmployeeCardTimeSlotsProps> = React
                     <IconButton
                       size="small"
                       disabled={!obsEnabled}
-                      onClick={() => obsEnabled && onOpenObsModal(btn.etiqueta)}
+                      onClick={() => obsEnabled && onOpenObsModal(logType)}
                       sx={{
                         border: '1px solid',
                         borderColor: obsEnabled ? '#cbd5e1' : '#e2e8f0',

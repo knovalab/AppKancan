@@ -18,6 +18,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/es';
 import { FestivoDay } from '../../components/FestivoDay';
+import { LOG_TYPE } from '../../domain/registro';
 
 interface DetallePlanillaTablaProps {
   fechaSeleccionada: Dayjs;
@@ -149,10 +150,10 @@ export const DetallePlanillaTabla: React.FC<DetallePlanillaTablaProps> = React.m
               ) : (
                 filasPagina.map((fila, idx) => {
                   const eventosHoras = [
-                    { key: 'inicioJornada', label: 'Comenzar Jornada', hora: fila.inicioJornada, recordId: fila.recordIdInicioJornada },
-                    { key: 'inicioAlmuerzo', label: 'Iniciar Almuerzo', hora: fila.inicioAlmuerzo, recordId: fila.recordIdInicioAlmuerzo },
-                    { key: 'finAlmuerzo', label: 'Finalizar Almuerzo', hora: fila.finAlmuerzo, recordId: fila.recordIdFinAlmuerzo },
-                    { key: 'finJornada', label: 'Terminar Jornada', hora: fila.finJornada, recordId: fila.recordIdFinJornada },
+                    { key: 'inicioJornada', label: LOG_TYPE.inicioJornada, hora: fila.inicioJornada, recordId: fila.recordIdInicioJornada },
+                    { key: 'inicioAlmuerzo', label: LOG_TYPE.inicioAlmuerzo, hora: fila.inicioAlmuerzo, recordId: fila.recordIdInicioAlmuerzo },
+                    { key: 'finAlmuerzo', label: LOG_TYPE.finAlmuerzo, hora: fila.finAlmuerzo, recordId: fila.recordIdFinAlmuerzo },
+                    { key: 'finJornada', label: LOG_TYPE.finJornada, hora: fila.finJornada, recordId: fila.recordIdFinJornada },
                   ];
 
                   const employeeId = fila.id.includes('_') ? fila.id.split('_')[1] : fila.id;

@@ -2,12 +2,13 @@ import { saveAs } from "file-saver";
 import dayjs from "dayjs";
 import { TimeRecord } from "../api/directus/read";
 import { Tienda } from "../interfaces/horarios.interface";
+import { LOG_TYPE } from "../domain/registro";
 
 const EVENTOS = [
-  { tipo: "Comenzar Jornada", etiqueta: "Inicio turno" },
-  { tipo: "Iniciar Almuerzo", etiqueta: "Inicio almuerzo" },
-  { tipo: "Finalizar Almuerzo", etiqueta: "Fin almuerzo" },
-  { tipo: "Terminar Jornada", etiqueta: "Fin turno" },
+  { tipo: LOG_TYPE.inicioJornada, etiqueta: "Inicio turno" },
+  { tipo: LOG_TYPE.inicioAlmuerzo, etiqueta: "Inicio almuerzo" },
+  { tipo: LOG_TYPE.finAlmuerzo, etiqueta: "Fin almuerzo" },
+  { tipo: LOG_TYPE.finJornada, etiqueta: "Fin turno" },
 ] as const;
 
 const DELIM = ";";
@@ -96,10 +97,10 @@ const agruparParaExport = (
   const filas = Object.values(grupos).map((regs) => {
     const porTipo = (tipo: string) => regs.find((r) => r.log_type === tipo) || null;
 
-    const inicioTurno = porTipo("Comenzar Jornada")?.record_time ?? null;
-    const inicioAlmuerzo = porTipo("Iniciar Almuerzo")?.record_time ?? null;
-    const finAlmuerzo = porTipo("Finalizar Almuerzo")?.record_time ?? null;
-    const finTurno = porTipo("Terminar Jornada")?.record_time ?? null;
+    const inicioTurno = porTipo(LOG_TYPE.inicioJornada)?.record_time ?? null;
+    const inicioAlmuerzo = porTipo(LOG_TYPE.inicioAlmuerzo)?.record_time ?? null;
+    const finAlmuerzo = porTipo(LOG_TYPE.finAlmuerzo)?.record_time ?? null;
+    const finTurno = porTipo(LOG_TYPE.finJornada)?.record_time ?? null;
     const lineasMotivo: string[] = [];
     const lineasObs: string[] = [];
     const lineasHoraInicial: string[] = [];

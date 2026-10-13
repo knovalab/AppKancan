@@ -10,6 +10,17 @@ import EmployeeCard from '../components/EmployeeCard';
 import { HeaderActions } from '../components/HeaderActions';
 import ExportEventosDialog from '../components/reportes/ExportEventosDialog';
 import { useHorariosTour } from '../components/tour/HorariosTourContext';
+import {
+	crearRegistrosVacios,
+	ESTADO,
+	EVENTO,
+	type EventoTipo,
+	ID_EMPLEADO_DEMO,
+	keyPorLogType,
+	type LogType,
+	MAX_PAUSAS_ACTIVAS,
+	marcacionPorLogType,
+} from '../domain/registro';
 import { useAceptacionNormasEmpleados } from '../hooks/useAceptacionNormasEmpleados';
 import { useHorarios } from '../hooks/useHorarios';
 import { useHorariosLayout } from '../hooks/useHorariosLayout';
@@ -48,75 +59,53 @@ export default function RegistrosPage() {
 	} = useAceptacionNormasEmpleados(empleadoIds);
 
 	const [demoEmpleado, setDemoEmpleado] = useState<EmpleadoAsistencia>({
-		id: '99999',
+		id: ID_EMPLEADO_DEMO,
 		documento: '0000000000',
 		nombre: 'USUARIO DE EJEMPLO',
 		cargo: '',
-		estadoActual: 'entrada_pendiente',
+		estadoActual: ESTADO.entradaPendiente,
 		pausasActivasCount: 0,
-		registros: {
-			inicioJornada: null,
-			inicioAlmuerzo: null,
-			finAlmuerzo: null,
-			finJornada: null,
-			observaciones: {},
-			ids: {},
-			horasOriginales: {},
-			horasEditadas: {},
-		},
+		registros: crearRegistrosVacios(),
 	});
 
+	// Demo en memoria: usa el mismo catálogo de marcaciones que el registro real.
 	const registrarEventoDemo = (
 		_idEmpleado: string,
-		tipoEvento: string,
+		tipoEvento: LogType,
 		horaOverride?: string,
 		observacionOverride?: string,
 	) => {
+		const marcacion = marcacionPorLogType(tipoEvento);
+		if (!marcacion) return;
 		const ahora = horaOverride || dayjs().format('HH:mm');
-		setDemoEmpleado((prev) => {
-			const nuevo = {
-				...prev,
-				registros: {
-					...prev.registros,
-					observaciones: { ...prev.registros.observaciones },
-				},
-			};
-			let eventKey = '';
-			if (tipoEvento === 'Comenzar Jornada') {
-				eventKey = 'inicioJornada';
-				nuevo.estadoActual = 'jornada_iniciada';
-			} else if (tipoEvento === 'Iniciar Almuerzo') {
-				eventKey = 'inicioAlmuerzo';
-				nuevo.estadoActual = 'en_almuerzo';
-			} else if (tipoEvento === 'Finalizar Almuerzo') {
-				eventKey = 'finAlmuerzo';
-				nuevo.estadoActual = 'regreso_almuerzo';
-			} else if (tipoEvento === 'Terminar Jornada') {
-				eventKey = 'finJornada';
-				nuevo.estadoActual = 'jornada_finalizada';
-			}
-
-			if (eventKey) {
-				nuevo.registros[eventKey as keyof typeof nuevo.registros] =
-					ahora as any;
-				if (observacionOverride)
-					nuevo.registros.observaciones[
-						eventKey as keyof typeof nuevo.registros.observaciones
-					] = observacionOverride;
-			}
-			return nuevo;
-		});
+		setDemoEmpleado((prev) => ({
+			...prev,
+			estadoActual: marcacion.estadoResultante,
+			registros: {
+				...prev.registros,
+				[marcacion.key]: ahora,
+				observaciones: observacionOverride
+					? {
+							...prev.registros.observaciones,
+							[marcacion.key]: observacionOverride,
+						}
+					: { ...prev.registros.observaciones },
+			},
+		}));
 	};
 
 	const reportarEventoDemo = (
 		_idEmpleado: string,
-		eventType: string,
+		eventType: EventoTipo,
 		_observaciones?: string,
 	) => {
-		if (eventType === 'Terminar Pausa Activa') {
+		if (eventType === EVENTO.terminarPausaActiva) {
 			setDemoEmpleado((prev) => ({
 				...prev,
-				pausasActivasCount: Math.min((prev.pausasActivasCount ?? 0) + 1, 2),
+				pausasActivasCount: Math.min(
+					(prev.pausasActivasCount ?? 0) + 1,
+					MAX_PAUSAS_ACTIVAS,
+				),
 			}));
 		}
 		return true;
@@ -124,39 +113,18 @@ export default function RegistrosPage() {
 
 	const guardarObservacionDemo = (
 		_idEmpleado: string,
-		evento: string,
+		evento: LogType,
 		texto: string,
 	) => {
-		setDemoEmpleado((prev) => {
-			const nuevo = {
-				...prev,
-				registros: {
-					...prev.registros,
-					observaciones: { ...prev.registros.observaciones },
-				},
-			};
-			let eventKey = '';
-			switch (evento) {
-				case 'Comenzar Jornada':
-					eventKey = 'inicioJornada';
-					break;
-				case 'Iniciar Almuerzo':
-					eventKey = 'inicioAlmuerzo';
-					break;
-				case 'Finalizar Almuerzo':
-					eventKey = 'finAlmuerzo';
-					break;
-				case 'Terminar Jornada':
-					eventKey = 'finJornada';
-					break;
-			}
-			if (eventKey) {
-				nuevo.registros.observaciones[
-					eventKey as keyof typeof nuevo.registros.observaciones
-				] = texto;
-			}
-			return nuevo;
-		});
+		const key = keyPorLogType(evento);
+		if (!key) return;
+		setDemoEmpleado((prev) => ({
+			...prev,
+			registros: {
+				...prev.registros,
+				observaciones: { ...prev.registros.observaciones, [key]: texto },
+			},
+		}));
 	};
 
 	// Tutorial lanzado desde el PeekButton global (navega a /horarios/registros).
@@ -256,7 +224,7 @@ export default function RegistrosPage() {
 				>
 					{modoDemo && (
 						<EmployeeCard
-							key="demo-99999"
+							key={`demo-${ID_EMPLEADO_DEMO}`}
 							empleado={demoEmpleado}
 							tiposNovedad={tiposNovedad}
 							reasons={reasons}

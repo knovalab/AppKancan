@@ -2,6 +2,7 @@ import { X, Clock, Play, Coffee, UtensilsCrossed, LogOut, FileText } from 'lucid
 import { motion, AnimatePresence } from 'motion/react';
 import { createPortal } from 'react-dom';
 import { ObservacionEvento } from '../interfaces/horarios.interface';
+import { LOG_TYPE } from '../domain/registro';
 
 interface ObservationModalProps {
   open: boolean;
@@ -15,10 +16,10 @@ const EVENTO_META: Record<
   string,
   { orden: number; icon: typeof Play; color: string; bg: string }
 > = {
-  'Comenzar Jornada': { orden: 0, icon: Play, color: '#16a34a', bg: '#dcfce7' },
-  'Iniciar Almuerzo': { orden: 1, icon: Coffee, color: '#ea580c', bg: '#ffedd5' },
-  'Finalizar Almuerzo': { orden: 2, icon: UtensilsCrossed, color: '#ca8a04', bg: '#fef9c3' },
-  'Terminar Jornada': { orden: 3, icon: LogOut, color: '#004680', bg: '#eaf2fb' },
+  [LOG_TYPE.inicioJornada]: { orden: 0, icon: Play, color: '#16a34a', bg: '#dcfce7' },
+  [LOG_TYPE.inicioAlmuerzo]: { orden: 1, icon: Coffee, color: '#ea580c', bg: '#ffedd5' },
+  [LOG_TYPE.finAlmuerzo]: { orden: 2, icon: UtensilsCrossed, color: '#ca8a04', bg: '#fef9c3' },
+  [LOG_TYPE.finJornada]: { orden: 3, icon: LogOut, color: '#004680', bg: '#eaf2fb' },
 };
 
 const inicial = (nombre: string) => (nombre.trim()[0] || '?').toUpperCase();

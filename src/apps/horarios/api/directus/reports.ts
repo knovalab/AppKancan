@@ -1,6 +1,7 @@
 import directus from "@/services/directus/directus";
 import { withAutoRefresh } from "@/auth/services/directusInterceptor";
 import { readItems } from "@directus/sdk";
+import type { EventReportHoy } from "../../interfaces/horarios.interface";
 import { STORE_PRUEBAS, TimeRecord } from "./read";
 
 export interface NewnessReport {
@@ -228,7 +229,7 @@ export async function getEmployeeEventReports(
 export async function getStoreEventReportsToday(
   storeId: number,
   date: string
-): Promise<any[]> {
+): Promise<EventReportHoy[]> {
   try {
     return await withAutoRefresh(() =>
       directus.request(
@@ -241,7 +242,7 @@ export async function getStoreEventReportsToday(
           limit: -1,
         })
       )
-    );
+    ) as EventReportHoy[];
   } catch (error) {
     console.error('❌ Error cargando eventos de la tienda:', error);
     return [];

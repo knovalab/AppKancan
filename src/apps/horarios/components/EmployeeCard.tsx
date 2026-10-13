@@ -8,6 +8,18 @@ import {
 	type Normas,
 	registrarAceptacionNormasEmpleado,
 } from '../api/directus/rules';
+import {
+	ESTADO,
+	EVENTO,
+	EVENTOS_REPORTABLES,
+	type EventoTipo,
+	esEmpleadoDemo,
+	LOG_TYPE,
+	type LogType,
+	MARCACIONES,
+	MAX_CARACTERES_OBSERVACION,
+	MAX_PAUSAS_ACTIVAS,
+} from '../domain/registro';
 import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
 import type {
 	EmpleadoAsistencia,
@@ -21,9 +33,11 @@ import {
 	EmployeeCardObsModal,
 	EmployeeCardOmitirAlmuerzoModal,
 } from './employee-card/EmployeeCardModals';
-import { EmployeeCardTimeSlots } from './employee-card/EmployeeCardTimeSlots';
 import {
-	EVENTOS_PAUSA,
+	type BotonSlot,
+	EmployeeCardTimeSlots,
+} from './employee-card/EmployeeCardTimeSlots';
+import {
 	getEditadoStatus,
 	getHoraEvento,
 	getObservacion,
@@ -35,7 +49,7 @@ import NormasModal from './NormasModal';
 import 'dayjs/locale/es';
 import {
 	TimeRecordVerificationModal,
-	VerificationData,
+	type VerificationData,
 } from './TimeRecordVerificationModal';
 
 interface EmployeeCardProps {
@@ -44,7 +58,7 @@ interface EmployeeCardProps {
 	reasons: Motivo[];
 	onRegistrarEvento: (
 		idEmpleado: string,
-		tipoEvento: string,
+		tipoEvento: LogType,
 		horaOverride?: string,
 		observacionOverride?: string,
 		reasonId?: number | null,
@@ -58,7 +72,7 @@ interface EmployeeCardProps {
 	onEliminarEmpleado: (idEmpleado: string) => void;
 	onGuardarObservacion: (
 		idEmpleado: string,
-		evento: string,
+		evento: LogType,
 		texto: string,
 	) => void;
 	onAgregarNovedad: (novedad: {
@@ -69,12 +83,12 @@ interface EmployeeCardProps {
 		fechaFin: string;
 		observaciones: string;
 		fechaRegistro: string;
-	}) => Promise<boolean> | boolean | any;
+	}) => Promise<boolean> | boolean;
 	onReportarEvento: (
 		idEmpleado: string,
-		eventType: string,
+		eventType: EventoTipo,
 		observaciones?: string,
-	) => Promise<boolean> | boolean | any;
+	) => Promise<boolean> | boolean;
 	/** Normas vigentes y estado de aceptación: los resuelve la página en una sola consulta. */
 	normas: Normas | null;
 	yaAceptoNormas: boolean;
@@ -130,20 +144,26 @@ function EmployeeCardContent({
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
 	const [obsModalOpen, setObsModalOpen] = useState(false);
-	const [eventoActualObs, setEventoActualObs] = useState('');
+	const [eventoActualObs, setEventoActualObs] = useState<LogType>(
+		LOG_TYPE.inicioJornada,
+	);
 	const [observacionTexto, setObservacionTexto] = useState('');
 	const [obsInicialModal, setObsInicialModal] = useState('');
 
 	const [horaModalOpen, setHoraModalOpen] = useState(false);
-	const [eventoActualHora, setEventoActualHora] = useState('');
+	const [eventoActualHora, setEventoActualHora] = useState<LogType>(
+		LOG_TYPE.inicioJornada,
+	);
 	const [initialReasonId, setInitialReasonId] = useState<number | null>(null);
 
 	const [eventoModalOpen, setEventoModalOpen] = useState(false);
-	const [eventoSeleccionado, setEventoSeleccionado] = useState('');
+	const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoTipo | ''>(
+		'',
+	);
 	const [eventoObservaciones, setEventoObservaciones] = useState('');
 	const [eventoError, setEventoError] = useState('');
 	const [guardandoEvento, setGuardandoEvento] = useState(false);
-	const [guardandoRegistro, setGuardandoRegistro] = useState<string | null>(
+	const [guardandoRegistro, setGuardandoRegistro] = useState<LogType | null>(
 		null,
 	);
 	const [omitirAlmuerzoModalOpen, setOmitirAlmuerzoModalOpen] = useState(false);
@@ -156,39 +176,22 @@ function EmployeeCardContent({
 
 	const showAceptarNormasButton =
 		tieneTemporal() &&
-		String(id) !== '99999' &&
+		!esEmpleadoDemo(id) &&
 		!!normasActivas &&
 		!yaAceptoNormas;
 
-	const botones = [
-		{
-			etiqueta: 'Comenzar Jornada',
-			activo: estadoActual === 'entrada_pendiente',
-			hora: registros.inicioJornada,
-		},
-		{
-			etiqueta: 'Iniciar Almuerzo',
-			activo: estadoActual === 'jornada_iniciada',
-			hora: registros.inicioAlmuerzo,
-		},
-		{
-			etiqueta: 'Finalizar Almuerzo',
-			activo: estadoActual === 'en_almuerzo',
-			hora: registros.finAlmuerzo,
-		},
-		{
-			etiqueta: 'Terminar Jornada',
-			activo: estadoActual === 'regreso_almuerzo',
-			hora: registros.finJornada,
-		},
-	];
+	// Un botón por marcación del catálogo; está activo si es la siguiente de la jornada.
+	const botones: BotonSlot[] = MARCACIONES.map((marcacion) => ({
+		marcacion,
+		activo: estadoActual === marcacion.habilitadaEn,
+		hora: registros[marcacion.key],
+	}));
 
-	const MAX_PAUSAS = 2;
-	const novedadActiva = estadoActual === 'entrada_pendiente';
-	const finalizado = estadoActual === 'jornada_finalizada';
-	const pausasAgotadas = pausasActivasCount >= MAX_PAUSAS;
+	const novedadActiva = estadoActual === ESTADO.entradaPendiente;
+	const finalizado = estadoActual === ESTADO.jornadaFinalizada;
+	const pausasAgotadas = pausasActivasCount >= MAX_PAUSAS_ACTIVAS;
 	const reporteActivo =
-		estadoActual !== 'entrada_pendiente' &&
+		estadoActual !== ESTADO.entradaPendiente &&
 		!finalizado &&
 		tiempoRestante === null &&
 		!pausasAgotadas;
@@ -222,7 +225,7 @@ function EmployeeCardContent({
 				onEliminarEmpleado(id);
 				handleCloseNovedadModal();
 			}
-		} catch (err: any) {
+		} catch (err) {
 			if (err instanceof yup.ValidationError) {
 				const errors: Record<string, string> = {};
 				err.inner.forEach((e) => {
@@ -234,7 +237,7 @@ function EmployeeCardContent({
 	};
 
 	const handleOpenEventoModal = () => {
-		setEventoSeleccionado(EVENTOS_PAUSA[0]);
+		setEventoSeleccionado(EVENTOS_REPORTABLES[0]);
 		setEventoObservaciones('');
 		setEventoError('');
 		setEventoModalOpen(true);
@@ -257,7 +260,7 @@ function EmployeeCardContent({
 			);
 			if (ok) {
 				setEventoModalOpen(false);
-				if (eventoSeleccionado === 'Iniciar Pausa Activa') {
+				if (eventoSeleccionado === EVENTO.iniciarPausaActiva) {
 					handleIniciarDemoPausa();
 				}
 			}
@@ -266,7 +269,7 @@ function EmployeeCardContent({
 		}
 	};
 
-	const handleOpenObsModal = (evento: string) => {
+	const handleOpenObsModal = (evento: LogType) => {
 		setEventoActualObs(evento);
 		const obs = getObservacion(registros, evento);
 		setObservacionTexto(obs);
@@ -276,7 +279,6 @@ function EmployeeCardContent({
 	const handleCloseObsModal = () => {
 		setObsModalOpen(false);
 		setObservacionTexto('');
-		setEventoActualObs('');
 		setObsInicialModal('');
 	};
 	const handleGuardarObservacion = async () => {
@@ -284,7 +286,7 @@ function EmployeeCardContent({
 		handleCloseObsModal();
 	};
 
-	const handleOpenHoraModal = (evento: string) => {
+	const handleOpenHoraModal = (evento: LogType) => {
 		setEventoActualHora(evento);
 		setInitialReasonId(null);
 		setHoraModalOpen(true);
@@ -297,29 +299,47 @@ function EmployeeCardContent({
 	};
 
 	const [verificationModalOpen, setVerificationModalOpen] = useState(false);
-	const [pendingEvento, setPendingEvento] = useState<string | null>(null);
+	const [pendingEvento, setPendingEvento] = useState<LogType | null>(null);
 
-	const handleRegistrarEvento = (tipoEvento: string) => {
+	// El empleado demo (tour) no pasa por cámara/GPS: no se sube su foto a Directus.
+	const handleRegistrarEvento = (tipoEvento: LogType) => {
+		if (esEmpleadoDemo(id)) {
+			void registrarMarcacion(tipoEvento);
+			return;
+		}
 		setPendingEvento(tipoEvento);
 		setVerificationModalOpen(true);
 	};
 
 	const handleConfirmVerification = async (data: VerificationData) => {
 		if (!pendingEvento) return;
-		const tipoEvento = pendingEvento;
+		await registrarMarcacion(pendingEvento, {
+			latitude: data.latitude,
+			longitude: data.longitude,
+			accuracy: data.accuracy,
+			photo: data.photo,
+		});
+	};
+
+	const registrarMarcacion = async (
+		tipoEvento: LogType,
+		metadata?: VerificationData,
+	) => {
 		setGuardandoRegistro(tipoEvento);
 		try {
 			// yaAceptoNormas ya viene de la consulta de la página: no se vuelve a preguntar.
-			await onRegistrarEvento(id, tipoEvento, undefined, undefined, null, {
-				latitude: data.latitude,
-				longitude: data.longitude,
-				accuracy: data.accuracy,
-				photo: data.photo,
-			});
+			await onRegistrarEvento(
+				id,
+				tipoEvento,
+				undefined,
+				undefined,
+				null,
+				metadata,
+			);
 			if (
-				tipoEvento === 'Comenzar Jornada' &&
+				tipoEvento === LOG_TYPE.inicioJornada &&
 				normasActivas &&
-				String(id) !== '99999' &&
+				!esEmpleadoDemo(id) &&
 				!yaAceptoNormas
 			) {
 				setTimeout(() => {
@@ -331,6 +351,7 @@ function EmployeeCardContent({
 			setPendingEvento(null);
 		}
 	};
+
 	const handleAceptarNormasEmpleado = async () => {
 		if (!normasActivas) return;
 		setAceptandoNormas(true);
@@ -352,16 +373,14 @@ function EmployeeCardContent({
 	const handleConfirmarSinAlmuerzo = async () => {
 		setOmitiendoAlmuerzo(true);
 		try {
-			await onRegistrarEvento(id, 'Iniciar Almuerzo');
-			await onRegistrarEvento(id, 'Finalizar Almuerzo');
+			await onRegistrarEvento(id, LOG_TYPE.inicioAlmuerzo);
+			await onRegistrarEvento(id, LOG_TYPE.finAlmuerzo);
 			setAlmuerzoOmitidoLocal(true);
 			setOmitirAlmuerzoModalOpen(false);
 		} finally {
 			setOmitiendoAlmuerzo(false);
 		}
 	};
-
-	const maxLength = 300;
 
 	return (
 		<>
@@ -385,7 +404,7 @@ function EmployeeCardContent({
 					reporteActivo={reporteActivo}
 					finalizado={finalizado}
 					showAceptarNormasButton={showAceptarNormasButton}
-					maxPausas={MAX_PAUSAS}
+					maxPausas={MAX_PAUSAS_ACTIVAS}
 					onOpenNovedadModal={handleOpenNovedadModal}
 					onOpenEventoModal={handleOpenEventoModal}
 					onOpenEmployeeNormasModal={() => setEmployeeNormasOpen(true)}
@@ -444,7 +463,7 @@ function EmployeeCardContent({
 				onClose={handleCloseObsModal}
 				eventoActualObs={eventoActualObs}
 				nombre={nombre}
-				maxLength={maxLength}
+				maxLength={MAX_CARACTERES_OBSERVACION}
 				observacionTexto={observacionTexto}
 				setObservacionTexto={setObservacionTexto}
 				obsInicialModal={obsInicialModal}

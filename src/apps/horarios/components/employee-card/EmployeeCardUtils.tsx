@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { type ReactElement, useState, useEffect, useRef } from 'react';
 import { Typography, Tooltip } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
@@ -6,35 +6,34 @@ import DiningIcon from '@mui/icons-material/Dining';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import dayjs from 'dayjs';
 import * as yup from 'yup';
+import {
+  DURACION_PAUSA_ACTIVA_MS,
+  esEmpleadoDemo,
+  EVENTO,
+  type EventoTipo,
+  keyPorLogType,
+  type LogType,
+  MAX_CARACTERES_OBSERVACION,
+  type MarcacionKey,
+} from '../../domain/registro';
+import type { RegistrosAsistencia } from '../../interfaces/horarios.interface';
+import { formatTo12Hour } from '../../utils/format';
 
-export const EVENTOS_PAUSA = [
-  'Iniciar Pausa Activa',
-];
-
-export const getIcon = (etiqueta: string) => {
-  switch (etiqueta) {
-    case 'Comenzar Jornada': return <PlayArrowIcon fontSize="small" />;
-    case 'Iniciar Almuerzo': return <RestaurantIcon fontSize="small" />;
-    case 'Finalizar Almuerzo': return <DiningIcon fontSize="small" />;
-    case 'Terminar Jornada': return <ExitToAppIcon fontSize="small" />;
-    default: return null;
-  }
+/** Icono del botón de cada marcación. */
+const ICONO_MARCACION: Record<MarcacionKey, ReactElement> = {
+  inicioJornada: <PlayArrowIcon fontSize="small" />,
+  inicioAlmuerzo: <RestaurantIcon fontSize="small" />,
+  finAlmuerzo: <DiningIcon fontSize="small" />,
+  finJornada: <ExitToAppIcon fontSize="small" />,
 };
 
-export const formatTo12Hour = (timeStr: string | null): string => {
-  if (!timeStr) return '';
-  if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
-  const parts = timeStr.split(':');
-  if (parts.length < 2) return timeStr;
-  let hours = parseInt(parts[0], 10);
-  const minutes = parts[1];
-  if (isNaN(hours)) return timeStr;
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  const hoursStr = String(hours).padStart(2, '0');
-  return `${hoursStr}:${minutes} ${ampm}`;
+export const getIcon = (logType: LogType): ReactElement | null => {
+  const key = keyPorLogType(logType);
+  return key ? ICONO_MARCACION[key] : null;
 };
+
+// Reexportado para no romper los imports existentes; la implementación vive en utils/format.
+export { formatTo12Hour };
 
 export function NombreEmpleado({ nombre }: { nombre: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -96,63 +95,42 @@ export const novedadSchema = yup.object().shape({
       if (!fechaInicio || !value) return true;
       return dayjs(value).isSame(dayjs(fechaInicio), 'day') || dayjs(value).isAfter(dayjs(fechaInicio), 'day');
     }),
-  observaciones: yup.string().max(300, 'Máximo 300 caracteres')
+  observaciones: yup.string().max(MAX_CARACTERES_OBSERVACION, `Máximo ${MAX_CARACTERES_OBSERVACION} caracteres`)
 });
 
-export const getObservacion = (registros: any, evento: string): string => {
-  if (!registros?.observaciones) return '';
-  switch (evento) {
-    case 'Comenzar Jornada': return registros.observaciones.inicioJornada || '';
-    case 'Iniciar Almuerzo': return registros.observaciones.inicioAlmuerzo || '';
-    case 'Finalizar Almuerzo': return registros.observaciones.finAlmuerzo || '';
-    case 'Terminar Jornada': return registros.observaciones.finJornada || '';
-    default: return '';
-  }
+// Lecturas de RegistrosAsistencia por log_type (antes, un switch por función).
+
+export const getObservacion = (registros: RegistrosAsistencia | undefined, logType: LogType): string => {
+  const key = keyPorLogType(logType);
+  return (key && registros?.observaciones[key]) || '';
 };
 
-export const getHoraEvento = (registros: any, evento: string): string | null => {
-  if (!registros) return null;
-  switch (evento) {
-    case 'Comenzar Jornada': return registros.inicioJornada;
-    case 'Iniciar Almuerzo': return registros.inicioAlmuerzo;
-    case 'Finalizar Almuerzo': return registros.finAlmuerzo;
-    case 'Terminar Jornada': return registros.finJornada;
-    default: return null;
-  }
+export const getHoraEvento = (registros: RegistrosAsistencia | undefined, logType: LogType): string | null => {
+  const key = keyPorLogType(logType);
+  return key && registros ? registros[key] : null;
 };
 
-export const getEditadoStatus = (registros: any, evento: string): boolean => {
-  if (!registros?.horasOriginales) return false;
-  let eventKey = '';
-  switch (evento) {
-    case 'Comenzar Jornada': eventKey = 'inicioJornada'; break;
-    case 'Iniciar Almuerzo': eventKey = 'inicioAlmuerzo'; break;
-    case 'Finalizar Almuerzo': eventKey = 'finAlmuerzo'; break;
-    case 'Terminar Jornada': eventKey = 'finJornada'; break;
-  }
-  return !!registros.horasOriginales[eventKey];
+export const getEditadoStatus = (registros: RegistrosAsistencia | undefined, logType: LogType): boolean => {
+  const key = keyPorLogType(logType);
+  return !!(key && registros?.horasOriginales[key]);
 };
 
-export const getRecordIdEvento = (registros: any, evento: string): number | undefined => {
-  if (!registros?.ids) return undefined;
-  let eventKey = '';
-  switch (evento) {
-    case 'Comenzar Jornada': eventKey = 'inicioJornada'; break;
-    case 'Iniciar Almuerzo': eventKey = 'inicioAlmuerzo'; break;
-    case 'Finalizar Almuerzo': eventKey = 'finAlmuerzo'; break;
-    case 'Terminar Jornada': eventKey = 'finJornada'; break;
-  }
-  return registros.ids[eventKey];
+export const getRecordIdEvento = (registros: RegistrosAsistencia | undefined, logType: LogType): number | undefined => {
+  const key = keyPorLogType(logType);
+  return key ? registros?.ids[key] : undefined;
 };
 
-export function useActiveBreak(id: string, onReportarEvento: (idEmpleado: string, eventType: string) => void) {
+// Temporizador de la pausa del empleado demo: en memoria, no en localStorage.
+const demoWindow = window as Window & { __demoActiveBreakExpires?: string };
+
+export function useActiveBreak(id: string, onReportarEvento: (idEmpleado: string, eventType: EventoTipo) => void) {
   const [tiempoRestante, setTiempoRestante] = useState<number | null>(null);
 
   useEffect(() => {
     const checkActiveBreak = () => {
       let expirationStr;
-      if (String(id) === '99999') {
-        expirationStr = (window as any).__demoActiveBreakExpires;
+      if (esEmpleadoDemo(id)) {
+        expirationStr = demoWindow.__demoActiveBreakExpires;
       } else {
         expirationStr = localStorage.getItem(`activeBreakExpires_${id}`);
       }
@@ -164,10 +142,10 @@ export function useActiveBreak(id: string, onReportarEvento: (idEmpleado: string
         if (diff > 0) {
           setTiempoRestante(diff);
         } else {
-          if (String(id) === '99999') delete (window as any).__demoActiveBreakExpires;
+          if (esEmpleadoDemo(id)) delete demoWindow.__demoActiveBreakExpires;
           else localStorage.removeItem(`activeBreakExpires_${id}`);
           setTiempoRestante(null);
-          onReportarEvento(id, 'Terminar Pausa Activa');
+          onReportarEvento(id, EVENTO.terminarPausaActiva);
         }
       }
     };
@@ -181,17 +159,17 @@ export function useActiveBreak(id: string, onReportarEvento: (idEmpleado: string
     if (tiempoRestante === null) return;
 
     if (tiempoRestante <= 0) {
-      if (String(id) === '99999') delete (window as any).__demoActiveBreakExpires;
+      if (esEmpleadoDemo(id)) delete demoWindow.__demoActiveBreakExpires;
       else localStorage.removeItem(`activeBreakExpires_${id}`);
       setTiempoRestante(null);
-      onReportarEvento(id, 'Terminar Pausa Activa');
+      onReportarEvento(id, EVENTO.terminarPausaActiva);
       return;
     }
 
     const interval = setInterval(() => {
       let expirationStr;
-      if (String(id) === '99999') {
-        expirationStr = (window as any).__demoActiveBreakExpires;
+      if (esEmpleadoDemo(id)) {
+        expirationStr = demoWindow.__demoActiveBreakExpires;
       } else {
         expirationStr = localStorage.getItem(`activeBreakExpires_${id}`);
       }
@@ -204,10 +182,10 @@ export function useActiveBreak(id: string, onReportarEvento: (idEmpleado: string
           setTiempoRestante(diff);
         } else {
           clearInterval(interval);
-          if (String(id) === '99999') delete (window as any).__demoActiveBreakExpires;
+          if (esEmpleadoDemo(id)) delete demoWindow.__demoActiveBreakExpires;
           else localStorage.removeItem(`activeBreakExpires_${id}`);
           setTiempoRestante(null);
-          onReportarEvento(id, 'Terminar Pausa Activa');
+          onReportarEvento(id, EVENTO.terminarPausaActiva);
         }
       } else {
         clearInterval(interval);
@@ -219,23 +197,23 @@ export function useActiveBreak(id: string, onReportarEvento: (idEmpleado: string
   }, [tiempoRestante, id, onReportarEvento]);
 
   const handleTerminarDemoPausa = () => {
-    if (String(id) === '99999') {
-      delete (window as any).__demoActiveBreakExpires;
+    if (esEmpleadoDemo(id)) {
+      delete demoWindow.__demoActiveBreakExpires;
     } else {
       localStorage.removeItem(`activeBreakExpires_${id}`);
     }
     setTiempoRestante(null);
-    onReportarEvento(id, 'Terminar Pausa Activa');
+    onReportarEvento(id, EVENTO.terminarPausaActiva);
   };
 
   const handleIniciarDemoPausa = () => {
-    const expirationTime = Date.now() + 5 * 60 * 1000;
-    if (String(id) === '99999') {
-      (window as any).__demoActiveBreakExpires = String(expirationTime);
+    const expirationTime = Date.now() + DURACION_PAUSA_ACTIVA_MS;
+    if (esEmpleadoDemo(id)) {
+      demoWindow.__demoActiveBreakExpires = String(expirationTime);
     } else {
       localStorage.setItem(`activeBreakExpires_${id}`, String(expirationTime));
     }
-    setTiempoRestante(300);
+    setTiempoRestante(DURACION_PAUSA_ACTIVA_MS / 1000);
   };
 
   return {

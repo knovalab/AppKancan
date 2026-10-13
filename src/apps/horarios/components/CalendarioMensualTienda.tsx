@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import 'dayjs/locale/es';
+import { LOG_TYPE } from '../domain/registro';
 
 dayjs.extend(isSameOrBefore);
 
@@ -124,8 +125,8 @@ export default function CalendarioMensualTienda({
                     const empRecs = records.filter(
                         (r: any) => Number(r.employee_id?.id || r.employee_id) === empId
                     );
-                    const tieneEntrada = empRecs.some((r: any) => r.log_type === 'Comenzar Jornada');
-                    const tieneSalida = empRecs.some((r: any) => r.log_type === 'Terminar Jornada');
+                    const tieneEntrada = empRecs.some((r: any) => r.log_type === LOG_TYPE.inicioJornada);
+                    const tieneSalida = empRecs.some((r: any) => r.log_type === LOG_TYPE.finJornada);
                     if (tieneEntrada && tieneSalida) {
                         hasComplete = true;
                     } else {

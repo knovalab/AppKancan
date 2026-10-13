@@ -21,3 +21,19 @@ export const formatNombrePropio = (str: string | undefined | null): string => {
     })
     .join(' ');
 };
+
+/** '14:05' | '14:05:00' → '02:05 PM'. Si ya viene en 12 h o no es una hora, la devuelve igual. */
+export const formatTo12Hour = (timeStr: string | null): string => {
+  if (!timeStr) return '';
+  if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  if (Number.isNaN(hours)) return timeStr;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const hoursStr = String(hours).padStart(2, '0');
+  return `${hoursStr}:${minutes} ${ampm}`;
+};

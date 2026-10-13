@@ -10,6 +10,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
+import { LOG_TYPE } from '../../domain/registro';
 dayjs.locale('es');
 
 import { getEmpleadosBulk, getTimeRecordsBulkRange, getPrimerPeriodoRegistro, getNovedades } from '../../api/directus/read';
@@ -80,8 +81,8 @@ const calcularMinutosSemanales = (
   let totalMinutes = 0;
   for (const date in byDay) {
     const recs = byDay[date];
-    const entrada = recs.find(r => r.log_type === 'Comenzar Jornada');
-    const salida = recs.find(r => r.log_type === 'Terminar Jornada');
+    const entrada = recs.find(r => r.log_type === LOG_TYPE.inicioJornada);
+    const salida = recs.find(r => r.log_type === LOG_TYPE.finJornada);
     if (entrada && salida) {
       const h1 = entrada.record_time || entrada.time;
       const h2 = salida.record_time || salida.time;
@@ -91,8 +92,8 @@ const calcularMinutosSemanales = (
         if (!isNaN(a) && !isNaN(b) && !isNaN(c) && !isNaN(d)) {
           let totalDia = (c * 60 + d) - (a * 60 + b);
           if (totalDia < 0) totalDia = 0;
-          const iniAlm = recs.find(r => r.log_type === 'Iniciar Almuerzo');
-          const finAlm = recs.find(r => r.log_type === 'Finalizar Almuerzo');
+          const iniAlm = recs.find(r => r.log_type === LOG_TYPE.inicioAlmuerzo);
+          const finAlm = recs.find(r => r.log_type === LOG_TYPE.finAlmuerzo);
           if (iniAlm && finAlm) {
             const ha1 = iniAlm.record_time || iniAlm.time;
             const ha2 = finAlm.record_time || finAlm.time;

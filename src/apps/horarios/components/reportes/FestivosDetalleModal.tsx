@@ -17,6 +17,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import CelebrationIcon from '@mui/icons-material/Celebration';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
+import { LOG_TYPE } from '../../domain/registro';
 
 // Utilidad para formatear minutos laborados
 const formatMinutes = (min: number): string => {
@@ -52,8 +53,8 @@ export const obtenerFestivosTrabajadosEmp = (
       r.record_date === fechaStr
     );
     let totalDia = 0;
-    const entrada = recsDelDia.find(r => r.log_type === 'Comenzar Jornada');
-    const salida = recsDelDia.find(r => r.log_type === 'Terminar Jornada');
+    const entrada = recsDelDia.find(r => r.log_type === LOG_TYPE.inicioJornada);
+    const salida = recsDelDia.find(r => r.log_type === LOG_TYPE.finJornada);
     if (entrada && salida) {
       const h1 = entrada.record_time || entrada.time;
       const h2 = salida.record_time || salida.time;
@@ -62,8 +63,8 @@ export const obtenerFestivosTrabajadosEmp = (
         const [c, d] = h2.split(':').map(Number);
         if (!isNaN(a) && !isNaN(b) && !isNaN(c) && !isNaN(d)) {
           totalDia = (c * 60 + d) - (a * 60 + b);
-          const iniAlm = recsDelDia.find(r => r.log_type === 'Iniciar Almuerzo');
-          const finAlm = recsDelDia.find(r => r.log_type === 'Finalizar Almuerzo');
+          const iniAlm = recsDelDia.find(r => r.log_type === LOG_TYPE.inicioAlmuerzo);
+          const finAlm = recsDelDia.find(r => r.log_type === LOG_TYPE.finAlmuerzo);
           if (iniAlm && finAlm) {
             const ha1 = iniAlm.record_time || iniAlm.time;
             const ha2 = finAlm.record_time || finAlm.time;

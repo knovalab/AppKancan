@@ -5,9 +5,8 @@ import {
 	getNormasActivas,
 	type Normas,
 } from '../api/directus/rules';
+import { esEmpleadoDemo } from '../domain/registro';
 import useHorariosPolicies from './useHorariosPolicies';
-
-const ID_DEMO = '99999';
 
 /**
  * Aceptación de normas de todos los empleados de la tienda en una sola consulta.
@@ -34,7 +33,7 @@ export function useAceptacionNormasEmpleados(empleadoIds: readonly string[]) {
 	const ids = useMemo(
 		() =>
 			[...new Set(empleadoIds)]
-				.filter((id) => id !== ID_DEMO)
+				.filter((id) => !esEmpleadoDemo(id))
 				.map(Number)
 				.filter((id) => Number.isFinite(id))
 				.sort((a, b) => a - b),
@@ -60,7 +59,9 @@ export function useAceptacionNormasEmpleados(empleadoIds: readonly string[]) {
 
 	const yaAcepto = useCallback(
 		(empleadoId: string) =>
-			empleadoId === ID_DEMO || !aceptaron || aceptaron.has(Number(empleadoId)),
+			esEmpleadoDemo(empleadoId) ||
+			!aceptaron ||
+			aceptaron.has(Number(empleadoId)),
 		[aceptaron],
 	);
 

@@ -2,12 +2,13 @@ import React from 'react';
 import { Box, Typography, Button, IconButton, Chip, Tooltip } from '@mui/material';
 import WarningIcon from '@mui/icons-material/Warning';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import { ESTADO, type EstadoAsistencia, ETIQUETA_ESTADO, EVENTO } from '../../domain/registro';
 import { EmpleadoAsistencia } from '../../interfaces/horarios.interface';
 import { NombreEmpleado } from './EmployeeCardUtils';
 
 interface EmployeeCardHeaderProps {
   empleado: EmpleadoAsistencia;
-  estadoActual: string;
+  estadoActual: EstadoAsistencia;
   pausasActivasCount: number;
   pausasAgotadas: boolean;
   novedadActiva: boolean;
@@ -43,7 +44,7 @@ export const EmployeeCardHeader: React.FC<EmployeeCardHeaderProps> = React.memo(
             {empleado.cargo}
           </Typography>
         )}
-        {estadoActual !== 'entrada_pendiente' && !finalizado && (
+        {estadoActual !== ESTADO.entradaPendiente && !finalizado && (
           <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#ffffff', opacity: 0.75, textTransform: 'uppercase', mt: 0.5, letterSpacing: '0.5px' }}>
             {pausasAgotadas
               ? null
@@ -103,7 +104,7 @@ export const EmployeeCardHeader: React.FC<EmployeeCardHeaderProps> = React.memo(
           pausasAgotadas
             ? `Pausas activas completadas (${maxPausas} de ${maxPausas})`
             : reporteActivo
-              ? 'Iniciar Pausa Activa'
+              ? EVENTO.iniciarPausaActiva
               : 'No disponible'
         }>
           <span className="tour-evento-btn">
@@ -125,7 +126,7 @@ export const EmployeeCardHeader: React.FC<EmployeeCardHeaderProps> = React.memo(
             </IconButton>
           </span>
         </Tooltip>
-        <Chip label={estadoActual.replace(/_/g, ' ').toUpperCase()} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 'bold', fontSize: '0.65rem', height: 24 }} />
+        <Chip label={ETIQUETA_ESTADO[estadoActual]} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 'bold', fontSize: '0.65rem', height: 24 }} />
       </Box>
     </Box>
   );

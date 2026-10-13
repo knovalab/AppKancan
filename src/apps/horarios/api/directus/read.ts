@@ -267,7 +267,7 @@ export const fetchTimeRecords = async (
 /**
  * Reutiliza fetchTimeRecords(date, date, storeId) para evitar duplicar peticiones a com_time_records.
  */
-export async function getTimeRecords(storeId: number, date: string): Promise<any[]> {
+export async function getTimeRecords(storeId: number, date: string): Promise<TimeRecord[]> {
   return fetchTimeRecords(date, date, storeId);
 }
 
@@ -307,8 +307,9 @@ export async function getCargos(): Promise<Cargo[]> {
   }
 }
 
-const idRelacion = (val: any): number | null => {
-  const raw = val != null && typeof val === "object" ? val.id : val;
+/** Id de una relación M2O de Directus, venga como objeto `{ id }` o como valor plano. */
+export const idRelacion = (val: unknown): number | null => {
+  const raw = val != null && typeof val === "object" ? (val as { id?: unknown }).id : val;
   const num = Number(raw);
   return Number.isFinite(num) ? num : null;
 };

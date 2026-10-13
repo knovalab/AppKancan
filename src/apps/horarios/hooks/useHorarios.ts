@@ -17,12 +17,24 @@ import {
 	getStoreIdUsuarioActual,
 	getTimeRecords,
 	getTiposNovedad,
+	idRelacion,
+	type TimeRecord,
 } from '../api/directus/read';
+import {
+	crearRegistrosVacios,
+	ESTADO,
+	type EstadoAsistencia,
+	EVENTO,
+	type EventoTipo,
+	keyPorLogType,
+	type LogType,
+	MARCACIONES,
+} from '../domain/registro';
 import type {
 	EmpleadoAsistencia,
+	EventReportHoy,
 	Motivo,
 	NovedadMapeada,
-	RegistrosAsistencia,
 	TipoNovedad,
 } from '../interfaces/horarios.interface';
 import { getRealColombiaTime } from '../utils/timeSync';
@@ -75,13 +87,13 @@ export const useHorarios = (storeOverride?: number | null) => {
 		data: timeRecords = [],
 		isLoading: loadingTimeRecords,
 		error: errorTime,
-	} = useQuery<any[]>({
+	} = useQuery<TimeRecord[]>({
 		queryKey: ['timeRecords', STORE_ID, hoy],
 		queryFn: () => getTimeRecords(STORE_ID as number, hoy),
 		enabled: tieneTienda,
 	});
 
-	const { data: eventReportsToday = [] } = useQuery<any[]>({
+	const { data: eventReportsToday = [] } = useQuery<EventReportHoy[]>({
 		queryKey: ['eventReportsToday', STORE_ID, hoy],
 		queryFn: () => getStoreEventReportsToday(STORE_ID as number, hoy),
 		enabled: tieneTienda,
@@ -101,74 +113,33 @@ export const useHorarios = (storeOverride?: number | null) => {
 
 	const empleadosMapeados: EmpleadoAsistencia[] = empleadosDB.map((emp) => {
 		const records = timeRecords.filter(
-			(r) => Number(r.employee_id?.id || r.employee_id) === Number(emp.id),
+			(r) => idRelacion(r.employee_id) === Number(emp.id),
 		);
 
-		const registros: RegistrosAsistencia = {
-			inicioJornada: null,
-			inicioAlmuerzo: null,
-			finAlmuerzo: null,
-			finJornada: null,
-			observaciones: {},
-			ids: {},
-			horasOriginales: {},
-			horasEditadas: {},
-		};
-
-		records.forEach((r) => {
-			const type = r.log_type;
-			const timeVal = r.record_time;
-			const time = timeVal ? timeVal.substring(0, 5) : '';
-			const obs = r.observations || '';
-
-			let eventKey = '';
-			if (type === 'Comenzar Jornada') {
-				eventKey = 'inicioJornada';
-				registros.inicioJornada = time;
-				registros.observaciones.inicioJornada = obs;
-				registros.ids!.inicioJornada = r.id;
-			} else if (type === 'Iniciar Almuerzo') {
-				eventKey = 'inicioAlmuerzo';
-				registros.inicioAlmuerzo = time;
-				registros.observaciones.inicioAlmuerzo = obs;
-				registros.ids!.inicioAlmuerzo = r.id;
-			} else if (type === 'Finalizar Almuerzo') {
-				eventKey = 'finAlmuerzo';
-				registros.finAlmuerzo = time;
-				registros.observaciones.finAlmuerzo = obs;
-				registros.ids!.finAlmuerzo = r.id;
-			} else if (type === 'Terminar Jornada') {
-				eventKey = 'finJornada';
-				registros.finJornada = time;
-				registros.observaciones.finJornada = obs;
-				registros.ids!.finJornada = r.id;
-			}
-
-			if (eventKey) {
-				registros.horasOriginales![eventKey] = r.original_record_time
-					? r.original_record_time.substring(0, 5)
-					: null;
-				registros.horasEditadas![eventKey] = r.original_record_time
-					? r.record_time.substring(0, 5)
-					: null;
-			}
-		});
-
-		let estadoActual = 'entrada_pendiente';
-		if (registros.finJornada) {
-			estadoActual = 'jornada_finalizada';
-		} else if (registros.finAlmuerzo) {
-			estadoActual = 'regreso_almuerzo';
-		} else if (registros.inicioAlmuerzo) {
-			estadoActual = 'en_almuerzo';
-		} else if (registros.inicioJornada) {
-			estadoActual = 'jornada_iniciada';
+		const registros = crearRegistrosVacios();
+		for (const r of records) {
+			const key = keyPorLogType(r.log_type);
+			if (!key) continue;
+			registros[key] = r.record_time ? r.record_time.substring(0, 5) : '';
+			registros.observaciones[key] = r.observations || '';
+			registros.ids[key] = r.id;
+			registros.horasOriginales[key] = r.original_record_time
+				? r.original_record_time.substring(0, 5)
+				: null;
+			registros.horasEditadas[key] = r.original_record_time
+				? r.record_time.substring(0, 5)
+				: null;
 		}
+
+		// El estado es el que deja la última marcación registrada (en orden de jornada).
+		const ultima = [...MARCACIONES].reverse().find((m) => registros[m.key]);
+		const estadoActual: EstadoAsistencia =
+			ultima?.estadoResultante ?? ESTADO.entradaPendiente;
 
 		const pausasActivasCount = eventReportsToday.filter(
 			(r) =>
-				Number(r.employee_id?.id || r.employee_id) === Number(emp.id) &&
-				r.event_type === 'Terminar Pausa Activa',
+				idRelacion(r.employee_id) === Number(emp.id) &&
+				r.event_type === EVENTO.terminarPausaActiva,
 		).length;
 
 		return {
@@ -239,7 +210,7 @@ export const useHorarios = (storeOverride?: number | null) => {
 
 	const registrarEvento = async (
 		idEmpleado: string,
-		tipoEvento: string,
+		tipoEvento: LogType,
 		horaOverride?: string,
 		observacionOverride?: string,
 		reasonId?: number | null,
@@ -261,7 +232,7 @@ export const useHorarios = (storeOverride?: number | null) => {
 
 			const existingRecord = timeRecords.find(
 				(r) =>
-					Number(r.employee_id?.id || r.employee_id) === Number(idEmpleado) &&
+					idRelacion(r.employee_id) === Number(idEmpleado) &&
 					r.log_type === tipoEvento &&
 					r.record_date === recordDate,
 			);
@@ -278,7 +249,7 @@ export const useHorarios = (storeOverride?: number | null) => {
 				});
 				recordId = existingRecord.id;
 			} else {
-				const creado: any = await createTimeRecordMutation.mutateAsync({
+				const creado = await createTimeRecordMutation.mutateAsync({
 					employee_id: Number(idEmpleado),
 					store_id: STORE_ID as number,
 					log_type: tipoEvento,
@@ -303,7 +274,7 @@ export const useHorarios = (storeOverride?: number | null) => {
 
 	const guardarObservacion = async (
 		idEmpleado: string,
-		tipoEvento: string,
+		tipoEvento: LogType,
 		texto: string,
 	) => {
 		setError(null);
@@ -313,22 +284,8 @@ export const useHorarios = (storeOverride?: number | null) => {
 			);
 			if (!emp) return;
 
-			let eventKey = '';
-			switch (tipoEvento) {
-				case 'Comenzar Jornada':
-					eventKey = 'inicioJornada';
-					break;
-				case 'Iniciar Almuerzo':
-					eventKey = 'inicioAlmuerzo';
-					break;
-				case 'Finalizar Almuerzo':
-					eventKey = 'finAlmuerzo';
-					break;
-				case 'Terminar Jornada':
-					eventKey = 'finJornada';
-					break;
-			}
-			const recordId = emp.registros.ids?.[eventKey];
+			const key = keyPorLogType(tipoEvento);
+			const recordId = key ? emp.registros.ids[key] : undefined;
 
 			if (recordId) {
 				await updateTimeRecordMutation.mutateAsync({
@@ -408,7 +365,7 @@ export const useHorarios = (storeOverride?: number | null) => {
 
 	const reportarEvento = async (
 		idEmpleado: string,
-		eventType: string,
+		eventType: EventoTipo,
 		observaciones?: string,
 	) => {
 		try {

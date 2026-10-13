@@ -1,24 +1,45 @@
-export interface RegistrosAsistencia {
-  inicioJornada: string | null;
-  inicioAlmuerzo: string | null;
-  finAlmuerzo: string | null;
-  finJornada: string | null;
-  observaciones: Record<string, string>;
-  ids?: Record<string, number>;
-  horasOriginales?: Record<string, string | null>;
-  horasEditadas?: Record<string, string | null>;
-}
+import type {
+  EstadoAsistencia,
+  EventoTipo,
+  LogType,
+  MarcacionKey,
+} from '../domain/registro';
+
+/** Datos opcionales por marcación (solo existen si la marcación está registrada). */
+type PorMarcacion<T> = Partial<Record<MarcacionKey, T>>;
+
+/**
+ * Marcaciones del día de un empleado. Las 4 horas (`inicioJornada`, …) vienen del
+ * catálogo `MARCACIONES`; los contenedores siempre existen (pueden estar vacíos).
+ */
+export type RegistrosAsistencia = Record<MarcacionKey, string | null> & {
+  observaciones: PorMarcacion<string>;
+  ids: PorMarcacion<number>;
+  horasOriginales: PorMarcacion<string | null>;
+  horasEditadas: PorMarcacion<string | null>;
+};
 
 export interface EmpleadoAsistencia {
+  /** Id de `adm_employees` como string (la BD usa number; se convierte en la API). */
   id: string;
   documento: string;
   nombre: string;
   cargo?: string;
-  estadoActual: string;
+  estadoActual: EstadoAsistencia;
   registros: RegistrosAsistencia;
   pausasActivasCount?: number;
   storeId?: number | null;
 }
+
+/** Fila de `com_event_reports` tal como la leen las consultas del día. */
+export interface EventReportHoy {
+  id: number;
+  employee_id: { id: number | string } | number | string | null;
+  event_type: EventoTipo | string;
+  date: string;
+}
+
+export type { EstadoAsistencia, EventoTipo, LogType, MarcacionKey };
 
 export interface ObservacionEvento {
   evento: string;

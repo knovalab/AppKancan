@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { LOG_TYPE } from '../../domain/registro';
 
 export const AVATAR_COLORS = [
   '#0284c7', '#7c3aed', '#16a34a', '#ea580c', '#db2777',
@@ -86,10 +87,10 @@ export const calcularMinutosSemanales = (empId: any, startStr: string, endStr: s
 
         for (let j = 0; j < recs.length; j++) {
             const type = recs[j].log_type;
-            if (type === 'Comenzar Jornada') entrada = recs[j];
-            else if (type === 'Terminar Jornada') salida = recs[j];
-            else if (type === 'Iniciar Almuerzo') iniAlmuerzo = recs[j];
-            else if (type === 'Finalizar Almuerzo') finAlmuerzo = recs[j];
+            if (type === LOG_TYPE.inicioJornada) entrada = recs[j];
+            else if (type === LOG_TYPE.finJornada) salida = recs[j];
+            else if (type === LOG_TYPE.inicioAlmuerzo) iniAlmuerzo = recs[j];
+            else if (type === LOG_TYPE.finAlmuerzo) finAlmuerzo = recs[j];
         }
 
         if (entrada && salida) {

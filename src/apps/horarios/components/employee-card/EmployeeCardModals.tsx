@@ -10,12 +10,13 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import { EVENTOS_REPORTABLES, type EventoTipo, type LogType, MAX_CARACTERES_OBSERVACION } from '../../domain/registro';
 import { FestivoDay } from '../FestivoDay';
 
 interface EmployeeCardObsModalProps {
   open: boolean;
   onClose: () => void;
-  eventoActualObs: string;
+  eventoActualObs: LogType;
   nombre: string;
   maxLength: number;
   observacionTexto: string;
@@ -128,16 +129,12 @@ export const EmployeeCardNovedadModal: React.FC<EmployeeCardNovedadModalProps> =
   </Dialog>
 );
 
-export const EVENTOS_PAUSA_LIST = [
-  'Iniciar Pausa Activa',
-];
-
 interface EmployeeCardEventoModalProps {
   open: boolean;
   onClose: () => void;
   nombre: string;
-  eventoSeleccionado: string;
-  setEventoSeleccionado: (val: string) => void;
+  eventoSeleccionado: EventoTipo | '';
+  setEventoSeleccionado: (val: EventoTipo) => void;
   eventoError: string;
   setEventoError: (val: string) => void;
   eventoObservaciones: string;
@@ -162,9 +159,9 @@ export const EmployeeCardEventoModal: React.FC<EmployeeCardEventoModalProps> = (
           labelId="evento-select-label"
           value={eventoSeleccionado}
           label="Evento"
-          onChange={(e) => { setEventoSeleccionado(e.target.value); setEventoError(''); }}
+          onChange={(e) => { setEventoSeleccionado(e.target.value as EventoTipo); setEventoError(''); }}
         >
-          {EVENTOS_PAUSA_LIST.map((ev) => (
+          {EVENTOS_REPORTABLES.map((ev) => (
             <MenuItem key={ev} value={ev}>{ev}</MenuItem>
           ))}
         </Select>
@@ -176,9 +173,9 @@ export const EmployeeCardEventoModal: React.FC<EmployeeCardEventoModalProps> = (
         rows={3}
         fullWidth
         value={eventoObservaciones}
-        onChange={(e) => setEventoObservaciones(e.target.value.slice(0, 300))}
+        onChange={(e) => setEventoObservaciones(e.target.value.slice(0, MAX_CARACTERES_OBSERVACION))}
         placeholder="Detalle adicional (opcional)..."
-        helperText={`${eventoObservaciones.length}/300 caracteres`}
+        helperText={`${eventoObservaciones.length}/${MAX_CARACTERES_OBSERVACION} caracteres`}
         slotProps={{ formHelperText: { sx: { textAlign: 'right' } } }}
         sx={{ mt: 2.5 }}
       />

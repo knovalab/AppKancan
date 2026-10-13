@@ -10,6 +10,7 @@ import {
     Gavel as GavelIcon,
     Assignment as AssignmentIcon,
 } from '@mui/icons-material';
+import { LOG_TYPE } from '../domain/registro';
 
 export type EstadoDia = 'completo' | 'parcial' | 'sin_registro' | 'tienda_cerrada';
 
@@ -51,8 +52,8 @@ export const getNovedadIcon = (tipo: string): JSX.Element => {
 export const calcularMinutosDia = (records: any[], empId: string | number): number => {
     const r = records.filter(r => Number(r.employee_id?.id || r.employee_id) === Number(empId));
     if (r.length === 0) return 0;
-    const entrada = r.find(r => r.log_type === 'Comenzar Jornada');
-    const salida = r.find(r => r.log_type === 'Terminar Jornada');
+    const entrada = r.find(r => r.log_type === LOG_TYPE.inicioJornada);
+    const salida = r.find(r => r.log_type === LOG_TYPE.finJornada);
     if (!entrada || !salida) return 0;
     const h1 = entrada.record_time || entrada.time;
     const h2 = salida.record_time || salida.time;
@@ -65,8 +66,8 @@ export const calcularMinutosDia = (records: any[], empId: string | number): numb
     if (totalJornada < 0) totalJornada = 0;
 
     // Restar el tiempo de almuerzo si ambos registros existen
-    const iniAlmuerzo = r.find(r => r.log_type === 'Iniciar Almuerzo');
-    const finAlmuerzo = r.find(r => r.log_type === 'Finalizar Almuerzo');
+    const iniAlmuerzo = r.find(r => r.log_type === LOG_TYPE.inicioAlmuerzo);
+    const finAlmuerzo = r.find(r => r.log_type === LOG_TYPE.finAlmuerzo);
     if (iniAlmuerzo && finAlmuerzo) {
         const ha1 = iniAlmuerzo.record_time || iniAlmuerzo.time;
         const ha2 = finAlmuerzo.record_time || finAlmuerzo.time;
@@ -96,8 +97,8 @@ export const calcularHorasSemana = (empId: string | number, records: any[]): str
     let total = 0;
     for (const date in byDay) {
         const recs = byDay[date];
-        const entrada = recs.find(r => r.log_type === 'Comenzar Jornada');
-        const salida = recs.find(r => r.log_type === 'Terminar Jornada');
+        const entrada = recs.find(r => r.log_type === LOG_TYPE.inicioJornada);
+        const salida = recs.find(r => r.log_type === LOG_TYPE.finJornada);
         if (entrada && salida) {
             const h1 = entrada.record_time || entrada.time;
             const h2 = salida.record_time || salida.time;
@@ -109,8 +110,8 @@ export const calcularHorasSemana = (empId: string | number, records: any[]): str
                     if (totalDia < 0) totalDia = 0;
 
                     // Restar almuerzo diario
-                    const iniAlmuerzo = recs.find(r => r.log_type === 'Iniciar Almuerzo');
-                    const finAlmuerzo = recs.find(r => r.log_type === 'Finalizar Almuerzo');
+                    const iniAlmuerzo = recs.find(r => r.log_type === LOG_TYPE.inicioAlmuerzo);
+                    const finAlmuerzo = recs.find(r => r.log_type === LOG_TYPE.finAlmuerzo);
                     if (iniAlmuerzo && finAlmuerzo) {
                         const ha1 = iniAlmuerzo.record_time || iniAlmuerzo.time;
                         const ha2 = finAlmuerzo.record_time || finAlmuerzo.time;

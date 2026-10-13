@@ -9,24 +9,13 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
+import {
+  LOG_TYPE,
+  type MarcacionKey,
+  MIN_CARACTERES_NOTA_MOTIVO_OTRO,
+} from '../domain/registro';
 import { Motivo } from '../interfaces/horarios.interface';
-
-const NOTA_MIN_OTRO = 15;
-
-const formatTo12Hour = (timeStr: string | null): string => {
-  if (!timeStr) return '';
-  if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
-  const parts = timeStr.split(':');
-  if (parts.length < 2) return timeStr;
-  let hours = parseInt(parts[0], 10);
-  const minutes = parts[1];
-  if (isNaN(hours)) return timeStr;
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  const hoursStr = String(hours).padStart(2, '0');
-  return `${hoursStr}:${minutes} ${ampm}`;
-};
+import { formatTo12Hour } from '../utils/format';
 
 interface EditHourModalProps {
   open: boolean;
@@ -37,12 +26,7 @@ interface EditHourModalProps {
   initialObservation: string;
   reasons: Motivo[];
   initialReasonId: number | null;
-  registros?: {
-    inicioJornada?: string | null;
-    inicioAlmuerzo?: string | null;
-    finAlmuerzo?: string | null;
-    finJornada?: string | null;
-  };
+  registros?: Partial<Record<MarcacionKey, string | null>>;
   onConfirm: (timeFormatted: string, observation: string, reasonId: number | null) => Promise<void> | void;
   motivoRequerido?: boolean;
 }
@@ -120,18 +104,18 @@ export default function EditHourModal({
       return true;
     };
 
-    if (eventName === 'Comenzar Jornada') {
-      if (registros.inicioAlmuerzo) checkMax(registros.inicioAlmuerzo, 'Inicio Almuerzo');
-      else if (registros.finJornada) checkMax(registros.finJornada, 'Fin Jornada');
-    } else if (eventName === 'Iniciar Almuerzo') {
-      checkMin(registros.inicioJornada, 'Comenzar Jornada');
-      checkMax(registros.finAlmuerzo, 'Finalizar Almuerzo');
-    } else if (eventName === 'Finalizar Almuerzo') {
-      checkMin(registros.inicioAlmuerzo, 'Iniciar Almuerzo');
-      checkMax(registros.finJornada, 'Terminar Jornada');
-    } else if (eventName === 'Terminar Jornada') {
-      if (registros.finAlmuerzo) checkMin(registros.finAlmuerzo, 'Finalizar Almuerzo');
-      else checkMin(registros.inicioJornada, 'Comenzar Jornada');
+    if (eventName === LOG_TYPE.inicioJornada) {
+      if (registros.inicioAlmuerzo) checkMax(registros.inicioAlmuerzo, LOG_TYPE.inicioAlmuerzo);
+      else if (registros.finJornada) checkMax(registros.finJornada, LOG_TYPE.finJornada);
+    } else if (eventName === LOG_TYPE.inicioAlmuerzo) {
+      checkMin(registros.inicioJornada, LOG_TYPE.inicioJornada);
+      checkMax(registros.finAlmuerzo, LOG_TYPE.finAlmuerzo);
+    } else if (eventName === LOG_TYPE.finAlmuerzo) {
+      checkMin(registros.inicioAlmuerzo, LOG_TYPE.inicioAlmuerzo);
+      checkMax(registros.finJornada, LOG_TYPE.finJornada);
+    } else if (eventName === LOG_TYPE.finJornada) {
+      if (registros.finAlmuerzo) checkMin(registros.finAlmuerzo, LOG_TYPE.finAlmuerzo);
+      else checkMin(registros.inicioJornada, LOG_TYPE.inicioJornada);
     }
   }, [horaSeleccionada, open, eventName, registros]);
 
@@ -139,7 +123,7 @@ export default function EditHourModal({
   const esOtro = (motivoSeleccionado?.name || '').trim().toLowerCase() === 'otro';
 
   const handleConfirmarHora = async () => {
-    if (esOtro && horaObservacion.trim().length < NOTA_MIN_OTRO) return;
+    if (esOtro && horaObservacion.trim().length < MIN_CARACTERES_NOTA_MOTIVO_OTRO) return;
     const horaFormateada = horaSeleccionada?.format('hh:mm A') || '';
     // 👈 Si reasonId es 0, enviamos null (sin motivo)
     await onConfirm(horaFormateada, horaObservacion, reasonId === 0 ? null : reasonId);
@@ -147,7 +131,7 @@ export default function EditHourModal({
   };
 
   const horaCambiada = horaSeleccionada && horaInicial && !horaSeleccionada.isSame(horaInicial, 'minute');
-  const notaValida = !esOtro || horaObservacion.trim().length >= NOTA_MIN_OTRO;
+  const notaValida = !esOtro || horaObservacion.trim().length >= MIN_CARACTERES_NOTA_MOTIVO_OTRO;
   const puedeGuardar = horaCambiada && notaValida && !errorValidacion && (motivoRequerido ? reasonId !== 0 : true);
 
   return (
@@ -194,7 +178,7 @@ export default function EditHourModal({
 
           {esOtro && (
             <Alert severity="warning" icon={<InfoOutlinedIcon fontSize="inherit" />} sx={{ borderRadius: 2, bgcolor: '#fff8e1', color: '#7a5b00', border: '1px solid #ffe49c', '& .MuiAlert-icon': { color: '#c08a00' }, fontSize: '0.82rem', alignItems: 'center' }}>
-              Al seleccionar <b>"Otro"</b> debes agregar una nota (mínimo {NOTA_MIN_OTRO} caracteres) para especificar el motivo.
+              Al seleccionar <b>"Otro"</b> debes agregar una nota (mínimo {MIN_CARACTERES_NOTA_MOTIVO_OTRO} caracteres) para especificar el motivo.
             </Alert>
           )}
 
@@ -205,8 +189,8 @@ export default function EditHourModal({
             fullWidth
             value={horaObservacion}
             onChange={(e) => setHoraObservacion(e.target.value)}
-            placeholder={esOtro ? `Describe qué pasó (mínimo ${NOTA_MIN_OTRO} caracteres)...` : 'Escriba una nota (opcional)...'}
-            helperText={esOtro ? `${horaObservacion.trim().length}/${NOTA_MIN_OTRO} Caracteres` : 'Opcional'}
+            placeholder={esOtro ? `Describe qué pasó (mínimo ${MIN_CARACTERES_NOTA_MOTIVO_OTRO} caracteres)...` : 'Escriba una nota (opcional)...'}
+            helperText={esOtro ? `${horaObservacion.trim().length}/${MIN_CARACTERES_NOTA_MOTIVO_OTRO} Caracteres` : 'Opcional'}
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
           />
         </Box>

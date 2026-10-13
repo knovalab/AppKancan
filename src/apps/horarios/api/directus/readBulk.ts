@@ -1,6 +1,7 @@
 import directus from '@/services/directus/directus';
 import { readItems } from '@directus/sdk';
 import { withAutoRefresh } from '@/auth/services/directusInterceptor';
+import { crearRegistrosVacios, ESTADO } from '../../domain/registro';
 import { EmpleadoAsistencia } from '../../interfaces/horarios.interface';
 
 export interface StoreClosedDay {
@@ -37,15 +38,9 @@ export const getEmpleadosBulk = async (storeIds?: number[]): Promise<EmpleadoAsi
         documento: e.document_number ? String(e.document_number) : String(e.id),
         nombre: parts.join(' ').trim() || 'Empleado Sin Nombre',
         cargo: typeof e.position_id === 'object' ? e.position_id?.name : 'Sin cargo',
-        estadoActual: 'entrada_pendiente',
+        estadoActual: ESTADO.entradaPendiente,
         storeId: e.store_id ? Number(typeof e.store_id === 'object' ? e.store_id.id : e.store_id) : null,
-        registros: {
-          inicioJornada: null,
-          inicioAlmuerzo: null,
-          finAlmuerzo: null,
-          finJornada: null,
-          observaciones: {},
-        },
+        registros: crearRegistrosVacios(),
       };
     });
   } catch (err) {

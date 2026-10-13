@@ -1,255 +1,275 @@
-# App Horarios — Revisión de `useHorarios` y puntos a mejorar
+# Registro de Horarios — Análisis para añadir funcionalidades
 
-> Alcance: `src/apps/horarios/hooks/useHorarios.ts`, sus APIs (`api/directus/*`), sus consumidores
-> (`RegistrosPage`, `ModalDetalleTienda`, `DetallePlanillaPage`, `EmployeeCard`) y el resto de la app
-> según `repomix-output.xml`.
->
-> Nota: el diff actual de `useHorarios.ts` en la rama `setup` es solo formateo de Biome (tabs + orden de imports); la lógica no cambió.
+> **Reconstruido el 2026-10-13** sobre `setup` @ `ce3316d`.
+> **Objetivo:** dejar el **registro de horarios** (`/horarios/registros`) listo para crecer con nuevas funcionalidades.
+> **Fuera de alcance por ahora:** rendimiento, bugs de otras secciones (Monitoreo, Reportes, Historial, Admin), la duplicación de la lógica de acceso, las normas del header y los avisos generales de Biome. Están en la §8 para no perderlos.
 
 ---
 
-## 1. ¿Qué hace `useHorarios`?
+## 0. Resumen
 
-Es el hook "todo en uno" de la pantalla de registro de asistencia de una tienda para **el día de hoy** (hora de Colombia sincronizada con el servidor vía `getRealColombiaTime`).
+La navegación y el layout ya están resueltos (`23d35de`), igual que la aceptación de normas por empleado (`ce3316d`). Lo que **frena las funcionalidades nuevas** es cómo está modelado el registro:
 
-### Lecturas (6 queries de React Query)
+1. **Las 4 marcaciones están escritas a mano** como strings (`'Comenzar Jornada'`…) en **22 archivos** y en **13 `switch`/`if`** solo dentro del flujo de registro. Añadir o cambiar una marcación significa tocarlos todos.
+2. **Las reglas del flujo están repartidas en 3 sitios** que tienen que coincidir: qué estado tiene el empleado (`useHorarios`), qué botón está activo (`EmployeeCard`) y en qué orden se pueden editar las horas (`EditHourModal`).
+3. **El modelo de datos es "1 marcación por tipo y día"**: si ya existe, se sobrescribe. Eso impide turnos partidos, varias entradas o varias pausas registradas como marcación.
+4. **`EmployeeCard` concentra todo** (465 líneas, 23 `useState`, 6 modales). Cada acción nueva va ahí.
+5. **La demo reimplementa la lógica** en `RegistrosPage`: cada funcionalidad nueva hay que programarla dos veces.
 
-| Query key | Fuente | Para qué |
-|---|---|---|
-| `['horariosStoreId']` | `readMe` → `store_id` | Tienda del usuario logueado (si no llega `storeOverride`) |
-| `['empleados', storeId]` | `adm_employees` (activos) | Empleados de la tienda |
-| `['tiposNovedad']` | `com_newness` | Catálogo de tipos de novedad |
-| `['reasons']` | `com_reasons` | Catálogo de motivos de edición de hora |
-| `['novedades', storeId]` | `com_newness_reports` | **Todo el histórico** de novedades de la tienda |
-| `['timeRecords', storeId, hoy]` | `com_time_records` | Marcaciones de hoy |
-| `['eventReportsToday', storeId, hoy]` | `com_event_reports` | Eventos de hoy (pausas activas) |
-
-### Derivaciones (en cada render)
-
-1. **`idsConNovedadHoy`**: empleados con novedad registrada hoy.
-2. **`empleadosMapeados`**: por cada empleado, busca sus marcaciones y arma `registros` (`inicioJornada`, `inicioAlmuerzo`, `finAlmuerzo`, `finJornada` + observaciones, ids, horas originales/editadas), calcula `estadoActual` (máquina de estados implícita) y cuenta `pausasActivasCount`.
-3. **`empleados`**: los mapeados menos los que tienen novedad hoy.
-4. **`novedadesMapped`**: normaliza las novedades para la pestaña de Novedades.
-
-### Acciones expuestas
-
-| Acción | Qué hace |
-|---|---|
-| `registrarEvento` | Crea la marcación o, si ya existe para ese tipo/día, la actualiza guardando `original_record_time`. Opcionalmente guarda motivo (`upsertRecordReason`). |
-| `guardarObservacion` | Actualiza la observación de una marcación existente. |
-| `agregarNovedad` | Valida rango de fechas y crea una fila de novedad **por día** en lote. |
-| `reportarEvento` | Crea un `com_event_reports` (pausas activas, etc.). |
-| `resetHorarios` | Invalida y refetchea **toda** la caché de React Query. |
-| `eliminarEmpleado` | No hace nada (`() => {}`). |
-
-### Consumidores
-
-- `RegistrosPage` → usa todo.
-- `ModalDetalleTienda` → solo `empleados`, `loading`, `reasons`.
-- `DetallePlanillaPage` → **solo `reasons`**, pero dispara las 7 queries.
+La propuesta (§5) es **centralizar el dominio del registro** en un catálogo de marcaciones y unas pocas funciones puras. Con eso, añadir algo pasa a ser "declarar y renderizar".
 
 ---
 
-## 2. Bugs y riesgos funcionales (prioridad alta)
+## 1. Cómo funciona hoy el registro
 
-### 2.1 Registros que caen en la tienda de pruebas (90) silenciosamente
-`create.ts` hace `store_id: Number(data.store_id || 90)` en `createTimeRecord`, `createNovedad(es)` y `createEventReport`. El hook pasa `STORE_ID as number`, que puede ser `null` si `readMe` falla o aún no resolvió. Resultado: la marcación se guarda en la tienda "Oficina" sin error visible.
+### 1.1 Flujo
 
-**Propuesta:** quitar el fallback a 90 en `create.ts` (que el `store_id` sea obligatorio) y en el hook lanzar/abortar si `STORE_ID == null`. Si se necesita la constante, usar `STORE_PRUEBAS` de `read.ts`, no el literal.
-
-### 2.2 `registrarEvento` y `guardarObservacion` se tragan los errores
-Ambos hacen `catch { console.error }` y resuelven `void`. Quien llama (`EditHourModal.onConfirm`, `handleConfirmarSinAlmuerzo`) no puede saber si falló: el modal se cierra y en "sin almuerzo" se ejecuta el segundo evento aunque el primero haya fallado.
-
-**Propuesta:** devolver `Promise<boolean>` (como ya hacen `agregarNovedad` y `reportarEvento`) o relanzar el error. Unificar el contrato de todas las acciones.
-
-### 2.3 Errores de queries que nunca llegan
-Las funciones de `read.ts` / `reports.ts` / `readBulk.ts` hacen `catch → return []`. React Query nunca ve un error, así que `errorE/errorT/errorN/errorTime` casi siempre son `null`, y si falla la red el usuario ve "0 empleados" en vez de un error. Además, cuando sí hay error se muestra el texto engañoso `'Sincronizando...'`.
-
-**Propuesta:** en las funciones usadas como `queryFn`, **relanzar** el error (dejar que React Query maneje reintentos y estado `isError`). Exponer `isError` y un mensaje real.
-
-### 2.4 Dependencia implícita de `customParseFormat`
-`dayjs(horaOverride, 'hh:mm A')` necesita el plugin `customParseFormat`. Ningún archivo de la app lo extiende; funciona solo porque `@mui/x-date-pickers/AdapterDayjs` lo registra globalmente al importarse. Si cambia el orden de carga o se quita el date picker, se parsea como `Invalid Date`.
-
-Además, ese `dayjs(...)` usa la **fecha del dispositivo**, no `getRealColombiaTime()`, para `record_date`.
-
-**Propuesta:** `dayjs.extend(customParseFormat)` explícito (p. ej. en `utils/timeSync.ts`) y construir la fecha a partir de `hoy`: `dayjs(`${hoy} ${hora}`, 'YYYY-MM-DD hh:mm A')`.
-
-### 2.5 Duplicados por doble clic / carrera
-La lógica "si existe actualizo, si no creo" se basa en la caché local `timeRecords`. Un doble clic antes de que se invalide la query crea dos marcaciones del mismo tipo.
-
-**Propuesta:** deshabilitar el botón mientras `mutation.isPending`, y a nivel BD un índice único `(employee_id, record_date, log_type)` en `com_time_records`.
-
-### 2.6 `resetHorarios` invalida la caché de **todas** las apps
-`queryClient.invalidateQueries()` sin key afecta a vacantes, promociones, etc. Limitar a las keys de horarios (ver §4.3).
-
-### 2.7 `agregarNovedad` sin límite de rango
-Un rango de un año crea 365 filas en una sola petición. Validar un máximo (p. ej. 31/60 días) y avisar si ya existe novedad ese día para el empleado.
-
----
-
-## 3. Tipos
-
-Hay **~267 usos de `any`** en la app (15 en `useHorarios.ts`, 21 en `read.ts`, 17 en `create.ts`). Puntos concretos:
-
-### 3.1 Tipos de dominio como uniones, no `string`
-```ts
-// interfaces/horarios.interface.ts
-export const LOG_TYPES = {
-  inicioJornada: 'Comenzar Jornada',
-  inicioAlmuerzo: 'Iniciar Almuerzo',
-  finAlmuerzo: 'Finalizar Almuerzo',
-  finJornada: 'Terminar Jornada',
-} as const;
-
-export type EventKey = keyof typeof LOG_TYPES;              // 'inicioJornada' | ...
-export type LogType = (typeof LOG_TYPES)[EventKey];        // 'Comenzar Jornada' | ...
-
-export const EVENT_KEY_BY_LOG_TYPE = Object.fromEntries(
-  Object.entries(LOG_TYPES).map(([k, v]) => [v, k]),
-) as Record<LogType, EventKey>;
-
-export type EstadoAsistencia =
-  | 'entrada_pendiente'
-  | 'jornada_iniciada'
-  | 'en_almuerzo'
-  | 'regreso_almuerzo'
-  | 'jornada_finalizada';
 ```
-Los strings `'Comenzar Jornada'` etc. están repetidos en **más de 20 archivos** (`EmployeeCard`, `EmployeeCardUtils`, `RegistrosPage` (demo), `ModalDetalleTienda`, `DetallePlanillaPage`, `ReporteUtils`, `useTiendasResumen`, exportadores…). Un typo hoy no lo detecta el compilador.
+RegistrosPage (/horarios/registros?tienda=…)
+   │
+   ├─ useHorarios(storeId)                       ← el único hook de datos
+   │     ├─ lee: empleados, marcaciones de hoy, eventos de hoy, novedades, catálogos
+   │     ├─ deriva por empleado: registros{4 horas}, estadoActual, pausasActivasCount
+   │     ├─ oculta los empleados con novedad hoy
+   │     └─ acciones: registrarEvento, guardarObservacion, agregarNovedad, reportarEvento
+   │
+   ├─ useAceptacionNormasEmpleados(ids)          ← normas (ya resuelto)
+   │
+   └─ EmployeeCard × N   (+ 1 tarjeta demo, id 99999, con handlers propios)
+         ├─ Header: nombre, novedad, evento (pausa activa), aceptar normas
+         ├─ TimeSlots: 4 botones en línea + editar hora + observación + "sin almuerzo"
+         └─ Modales: novedad, evento, observación, editar hora, sin almuerzo, normas
+```
 
-### 3.2 `RegistrosAsistencia`
+### 1.2 Datos en Directus
+
+| Colección | Qué guarda | Clave lógica |
+|---|---|---|
+| `com_time_records` | Una marcación: `log_type`, `record_date`, `record_time`, `observations`, `original_record_time` | **(empleado, día, `log_type`)**: si ya existe se actualiza |
+| `com_records_reasons` | Motivo de una edición de hora | 1 por marcación (upsert) |
+| `com_event_reports` | Eventos sueltos: `Iniciar Pausa Activa` y `Terminar Pausa Activa` | Sin unicidad |
+| `com_newness_reports` | Novedades (una fila por día del rango) | Sin unicidad |
+| `com_reasons` / `com_newness` | Catálogos de motivos y tipos de novedad | — |
+
+### 1.3 La máquina de estados (implícita)
+
+```
+entrada_pendiente ──Comenzar Jornada──► jornada_iniciada ──Iniciar Almuerzo──► en_almuerzo
+                                              │                                    │
+                                              │ "sin almuerzo" = registra           │ Finalizar Almuerzo
+                                              │  Iniciar + Finalizar seguidos       ▼
+                                              └──────────────────────────────► regreso_almuerzo
+                                                                                    │ Terminar Jornada
+                                                                                    ▼
+                                                                          jornada_finalizada
+```
+
+- **El estado no se guarda**: se **deduce** cada vez a partir de cuál es la última de las 4 horas que existe (`useHorarios.ts:157-166`).
+- **Es lineal**: no hay forma de terminar la jornada sin pasar por el almuerzo. "Sin almuerzo" lo resuelve registrando dos marcaciones seguidas con la misma hora.
+- **Las pausas activas van aparte**, en `com_event_reports`, con un temporizador en `localStorage` del dispositivo. No forman parte del estado.
+
+---
+
+## 2. Dónde vive cada regla del registro
+
+Este es el mapa que hay que recorrer hoy para cambiar cualquier cosa del flujo:
+
+| Concepto | Dónde está definido | Copias |
+|---|---|---|
+| Nombres de las marcaciones (`'Comenzar Jornada'`…) | Strings literales | **22 archivos** (9 del registro, 13 de reportes, historial y monitoreo) |
+| `log_type` ↔ campo (`inicioJornada`…) | `useHorarios.ts:124-145` (if/else), `useHorarios.ts:307-320` (switch), `EmployeeCardUtils.tsx` (`getObservacion`, `getHoraEvento`, `getEditadoStatus`, `getRecordIdEvento`: 4 switch), `RegistrosPage.tsx` (2 en la demo) | **8** |
+| Cálculo del estado | `useHorarios.ts:157-166` | 1 (+ la demo lo asigna a mano) |
+| Qué botón está activo | `EmployeeCard.tsx:153-174` (array `botones`) | 1 |
+| Orden válido al editar una hora | `EditHourModal.tsx:123-134` | 1 |
+| Icono de cada marcación | `EmployeeCardUtils.tsx` `getIcon` (switch) | 1 |
+| "Sin almuerzo" | `EmployeeCard.handleConfirmarSinAlmuerzo` + `almuerzoOmitidoLocal` (estado local) + `TimeSlots` (`esCasillaAlmuerzo`) | 3 |
+| Pausas: máximo, duración, tipos | `MAX_PAUSAS = 2` (`EmployeeCard`), `5 * 60 * 1000` (`EmployeeCardUtils`), `EVENTOS_PAUSA` (`EmployeeCardUtils` y `EmployeeCardModals`) | 3 |
+| Crear o actualizar una marcación | `useHorarios.registrarEvento` (busca en la caché por `log_type` + fecha) | 1 |
+| Demo | `RegistrosPage`: `registrarEventoDemo`, `guardarObservacionDemo`, `reportarEventoDemo`; `id === '99999'` en 5 archivos | — |
+
+**Ejemplo práctico:** añadir una marcación "Salida temporal / Regreso" obliga a tocar hoy al menos `useHorarios` (×2), `RegistrosAsistencia`, `EmployeeCard` (botones y estados), `EmployeeCardUtils` (×5), `EditHourModal`, la demo de `RegistrosPage` (×2) y el tour. Y después, los 13 archivos de historial y reportes que leen `log_type`.
+
+---
+
+## 3. Fricciones para añadir funcionalidades
+
+Ordenadas por cuánto bloquean.
+
+### F1. Marcaciones sin catálogo 🔴
+No hay una definición única de qué marcaciones existen. Los strings son `string`, así que TypeScript no detecta un error de escritura, y cada mapeo `log_type` → campo es un `switch` distinto.
+**Bloquea:** añadir, renombrar o quitar marcaciones; configurarlas por tienda o por cargo.
+
+### F2. Reglas del flujo repartidas y lineales 🔴
+El estado se deduce en `useHorarios`, los botones activos se deciden en `EmployeeCard` y el orden de edición se valida en `EditHourModal`. Son tres versiones de la misma regla, que hay que mantener sincronizadas a mano. Además, el flujo solo admite una secuencia fija.
+**Bloquea:** jornadas sin almuerzo "de verdad", turnos partidos, marcaciones opcionales y reglas distintas por tipo de turno.
+
+### F3. Una marcación por tipo y día 🔴
+`registrarEvento` busca si ya existe `(empleado, log_type, día)` y, si existe, **la actualiza** (guarda la hora anterior en `original_record_time`). No se distingue "registrar" de "editar", y una misma marcación no puede repetirse en el día.
+**Bloquea:** varias entradas y salidas, turnos nocturnos que cruzan medianoche (la clave es el día) y registrar pausas como marcaciones.
+> Cambiarlo afecta al modelo de datos y a todos los reportes. Hay que **decidirlo antes** de diseñar funcionalidades que lo necesiten (§7).
+
+### F4. Contrato de acciones inconsistente 🟠
+| Acción | Firma | Devuelve | Si falla |
+|---|---|---|---|
+| `registrarEvento` | 5 posicionales `(id, tipo, hora?, obs?, reasonId?)` | `void` | `console.error`: **quien la llama no se entera** |
+| `guardarObservacion` | `(id, tipo, texto)` | `void` | Igual |
+| `agregarNovedad` | Objeto con 2 campos que no se usan | `boolean` | `setError` + snackbar |
+| `reportarEvento` | `(id, tipo, obs?)` | `boolean` | Snackbar |
+
+Cualquier funcionalidad que **encadene acciones** hereda este problema. "Sin almuerzo" ya lo sufre: si falla el primer registro, se ejecuta igual el segundo y se marca `almuerzoOmitidoLocal`.
+
+### F5. `EmployeeCard` como cajón de sastre 🟠
+465 líneas, **23 `useState`** y 6 modales con su propio estado, validación y guardado. También contiene lógica de negocio: qué botón está activo, pausas, normas y el modal tras "Comenzar Jornada".
+**Bloquea:** añadir una acción a la tarjeta sin que crezca todavía más; probar la lógica sin montar el componente.
+
+### F6. Demo reimplementada 🟠
+La tarjeta demo no usa la lógica real: `RegistrosPage` tiene su propia copia del mapeo y de los cambios de estado, y `id === '99999'` se comprueba en 5 archivos (`EmployeeCard`, `EmployeeCardUtils`, `EmployeeCardTimeSlots`, `RegistrosPage` y el hook de normas).
+**Bloquea:** cada funcionalidad nueva necesita su versión demo y su paso en el tour, o la demo deja de reflejar la realidad.
+
+### F7. Estado que solo vive en el navegador 🟡
+- `almuerzoOmitidoLocal`: se pierde al recargar. En BD queda como un almuerzo de 0 minutos, que en los reportes no se distingue de uno real.
+- Temporizador de la pausa activa en `localStorage`: es **por dispositivo**. Si el empleado cambia de equipo, la pausa no se ve.
+**Bloquea:** cualquier funcionalidad que tenga que saber "qué está haciendo el empleado ahora" de forma fiable.
+
+### F8. Reglas de negocio fijas en el código 🟡
+`MAX_PAUSAS = 2`, duración de la pausa de 5 min, `EVENTOS_PAUSA = ['Iniciar Pausa Activa']` (definido 2 veces), máximo de 300 caracteres en observaciones, motivo obligatorio al editar hora (`motivoRequerido = true` por defecto).
+**Bloquea:** parametrizar por tienda o cargo sin desplegar de nuevo.
+
+### F9. Tipos del dominio débiles 🟡
+`estadoActual: string`, `observaciones`/`ids`/`horas*: Record<string, …>` (opcionales, por eso aparece `registros.ids!`), `EmpleadoAsistencia.id: string` frente a `number` en BD, y `timeRecords: any[]`.
+**Bloquea:** que el compilador avise cuando una funcionalidad nueva olvida un caso.
+
+---
+
+## 4. Bugs dentro del contexto del registro
+
+Solo los que afectan a registrar marcaciones y que conviene corregir **antes** o **junto con** las funcionalidades nuevas, porque estas los heredarían:
+
+| # | Bug | Dónde | Por qué importa para lo nuevo |
+|---|---|---|---|
+| B1 | Las acciones no informan de los errores (F4) | `useHorarios.registrarEvento`, `guardarObservacion` | Cualquier flujo encadenado (como "sin almuerzo") sigue adelante aunque falle |
+| B2 | Si `store_id` llega vacío, la marcación se guarda en la **tienda 90** | `create.ts:105` (`data.store_id \|\| 90`); `useHorarios` pasa `STORE_ID as number` | Las acciones nuevas que creen registros heredan el fallback |
+| B3 | Al editar una hora, la fecha sale del **dispositivo** y no del servidor, y `customParseFormat` funciona por casualidad | `useHorarios.ts:249-252` | Las funcionalidades con hora manual tendrían el mismo problema |
+| B4 | La decisión crear/actualizar depende de la caché local | `useHorarios.ts:256-261` | Con dos dispositivos, o con la caché sin refrescar, se crea un duplicado |
+| B5 | "Sin almuerzo" solo se guarda en estado local | `EmployeeCard.almuerzoOmitidoLocal` | Al recargar desaparece la marca visual |
+
+---
+
+## 5. Propuesta: el dominio del registro en un solo sitio
+
+### 5.1 Estructura objetivo (solo el registro)
+
+```
+src/apps/horarios/
+├── domain/registro/                      ← NUEVO: sin React y sin Directus; puro y testeable
+│   ├── marcaciones.ts     catálogo: key, logType, etiqueta, icono, orden, "requiere"
+│   ├── estado.ts          calcularEstado(), accionesDisponibles(), validarHoraEditada()
+│   ├── mapeo.ts           timeRecords → RegistrosAsistencia (1 lookup, sin switch)
+│   └── reglas.ts          MAX_PAUSAS, DURACION_PAUSA, MAX_OBSERVACION, …
+├── hooks/registro/
+│   ├── useAsistenciaHoy.ts       empleados + marcaciones + eventos → EmpleadoAsistencia[]
+│   └── useAccionesRegistro.ts    registrar / editarHora / observar / reportar → Resultado
+├── components/employee-card/
+│   ├── EmployeeCard.tsx          solo compone
+│   ├── TimeSlots.tsx             recorre el catálogo; ya no hay botones fijos
+│   └── modales/…                 cada modal con su propio estado
+└── components/tour/demo/
+    └── useDemoRegistro.ts        implementa useAccionesRegistro en memoria con el MISMO dominio
+```
+
+`useHorarios` se mantiene como **fachada** para `NovedadesSeccion`, `ModalDetalleTienda` y `DetallePlanillaPage`, así nada fuera del registro se rompe.
+
+### 5.2 El catálogo de marcaciones (pieza central)
+
 ```ts
-export interface RegistrosAsistencia {
-  horas: Record<EventKey, string | null>;
-  observaciones: Partial<Record<EventKey, string>>;
-  ids: Partial<Record<EventKey, number>>;            // hoy es opcional → obliga a usar `!`
-  horasOriginales: Partial<Record<EventKey, string | null>>;
-  horasEditadas: Partial<Record<EventKey, string | null>>;
+// domain/registro/marcaciones.ts
+export const MARCACIONES = [
+	{ key: 'inicioJornada',  logType: 'Comenzar Jornada',   etiqueta: 'Comenzar Jornada',   icono: 'play',  requiere: [] },
+	{ key: 'inicioAlmuerzo', logType: 'Iniciar Almuerzo',   etiqueta: 'Iniciar Almuerzo',   icono: 'food',  requiere: ['inicioJornada'],  grupo: 'almuerzo' },
+	{ key: 'finAlmuerzo',    logType: 'Finalizar Almuerzo', etiqueta: 'Finalizar Almuerzo', icono: 'dining',requiere: ['inicioAlmuerzo'], grupo: 'almuerzo' },
+	{ key: 'finJornada',     logType: 'Terminar Jornada',   etiqueta: 'Terminar Jornada',   icono: 'exit',  requiere: ['inicioJornada'] },
+] as const;
+
+export type MarcacionKey = (typeof MARCACIONES)[number]['key'];
+export type LogType      = (typeof MARCACIONES)[number]['logType'];
+export const POR_LOG_TYPE: Record<LogType, Marcacion> = …;
+```
+
+Con esto:
+- Los 8 `switch` de mapeo pasan a ser `POR_LOG_TYPE[r.log_type].key`.
+- `TimeSlots` recorre `MARCACIONES`; ya no hay array `botones` fijo.
+- `accionesDisponibles(registros)` sale de `requiere`, y `EditHourModal` usa el mismo orden para validar.
+- Un typo en un `logType` pasa a ser un **error de compilación**.
+- Historial y reportes pueden importar `LogType`/`MARCACIONES` poco a poco, sin obligación inmediata.
+
+### 5.3 Contrato único de acciones
+
+```ts
+type Resultado = { ok: true; id?: number } | { ok: false; error: string };
+
+interface AccionesRegistro {
+	registrar(input: { empleadoId: number; marcacion: MarcacionKey; observacion?: string }): Promise<Resultado>;
+	editarHora(input: { empleadoId: number; marcacion: MarcacionKey; hora: string; motivoId: number; observacion?: string }): Promise<Resultado>;
+	observar(input: { empleadoId: number; marcacion: MarcacionKey; texto: string }): Promise<Resultado>;
+	reportarEvento(input: { empleadoId: number; tipo: EventoTipo; observacion?: string }): Promise<Resultado>;
 }
 ```
-- Hacer `ids`, `horasOriginales`, `horasEditadas` **no opcionales** elimina los `registros.ids!` del hook.
-- Usar `Record<EventKey, …>` en lugar de `Record<string, …>`.
-- (Opcional) agrupar las 4 horas en `horas` para poder iterar en vez de repetir if/else.
+- Separa **registrar** (crea) de **editar** (actualiza con motivo), que hoy van mezclados en `registrarEvento` (F3 y B4).
+- Si falta la tienda, devuelve error y no usa la 90 (B2). La hora manual se combina con la fecha del servidor (B3).
+- La demo implementa la misma interfaz en memoria (F6). `EmployeeCard` no sabe si es demo o no.
 
-### 3.3 `EmpleadoAsistencia`
-- `estadoActual: string` → `EstadoAsistencia`.
-- `id: string` mientras en BD es `number` → provoca `Number(...)`/`String(...)` por todas partes (`Number(r.employee_id?.id || r.employee_id) === Number(emp.id)`). Elegir uno (recomendado `number`) y convertir solo en la frontera (API).
-- `getEmpleadosBulk` hace `documento: … : String(e.id)` (usa el id como documento si no hay) — mejor `null` y que la UI decida.
+### 5.4 Cómo quedaría "añadir una funcionalidad"
 
-### 3.4 Respuestas de Directus tipadas
-- `TimeRecord` ya existe en `read.ts`, pero `getTimeRecords` devuelve `Promise<any[]>` → usar `Promise<TimeRecord[]>`. Mover `TimeRecord` a `interfaces/`.
-- Crear `NovedadReportDB` y `EventReportDB` para `getNovedades` / `getStoreEventReportsToday` (hoy `any[]`).
-- Ideal: definir el **schema de Directus** (`createDirectus<Schema>()`) para que `readItems('com_time_records', …)` infiera tipos y elimine los `fields: [...] as any`.
-
-### 3.5 Relaciones `id | objeto`
-El patrón `r.employee_id?.id || r.employee_id` se repite y es frágil (`0` es falsy). Ya existe `idRelacion()` en `read.ts` (no exportado). Exportarlo a `utils/` y usarlo siempre:
-```ts
-export const relId = (v: unknown): number | null => { … };
-```
-
-### 3.6 `TipoNovedad` con `name` **y** `nombre`
-`getTiposNovedad` duplica el mismo valor en dos campos, y el hook compara contra ambos. Dejar solo uno (`name`, que es el de BD) y borrar los fallbacks `t.nombre || t.name`.
-
-### 3.7 Mutaciones y errores
-- `onError: (err: any)` → `(err: Error)`; tipar `useMutation<TData, Error, TVariables>`.
-- Tipar el parámetro de `agregarNovedad` con una interfaz (`NuevaNovedadInput`) y eliminar campos que no se usan (`empleadoNombre`, `fechaRegistro`).
-- En `create.ts`, `catch (error: any)` → `unknown` + helper `getDirectusErrorMessage(error, fallback)` (el patrón `error?.errors?.[0]?.message || '...'` se repite ~12 veces).
+| Funcionalidad de ejemplo | Hoy | Con la propuesta |
+|---|---|---|
+| Nueva marcación lineal (p. ej. "Salida temporal / Regreso") | ~10 archivos del registro + demo + reportes | 1 entrada en `MARCACIONES` (+ icono) y su `requiere`. La demo funciona sola. Reportes, cuando se migren |
+| Jornada sin almuerzo de verdad | Truco de 2 marcaciones + estado local | `grupo: 'almuerzo'` opcional en `estado.ts`, sin marcaciones falsas |
+| Límite de pausas por tienda | Cambiar la constante en `EmployeeCard` | `reglas.ts` (o leerlo de Directus en el futuro) |
+| Nueva acción en la tarjeta | Más `useState` en `EmployeeCard` | Un modal nuevo en `modales/` + una acción en `AccionesRegistro` |
+| Turnos partidos o varias entradas | No se puede sin cambiar el modelo (F3) | Sigue necesitando la decisión de datos de §7, pero el catálogo y el contrato ya lo soportan |
 
 ---
 
-## 4. Reestructuración
+## 6. Plan por fases
 
-### 4.1 Partir el hook por responsabilidad
-El hook mezcla catálogos, datos del día, novedades históricas, mutaciones y estado de UI. Esto obliga a `DetallePlanillaPage` (que solo quiere `reasons`) y a `ModalDetalleTienda` a hacer 6–7 peticiones.
+Cada fase se puede desplegar sola y **no cambia el comportamiento visible**, salvo donde se indica.
 
-Propuesta de estructura:
+| Fase | Qué | Archivos | Resuelve | Criterio de aceptación |
+|---|---|---|---|---|
+| **0. Preparación** | Quitar los `console.log` de `useAceptacionNormasEmpleados`; quitar `resetHorarios`, `eliminarEmpleado`/`onEliminarEmpleado` | `useHorarios`, `EmployeeCard`, `RegistrosPage` | Ruido | `tsc` igual que antes |
+| **1. Catálogo y tipos** ✅ ([detalle](../FASE1_TIPOS_REGISTRO.md)) | `domain/registro/marcaciones.ts` + `MarcacionKey`, `LogType`, `EstadoAsistencia`; tipar `RegistrosAsistencia` con `Record<MarcacionKey, …>` sin opcionales | `domain/`, `interfaces/` | F1, F9 | Ningún literal `'Comenzar Jornada'` en los archivos del registro |
+| **2. Dominio puro** | `mapeo.ts`, `estado.ts` (`calcularEstado`, `accionesDisponibles`, `validarHoraEditada`), `reglas.ts`. `useHorarios`, `EmployeeCard`, `EmployeeCardUtils` y `EditHourModal` los usan | `domain/`, consumidores | F2, F8 | Los 13 `switch`/`if` del registro desaparecen. Primeros tests unitarios del dominio |
+| **3. Acciones con contrato** | `useAccionesRegistro` con `Resultado`; separar registrar y editar; sin fallback a 90; hora manual con la fecha del servidor; "sin almuerzo" se detiene si falla el 1.º | `hooks/registro/`, `create.ts`, `EmployeeCard` | F4, B1, B2, B3 | "Sin almuerzo" con error simulado: no registra el 2.º y muestra el error |
+| **4. Demo con el mismo dominio** | `useDemoRegistro` implementa `AccionesRegistro`; borrar los handlers demo de `RegistrosPage`; centralizar `ID_DEMO` | `components/tour/demo/`, `RegistrosPage` | F6 | `RegistrosPage` sin lógica demo. El tour funciona igual |
+| **5. Partir `EmployeeCard`** | Cada modal con su propio estado; `TimeSlots` recorre el catálogo | `components/employee-card/` | F5 | `EmployeeCard` < 150 líneas y sin lógica de negocio |
+| **6. Decisiones de modelo** *(cambia el comportamiento)* | Según §7: "sin almuerzo" persistido, pausa activa en el servidor, varias marcaciones por día | Directus + dominio | F3, F7, B4, B5 | Lo que se decida |
 
-```
-hooks/
-  queries/
-    keys.ts                 // query key factory (§4.3)
-    useStoreIdActual.ts     // ['horarios','storeId'] — hoy duplicado también en RegistrosPage
-    useCatalogos.ts         // useTiposNovedad(), useReasons()
-    useAsistenciaHoy.ts     // empleados + timeRecords + eventReports → EmpleadoAsistencia[]
-    useNovedades.ts         // novedades mapeadas
-  mutations/
-    useRegistrarEvento.ts
-    useGuardarObservacion.ts
-    useAgregarNovedad.ts
-    useReportarEvento.ts
-  useHorarios.ts            // fachada que compone los anteriores (compatibilidad con RegistrosPage)
-utils/
-  asistencia.ts             // funciones puras (§4.2)
-```
-
-- `DetallePlanillaPage` → `useReasons()`.
-- `ModalDetalleTienda` → `useAsistenciaHoy(tiendaId)` + `useReasons()`.
-- `RegistrosPage` puede seguir usando `useHorarios` sin cambios.
-
-### 4.2 Extraer la lógica a funciones puras (testeables)
-```ts
-// utils/asistencia.ts
-export function construirRegistros(records: TimeRecord[]): RegistrosAsistencia
-export function calcularEstado(r: RegistrosAsistencia): EstadoAsistencia
-export function mapNovedad(nov: NovedadReportDB, empleados: EmpleadoAsistencia[], tipos: TipoNovedad[]): NovedadMapeada
-```
-- El bloque `if/else` de 4 ramas (líneas 124–145) y el `switch` de `guardarObservacion` (306–320) se reemplazan por `EVENT_KEY_BY_LOG_TYPE[r.log_type]`.
-- La misma lógica está **copiada** en `RegistrosPage` (`registrarEventoDemo`, `guardarObservacionDemo`) y en `EmployeeCardUtils` (`getObservacion`, `getHoraEvento`, `getEditadoStatus`). Con las funciones puras + mapas, todo eso se reduce a lookups.
-- Mover la transformación de datos a `select` de React Query o al `queryFn`, no al cuerpo del hook.
-
-### 4.3 Query key factory
-Las keys actuales (`['empleados']`, `['reasons']`, `['novedades']`) son genéricas y pueden chocar con otras apps del monorepo. Además las invalidaciones son amplias (`['timeRecords']` invalida todas las tiendas y fechas).
-```ts
-export const horariosKeys = {
-  all: ['horarios'] as const,
-  storeId: () => [...horariosKeys.all, 'storeId'] as const,
-  empleados: (storeId: number) => [...horariosKeys.all, 'empleados', storeId] as const,
-  timeRecords: (storeId: number, fecha: string) => [...horariosKeys.all, 'timeRecords', storeId, fecha] as const,
-  // ...
-};
-```
-`resetHorarios` → `queryClient.invalidateQueries({ queryKey: horariosKeys.all })`.
-
-### 4.4 Rendimiento
-- Todas las derivaciones se recalculan en **cada render** y son O(empleados × registros). Usar `useMemo` y agrupar una sola vez:
-  ```ts
-  const recordsPorEmpleado = useMemo(() => groupBy(timeRecords, r => relId(r.employee_id)), [timeRecords]);
-  ```
-- `idsConNovedadHoy` es un array con `.includes` dentro de un `.filter` → usar `Set`.
-- `['novedades', storeId]` trae **todo el histórico** (`limit: -1`) solo para saber quién tiene novedad hoy y para la pestaña. Separar: una query con filtro `report_date = hoy` para el filtrado de empleados, y la lista histórica paginada o por rango solo cuando se abre la pestaña.
-- Las acciones se recrean en cada render; si se pasan a `EmployeeCard` (lista), envolver en `useCallback` o exponer directamente las mutaciones.
-
-### 4.5 Manejo de errores unificado
-Hoy conviven tres mecanismos: `useState error`, `showSnackbar` y `console.error`, con mensajes duplicados (`setError(msg)` + `showSnackbar(msg)`). Elegir uno:
-- Mutaciones → snackbar (en `onError` de la mutación) y devolver el resultado.
-- Queries → `isError` de React Query.
-- Eliminar el `useState<string | null>` del hook o reservarlo solo para errores de validación del formulario de novedad.
-
-### 4.6 Código muerto / limpieza
-- `eliminarEmpleado` es un no-op: eliminar del hook y la prop `onEliminarEmpleado` de `EmployeeCard` (el empleado ya desaparece al invalidar `novedades`).
-- En `novedadesMapped`, la segunda rama (líneas 447–492) casi nunca se ejecuta porque `getNovedades` ya devuelve `empleadoNombre` como `Empleado #<id>` (nunca igual a `'Empleado #'`). Además el significado de `empleadoActivo` cambia entre ramas (`status === 'Activo'` vs. "está en la lista local"). Unificar en `mapNovedad`.
-- `getNovedades` y `getStoreNovedades` en `read.ts` son prácticamente iguales (el comentario dice que reutiliza, pero no lo hace). Dejar una sola.
-- `STORE_ID` en mayúsculas sugiere constante; renombrar a `storeId`.
-- `horaOverride`, `observacionOverride`, `reasonId` como posicionales → pasar un objeto `{ empleadoId, tipo, hora?, observacion?, reasonId? }`.
+Las fases 1 y 2 son las que más desbloquean. A partir de la 2, una marcación nueva se declara en lugar de programarse.
 
 ---
 
-## 5. Otros puntos de la app (contexto repomix)
+## 7. Decisiones de negocio y datos (antes de la fase 6)
 
-- **Archivos muy grandes**: `MonitoreoPage` (760), `ModalCierreMasivo` (723), `ReportePage`/`ExportUnificadoDialog`/`RegistrosPage` (~670). Candidatos a dividir igual que se hizo con `employee-card/`.
-- **Código de demo/tour mezclado con producción**: `RegistrosPage` mantiene `demoEmpleado`, `registrarEventoDemo`, etc., y `EmployeeCard` chequea `String(id) !== '99999'`. Mover a un `useDemoEmpleado()` dentro de `components/tour/`.
-- **IDs mágicos**: tienda `90` (pruebas) en `create.ts`, tienda `5` excluida en `RegistrosPage`, empleado `99999` demo, `EMAIL_DEFECTO`/`TELEFONO_DEFECTO`. Centralizar en un `constants.ts`.
-- **`horariosStoreId`** se consulta tanto en `useHorarios` como en `RegistrosPage` con opciones distintas (`enabled` diferente) → centralizar en `useStoreIdActual()`.
-- **Mapeo de nombre completo** (`[first, middle, last, second_last].filter(Boolean).join(' ')`) repetido en ~10 sitios → `utils/format.ts: nombreCompleto(emp)`.
-- **Biome**: con `preset: recommended`, `noExplicitAny` y `noNonNullAssertion` deberían marcar gran parte de lo anterior; correr `npx biome check src/apps/horarios` para tener la lista completa.
-- **Tests**: no hay tests de la app. Las funciones puras de §4.2 (`construirRegistros`, `calcularEstado`, `mapNovedad`, expansión de rango de `agregarNovedad`) son el mejor punto de entrada.
+- [ ] **¿Qué funcionalidades nuevas hay en la hoja de ruta?** Define si basta con las fases 1–5 o hace falta la 6.
+- [ ] **¿Puede haber más de una marcación del mismo tipo por día?** (turnos partidos, salidas temporales). Si es que sí, la clave `(empleado, día, log_type)` deja de valer (F3).
+- [ ] **¿Hay turnos que cruzan medianoche?** La clave por `record_date` lo impide hoy.
+- [ ] **"Sin almuerzo"**: ¿se guarda como un campo o evento propio en vez de 2 marcaciones con la misma hora? (F7, B5).
+- [ ] **Pausas activas**: ¿el temporizador debe ser fiable entre dispositivos (servidor) o basta con `localStorage`?
+- [ ] **Reglas configurables** (`MAX_PAUSAS`, duración, motivo obligatorio): ¿por tienda, por cargo o globales?
+- [ ] ¿Se puede añadir un **índice único** en `com_time_records` para cerrar los duplicados (B4)?
 
 ---
 
-## 6. Orden sugerido de trabajo
+## 8. Fuera de alcance (registrado, no se trabaja ahora)
 
-1. **Quick wins sin riesgo**: constantes `LOG_TYPES`/`EstadoAsistencia`, `relId`, `customParseFormat` explícito, borrar `eliminarEmpleado`, `useMemo` + `Set`.
-2. **Correctitud**: quitar fallback a tienda 90, que las acciones devuelvan éxito/fallo, que los `queryFn` relancen errores.
-3. **Tipos**: `RegistrosAsistencia`/`EmpleadoAsistencia` estrictos, `TimeRecord` y DTOs de Directus, eliminar `any` del hook y de `create.ts`/`read.ts`.
-4. **Reestructuración**: query key factory → hooks separados → `useHorarios` como fachada → migrar `DetallePlanillaPage` y `ModalDetalleTienda`.
-5. **Extras**: novedades por rango/paginadas, índice único en BD, extraer demo del tour, tests de utils.
+| Tema | Referencia |
+|---|---|
+| Rendimiento: `useHorarios` sin `useMemo`, novedades con todo el histórico, 7 queries en `DetallePlanillaPage`/`ModalDetalleTienda`/`NovedadesSeccion` | — |
+| Las `queryFn` devuelven `[]` ante errores (21 casos en `read`, `readBulk` y `reports`) | Afecta a todas las secciones |
+| Lógica de acceso duplicada (`useHorariosPolicies` en 9 archivos, "tiendas permitidas" ×5, tienda 5 a mano) | Migrar a `useHorariosLayout().acceso` |
+| Normas del header que nunca se guardan; modal de "Comenzar Jornada" restringido a `temporal`; filtro `rule_id`/`version` | [`../FLUJO_ACEPTACION_NORMAS.md`](../FLUJO_ACEPTACION_NORMAS.md) |
+| Sub-rutas de Monitoreo y Reportes con `SubSeccionLayout` | [`../LAYOUT_HORARIOS.md`](../LAYOUT_HORARIOS.md) |
+| `agregarNovedad` sin límite de rango; `getNovedades` ≈ `getStoreNovedades`; `TipoNovedad` con `name` y `nombre` | Novedades |
+| Query key factory (`horariosKeys`) | Conviene hacerla junto con la fase 3 si se tocan las claves |
+| Archivos grandes fuera del registro (`MonitoreoPage` 760, `ModalCierreMasivo` 723, `ReportePage` 674…) y 3 errores de `tsc` en `MonitoreoPage` | — |
+| 292 `noExplicitAny` y otros avisos de Biome en toda la app | Se reducirán en el registro con las fases 1–3 |

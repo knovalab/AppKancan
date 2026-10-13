@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/es';
 import { useHolidays } from '../../reservas/hooks/useHolidays';
+import { LOG_TYPE } from '../domain/registro';
 
 dayjs.locale('es');
 
@@ -294,15 +295,15 @@ export default function DetallePlanillaPage({ storeId: propStoreId }: DetallePla
 
       empMap.forEach((emp) => {
         const empId = emp.id;
-        const inicioJornada = getHora(empId, 'Comenzar Jornada');
-        const inicioAlmuerzo = getHora(empId, 'Iniciar Almuerzo');
-        const finAlmuerzo = getHora(empId, 'Finalizar Almuerzo');
-        const finJornada = getHora(empId, 'Terminar Jornada');
+        const inicioJornada = getHora(empId, LOG_TYPE.inicioJornada);
+        const inicioAlmuerzo = getHora(empId, LOG_TYPE.inicioAlmuerzo);
+        const finAlmuerzo = getHora(empId, LOG_TYPE.finAlmuerzo);
+        const finJornada = getHora(empId, LOG_TYPE.finJornada);
         
-        const recordIdInicioJornada = getRecordId(empId, 'Comenzar Jornada');
-        const recordIdInicioAlmuerzo = getRecordId(empId, 'Iniciar Almuerzo');
-        const recordIdFinAlmuerzo = getRecordId(empId, 'Finalizar Almuerzo');
-        const recordIdFinJornada = getRecordId(empId, 'Terminar Jornada');
+        const recordIdInicioJornada = getRecordId(empId, LOG_TYPE.inicioJornada);
+        const recordIdInicioAlmuerzo = getRecordId(empId, LOG_TYPE.inicioAlmuerzo);
+        const recordIdFinAlmuerzo = getRecordId(empId, LOG_TYPE.finAlmuerzo);
+        const recordIdFinJornada = getRecordId(empId, LOG_TYPE.finJornada);
 
         const novedad = getNovedadEmpleado(empId);
         const minutosDia = calcularMinutosDia(recordsDia, empId);
