@@ -38,7 +38,6 @@ function Login() {
 
 			if (error?.response?.status === 401) {
 				message = 'Credenciales incorrectas.';
-				reset();
 			} else if (
 				error?.response?.data?.errors?.[0]?.message === 'User suspended'
 			) {

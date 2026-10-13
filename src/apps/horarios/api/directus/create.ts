@@ -98,9 +98,13 @@ export async function createTimeRecord(data: {
 	record_date: string;
 	record_time: string;
 	observations?: string;
+	latitude?: number | null;
+	longitude?: number | null;
+	accuracy?: number | null;
+	photo?: string | null;
 }) {
 	try {
-		const payload = {
+		const payload: Record<string, any> = {
 			employee_id: Number(data.employee_id),
 			store_id: Number(data.store_id || 90),
 			log_type: data.log_type,
@@ -108,6 +112,18 @@ export async function createTimeRecord(data: {
 			record_time: data.record_time,
 			observations: data.observations || '',
 		};
+		if (data.latitude !== undefined && data.latitude !== null) {
+			payload.latitude = data.latitude;
+		}
+		if (data.longitude !== undefined && data.longitude !== null) {
+			payload.longitude = data.longitude;
+		}
+		if (data.accuracy !== undefined && data.accuracy !== null) {
+			payload.accuracy = data.accuracy;
+		}
+		if (data.photo !== undefined && data.photo !== null) {
+			payload.photo = data.photo;
+		}
 		return await withAutoRefresh(() =>
 			directus.request(createItem('com_time_records', payload)),
 		);

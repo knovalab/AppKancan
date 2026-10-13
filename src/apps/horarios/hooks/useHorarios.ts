@@ -243,6 +243,12 @@ export const useHorarios = (storeOverride?: number | null) => {
 		horaOverride?: string,
 		observacionOverride?: string,
 		reasonId?: number | null,
+		metadata?: {
+			latitude?: number | null;
+			longitude?: number | null;
+			accuracy?: number | null;
+			photo?: string | null;
+		},
 	) => {
 		setError(null);
 		try {
@@ -279,6 +285,10 @@ export const useHorarios = (storeOverride?: number | null) => {
 					record_date: recordDate,
 					record_time: recordTime,
 					observations: observacion,
+					latitude: metadata?.latitude,
+					longitude: metadata?.longitude,
+					accuracy: metadata?.accuracy,
+					photo: metadata?.photo,
 				});
 				recordId = creado?.id != null ? Number(creado.id) : null;
 			}

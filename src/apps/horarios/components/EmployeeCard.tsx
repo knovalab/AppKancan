@@ -33,6 +33,10 @@ import {
 } from './employee-card/EmployeeCardUtils';
 import NormasModal from './NormasModal';
 import 'dayjs/locale/es';
+import {
+	TimeRecordVerificationModal,
+	VerificationData,
+} from './TimeRecordVerificationModal';
 
 interface EmployeeCardProps {
 	empleado: EmpleadoAsistencia;
@@ -44,6 +48,12 @@ interface EmployeeCardProps {
 		horaOverride?: string,
 		observacionOverride?: string,
 		reasonId?: number | null,
+		metadata?: {
+			latitude?: number | null;
+			longitude?: number | null;
+			accuracy?: number | null;
+			photo?: string | null;
+		},
 	) => Promise<void> | void;
 	onEliminarEmpleado: (idEmpleado: string) => void;
 	onGuardarObservacion: (
@@ -286,11 +296,26 @@ function EmployeeCardContent({
 		}
 	};
 
-	const handleRegistrarEvento = async (tipoEvento: string) => {
+	const [verificationModalOpen, setVerificationModalOpen] = useState(false);
+	const [pendingEvento, setPendingEvento] = useState<string | null>(null);
+
+	const handleRegistrarEvento = (tipoEvento: string) => {
+		setPendingEvento(tipoEvento);
+		setVerificationModalOpen(true);
+	};
+
+	const handleConfirmVerification = async (data: VerificationData) => {
+		if (!pendingEvento) return;
+		const tipoEvento = pendingEvento;
 		setGuardandoRegistro(tipoEvento);
 		try {
-			await onRegistrarEvento(id, tipoEvento);
 			// yaAceptoNormas ya viene de la consulta de la página: no se vuelve a preguntar.
+			await onRegistrarEvento(id, tipoEvento, undefined, undefined, null, {
+				latitude: data.latitude,
+				longitude: data.longitude,
+				accuracy: data.accuracy,
+				photo: data.photo,
+			});
 			if (
 				tipoEvento === 'Comenzar Jornada' &&
 				normasActivas &&
@@ -303,9 +328,9 @@ function EmployeeCardContent({
 			}
 		} finally {
 			setGuardandoRegistro(null);
+			setPendingEvento(null);
 		}
 	};
-
 	const handleAceptarNormasEmpleado = async () => {
 		if (!normasActivas) return;
 		setAceptandoNormas(true);
@@ -459,6 +484,16 @@ function EmployeeCardContent({
 				nombre={nombre}
 				omitiendoAlmuerzo={omitiendoAlmuerzo}
 				onConfirmar={handleConfirmarSinAlmuerzo}
+			/>
+			<TimeRecordVerificationModal
+				open={verificationModalOpen}
+				onClose={() => {
+					setVerificationModalOpen(false);
+					setPendingEvento(null);
+				}}
+				employeeName={nombre}
+				eventName={pendingEvento || ''}
+				onConfirm={handleConfirmVerification}
 			/>
 		</>
 	);
