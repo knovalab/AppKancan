@@ -231,4 +231,3 @@ describe('useAceptacionNormasEmpleados', () => {
 		consoleSpy.mockRestore();
 	});
 });
-

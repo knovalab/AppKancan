@@ -9,4 +9,3 @@ export function createMockNormas(overrides: Partial<Normas> = {}): Normas {
 		...overrides,
 	};
 }
-
