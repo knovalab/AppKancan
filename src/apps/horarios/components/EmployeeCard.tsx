@@ -19,6 +19,7 @@ import {
 	MARCACIONES,
 	MAX_CARACTERES_OBSERVACION,
 	MAX_PAUSAS_ACTIVAS,
+	requiereVerificacion,
 } from '../domain/registro';
 import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
 import type {
@@ -304,13 +305,21 @@ function EmployeeCardContent({
 	const [verificationModalOpen, setVerificationModalOpen] = useState(false);
 	const [pendingEvento, setPendingEvento] = useState<LogType | null>(null);
 
-	// Orden al marcar: normas (solo "Comenzar Jornada" y si no las aceptó) → foto + GPS → guardar.
-	// El empleado demo (tour) no pasa por normas ni cámara/GPS: no se sube su foto a Directus.
+	// Orden al marcar:
+	// 1. Empleado demo o eventos sin verificación (almuerzos) → registrar directamente sin cámara ni GPS.
+	// 2. "Comenzar Jornada" → validar normas → modal de foto + GPS → registrar.
+	// 3. "Terminar Jornada" → modal de foto + GPS → registrar.
 	const handleRegistrarEvento = async (tipoEvento: LogType) => {
 		if (esEmpleadoDemo(id)) {
 			void registrarMarcacion(tipoEvento);
 			return;
 		}
+
+		if (!requiereVerificacion(tipoEvento)) {
+			void registrarMarcacion(tipoEvento);
+			return;
+		}
+
 		setPendingEvento(tipoEvento);
 		if (tipoEvento === LOG_TYPE.inicioJornada && normasActivas) {
 			// Se pregunta a Directus en el momento (no a la caché ni solo con `temporal`):

@@ -1,29 +1,27 @@
-import React, { useEffect, useState } from 'react';
 import {
+	Alert,
+	Box,
+	Button,
+	Chip,
+	CircularProgress,
 	Dialog,
 	DialogContent,
 	DialogTitle,
 	IconButton,
-	Button,
-	Box,
 	Typography,
-	CircularProgress,
-	Alert,
-	Chip,
 } from '@mui/material';
 import {
+	AlertTriangle,
 	Camera,
+	Check,
 	MapPin,
 	RefreshCw,
-	AlertTriangle,
 	X,
-	Check,
 } from 'lucide-react';
-import { useInAppCamera, CapturedPhoto } from '../hooks/useInAppCamera';
-import {
-	useHighPrecisionLocation,
-} from '../hooks/useHighPrecisionLocation';
+import React, { useEffect, useState } from 'react';
 import { uploadAttendancePhoto } from '../api/directus/upload';
+import { useHighPrecisionLocation } from '../hooks/useHighPrecisionLocation';
+import { CapturedPhoto, useInAppCamera } from '../hooks/useInAppCamera';
 
 export interface VerificationData {
 	latitude: number;
@@ -63,7 +61,9 @@ export const TimeRecordVerificationModal: React.FC<
 		acquireLocation,
 	} = useHighPrecisionLocation();
 
-	const [capturedPhoto, setCapturedPhoto] = useState<CapturedPhoto | null>(null);
+	const [capturedPhoto, setCapturedPhoto] = useState<CapturedPhoto | null>(
+		null,
+	);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -150,8 +150,8 @@ export const TimeRecordVerificationModal: React.FC<
 						p: 0,
 						bgcolor: '#ffffff',
 						m: { xs: 1.5, sm: 3 },
-					}
-				}
+					},
+				},
 			}}
 		>
 			<DialogTitle
@@ -166,13 +166,22 @@ export const TimeRecordVerificationModal: React.FC<
 				}}
 			>
 				<Box>
-					<Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
+					<Typography
+						variant="caption"
+						sx={{ color: '#64748b', fontWeight: 600 }}
+					>
 						Verificación de Asistencia
 					</Typography>
-					<Typography variant="h6" sx={{ fontWeight: 700, color: '#0f172a', fontSize: '1.1rem' }}>
+					<Typography
+						variant="h6"
+						sx={{ fontWeight: 700, color: '#0f172a', fontSize: '1.1rem' }}
+					>
 						{eventName}
 					</Typography>
-					<Typography variant="body2" sx={{ color: '#475569', fontWeight: 500 }}>
+					<Typography
+						variant="body2"
+						sx={{ color: '#475569', fontWeight: 500 }}
+					>
 						{employeeName}
 					</Typography>
 				</Box>
@@ -183,7 +192,9 @@ export const TimeRecordVerificationModal: React.FC<
 				)}
 			</DialogTitle>
 
-			<DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+			<DialogContent
+				sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}
+			>
 				{/* GPS Precision Status Banner */}
 				<Box
 					sx={{
@@ -213,14 +224,21 @@ export const TimeRecordVerificationModal: React.FC<
 								}}
 							>
 								{isGpsLoading
-									? 'Adquiriendo GPS de máxima precisión...'
+									? 'Adquiriendo ubicación GPS...'
 									: coords
-										? `GPS asegurado (Precisión: ±${Math.round(coords.accuracy)}m)`
+										? 'Ubicación GPS confirmada'
 										: 'Ubicación GPS requerida'}
 							</Typography>
 							{coords && (
-								<Typography variant="caption" sx={{ color: '#166534', fontSize: '0.7rem' }}>
-									Lat: {coords.latitude.toFixed(6)}, Lon: {coords.longitude.toFixed(6)}
+								<Typography
+									variant="caption"
+									sx={{
+										color: '#166534',
+										fontSize: '0.72rem',
+										display: 'block',
+									}}
+								>
+									Ubicación asegurada
 								</Typography>
 							)}
 						</Box>
@@ -236,13 +254,19 @@ export const TimeRecordVerificationModal: React.FC<
 							title="Reintentar señal GPS"
 							sx={{ p: 0.5 }}
 						>
-							<RefreshCw size={14} className={isGpsLoading ? 'animate-spin' : ''} />
+							<RefreshCw
+								size={14}
+								className={isGpsLoading ? 'animate-spin' : ''}
+							/>
 						</IconButton>
 					)}
 				</Box>
 
 				{gpsError && (
-					<Alert severity="warning" sx={{ py: 0.5, px: 1.5, fontSize: '0.78rem' }}>
+					<Alert
+						severity="warning"
+						sx={{ py: 0.5, px: 1.5, fontSize: '0.78rem' }}
+					>
 						{gpsError}
 					</Alert>
 				)}
@@ -261,7 +285,8 @@ export const TimeRecordVerificationModal: React.FC<
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
-						boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3), inset 0 0 20px rgba(0,0,0,0.5)',
+						boxShadow:
+							'0 10px 25px -5px rgba(0,0,0,0.3), inset 0 0 20px rgba(0,0,0,0.5)',
 					}}
 				>
 					{capturedPhoto ? (
@@ -293,7 +318,14 @@ export const TimeRecordVerificationModal: React.FC<
 							/>
 
 							{isCameraLoading && (
-								<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+								<Box
+									sx={{
+										display: 'flex',
+										flexDirection: 'column',
+										alignItems: 'center',
+										gap: 1,
+									}}
+								>
 									<CircularProgress size={28} sx={{ color: '#38bdf8' }} />
 									<Typography variant="caption" sx={{ color: '#94a3b8' }}>
 										Iniciando cámara frontal...
@@ -303,15 +335,27 @@ export const TimeRecordVerificationModal: React.FC<
 
 							{cameraError && !isCameraLoading && (
 								<Box sx={{ p: 2, textAlign: 'center' }}>
-									<AlertTriangle size={28} color="#f87171" style={{ margin: '0 auto 8px' }} />
-									<Typography variant="caption" sx={{ color: '#fca5a5', display: 'block' }}>
+									<AlertTriangle
+										size={28}
+										color="#f87171"
+										style={{ margin: '0 auto 8px' }}
+									/>
+									<Typography
+										variant="caption"
+										sx={{ color: '#fca5a5', display: 'block' }}
+									>
 										{cameraError}
 									</Typography>
 									<Button
 										size="small"
 										variant="outlined"
 										onClick={startCamera}
-										sx={{ mt: 1.5, color: '#38bdf8', borderColor: '#0284c7', textTransform: 'none' }}
+										sx={{
+											mt: 1.5,
+											color: '#38bdf8',
+											borderColor: '#0284c7',
+											textTransform: 'none',
+										}}
 									>
 										Reintentar cámara
 									</Button>
@@ -392,7 +436,10 @@ export const TimeRecordVerificationModal: React.FC<
 				</Box>
 
 				{submitError && (
-					<Alert severity="error" sx={{ py: 0.5, px: 1.5, fontSize: '0.78rem' }}>
+					<Alert
+						severity="error"
+						sx={{ py: 0.5, px: 1.5, fontSize: '0.78rem' }}
+					>
 						{submitError}
 					</Alert>
 				)}
@@ -463,6 +510,6 @@ export const TimeRecordVerificationModal: React.FC<
 					)}
 				</Box>
 			</DialogContent>
-		</Dialog >
+		</Dialog>
 	);
 };
