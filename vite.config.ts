@@ -1,4 +1,4 @@
-// import basicSsl from '@vitejs/plugin-basic-ssl'; // for local development with HTTPS
+import basicSsl from '@vitejs/plugin-basic-ssl'; // for local development with HTTPS
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
@@ -6,7 +6,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
 	plugins: [
 		react(),
-		// basicSsl() //useful when developing locally with HTTPS
+		basicSsl(), //useful when developing locally with HTTPS
 	],
 	base: '/',
 	cacheDir: 'node_modules/.vite',
