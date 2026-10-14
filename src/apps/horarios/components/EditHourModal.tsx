@@ -126,8 +126,12 @@ export default function EditHourModal({
     if (esOtro && horaObservacion.trim().length < MIN_CARACTERES_NOTA_MOTIVO_OTRO) return;
     const horaFormateada = horaSeleccionada?.format('hh:mm A') || '';
     // 👈 Si reasonId es 0, enviamos null (sin motivo)
-    await onConfirm(horaFormateada, horaObservacion, reasonId === 0 ? null : reasonId);
-    onClose();
+    try {
+      await onConfirm(horaFormateada, horaObservacion, reasonId === 0 ? null : reasonId);
+      onClose();
+    } catch {
+      // Si falla, el modal sigue abierto; el error lo muestra quien confirma (snackbar).
+    }
   };
 
   const horaCambiada = horaSeleccionada && horaInicial && !horaSeleccionada.isSame(horaInicial, 'minute');

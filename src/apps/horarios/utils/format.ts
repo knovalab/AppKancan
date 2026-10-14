@@ -37,3 +37,24 @@ export const formatTo12Hour = (timeStr: string | null): string => {
   const hoursStr = String(hours).padStart(2, '0');
   return `${hoursStr}:${minutes} ${ampm}`;
 };
+
+/**
+ * '08:05 PM' | '20:05' | '20:05:30' → '20:05:00' (o con los segundos dados). null si no es una hora.
+ * Sustituye a dayjs(hora, 'hh:mm A'), que depende de que alguien haya cargado customParseFormat.
+ */
+export const hora24 = (hora: string): string | null => {
+  const m = hora.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if (!m) return null;
+  let h = Number(m[1]);
+  const min = Number(m[2]);
+  const seg = m[3] ? Number(m[3]) : 0;
+  const ampm = m[4]?.toUpperCase();
+  if (ampm) {
+    if (h < 1 || h > 12) return null;
+    if (ampm === 'AM' && h === 12) h = 0;
+    if (ampm === 'PM' && h !== 12) h += 12;
+  }
+  if (h > 23 || min > 59 || seg > 59) return null;
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return `${dos(h)}:${dos(min)}:${dos(seg)}`;
+};

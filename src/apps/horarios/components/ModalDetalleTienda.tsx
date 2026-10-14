@@ -34,6 +34,7 @@ import ConfirmClosedDayDialogs from './detalle-tienda/ConfirmClosedDayDialogs';
 import { ModalDetalleTiendaHeader } from './detalle-tienda/ModalDetalleTiendaHeader';
 import CreateHourModal from './detalle-tienda/CreateHourModal';
 import { ESTADO, LOG_TYPE } from '../domain/registro';
+import { horariosKeys } from '../hooks/registro/keys';
 
 // ============================================================
 //  COMPONENTE PRINCIPAL
@@ -418,7 +419,7 @@ export default function ModalDetalleTienda({
             }
 
             queryClient.invalidateQueries({ queryKey: ['recordsDiaModal', tiendaId, fechaSeleccionada] });
-            queryClient.invalidateQueries({ queryKey: ['timeRecords'] });
+            queryClient.invalidateQueries({ queryKey: horariosKeys.timeRecords.todos });
             handleCloseEditHour();
         } catch (error) {
             console.error('Error al editar hora:', error);
@@ -461,7 +462,7 @@ export default function ModalDetalleTienda({
             }
 
             queryClient.invalidateQueries({ queryKey: ['recordsDiaModal', tiendaId, fechaSeleccionada] });
-            queryClient.invalidateQueries({ queryKey: ['timeRecords'] });
+            queryClient.invalidateQueries({ queryKey: horariosKeys.timeRecords.todos });
             handleCloseCreateHour();
         } catch (error: any) {
             console.error('Error detallado al crear hora:', error);

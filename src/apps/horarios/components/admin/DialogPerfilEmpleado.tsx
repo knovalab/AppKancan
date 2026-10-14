@@ -25,6 +25,7 @@ import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 import { formatDocumentNumber } from '../../utils/format';
 import { LOG_TYPE } from '../../domain/registro';
+import { horariosKeys } from '../../hooks/registro/keys';
 
 const AZUL = '#004680';
 const AVATAR_COLORS = ['#0284c7', '#7c3aed', '#16a34a', '#ea580c', '#db2777', '#0891b2', '#4f46e5', '#ca8a04', '#dc2626', '#059669', '#2563eb', '#9333ea'];
@@ -118,8 +119,8 @@ export default function DialogPerfilEmpleado({ open, empleado, tiendaNombre, onC
     mutationFn: eliminarNovedad,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['perfilNovedades', empId] });
-      queryClient.invalidateQueries({ queryKey: ['novedades'] });
-      queryClient.invalidateQueries({ queryKey: ['empleados'] });
+      queryClient.invalidateQueries({ queryKey: horariosKeys.novedades.todos });
+      queryClient.invalidateQueries({ queryKey: horariosKeys.empleados.todos });
       showSnackbar('Novedad eliminada con éxito', 'success');
     },
     onError: (err: any) => {

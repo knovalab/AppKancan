@@ -265,6 +265,34 @@ export const fetchTimeRecords = async (
 };
 
 /**
+ * Id de la marcación (empleado, log_type, fecha) si ya existe en Directus; null si no.
+ * Consulta fresca, sin caché: la usa el registro para rechazar marcaciones repetidas
+ * aunque se hayan hecho desde otro dispositivo. Los errores se propagan.
+ */
+export async function getMarcacionExistenteId(
+  employeeId: number,
+  logType: string,
+  date: string,
+): Promise<number | null> {
+  const items = (await withAutoRefresh(() =>
+    directus.request(
+      readItems('com_time_records', {
+        fields: ['id'],
+        filter: {
+          _and: [
+            { employee_id: { _eq: employeeId } },
+            { log_type: { _eq: logType } },
+            { record_date: { _eq: date } },
+          ],
+        },
+        limit: 1,
+      })
+    )
+  )) as { id: number }[];
+  return items[0]?.id != null ? Number(items[0].id) : null;
+}
+
+/**
  * Reutiliza fetchTimeRecords(date, date, storeId) para evitar duplicar peticiones a com_time_records.
  */
 export async function getTimeRecords(storeId: number, date: string): Promise<TimeRecord[]> {

@@ -1,43 +1,36 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
-import {
-	createEventReport,
-	createNovedades,
-	createTimeRecord,
-	updateTimeRecord,
-	upsertRecordReason,
-} from '../api/directus/create';
+import { createNovedades } from '../api/directus/create';
 import {
 	getEmpleados,
 	getNovedades,
-	getReasons,
 	getStoreEventReportsToday,
-	getStoreIdUsuarioActual,
 	getTimeRecords,
-	getTiposNovedad,
 	idRelacion,
 	type TimeRecord,
 } from '../api/directus/read';
+import type { VerificationData } from '../components/TimeRecordVerificationModal';
 import {
-	crearRegistrosVacios,
-	ESTADO,
-	type EstadoAsistencia,
+	agruparPorEmpleado,
+	calcularEstado,
 	EVENTO,
 	type EventoTipo,
 	keyPorLogType,
 	type LogType,
-	MARCACIONES,
+	mapearRegistros,
 } from '../domain/registro';
 import type {
 	EmpleadoAsistencia,
 	EventReportHoy,
-	Motivo,
 	NovedadMapeada,
-	TipoNovedad,
 } from '../interfaces/horarios.interface';
 import { getRealColombiaTime } from '../utils/timeSync';
+import { horariosKeys } from './registro/keys';
+import { useAccionesRegistro } from './registro/useAccionesRegistro';
+import { useCatalogosHorarios } from './registro/useCatalogosHorarios';
+import { useTiendaActual } from './registro/useTiendaActual';
 
 export const useHorarios = (storeOverride?: number | null) => {
 	const queryClient = useQueryClient();
@@ -45,40 +38,25 @@ export const useHorarios = (storeOverride?: number | null) => {
 	const { showSnackbar } = useGlobalSnackbar();
 	const hoy = getRealColombiaTime().format('YYYY-MM-DD');
 
-	const { data: storeUsuario = null } = useQuery<number | null>({
-		queryKey: ['horariosStoreId'],
-		queryFn: getStoreIdUsuarioActual,
-		staleTime: 30 * 60 * 1000,
-	});
-	const STORE_ID = storeOverride != null ? storeOverride : storeUsuario;
+	const STORE_ID = useTiendaActual(storeOverride);
 	const tieneTienda = STORE_ID != null;
+	const { reasons, tiposNovedad, errorTipos: errorT } = useCatalogosHorarios();
+	const acciones = useAccionesRegistro(STORE_ID);
 
 	const {
 		data: empleadosDB = [],
 		isLoading: loadingEmpleados,
 		error: errorE,
 	} = useQuery<EmpleadoAsistencia[]>({
-		queryKey: ['empleados', STORE_ID],
+		queryKey: horariosKeys.empleados.tienda(STORE_ID),
 		queryFn: () => getEmpleados(STORE_ID as number),
 		enabled: tieneTienda,
 		staleTime: 5 * 60 * 1000,
 		refetchOnWindowFocus: false,
 	});
 
-	const { data: tiposNovedad = [], error: errorT } = useQuery<TipoNovedad[]>({
-		queryKey: ['tiposNovedad'],
-		queryFn: getTiposNovedad,
-		staleTime: 10 * 60 * 1000,
-	});
-
-	const { data: reasons = [] } = useQuery<Motivo[]>({
-		queryKey: ['reasons'],
-		queryFn: getReasons,
-		staleTime: 10 * 60 * 1000,
-	});
-
 	const { data: novedadesDB = [], error: errorN } = useQuery<any[]>({
-		queryKey: ['novedades', STORE_ID],
+		queryKey: horariosKeys.novedades.tienda(STORE_ID),
 		queryFn: () => getNovedades(STORE_ID as number),
 		enabled: tieneTienda,
 	});
@@ -88,77 +66,66 @@ export const useHorarios = (storeOverride?: number | null) => {
 		isLoading: loadingTimeRecords,
 		error: errorTime,
 	} = useQuery<TimeRecord[]>({
-		queryKey: ['timeRecords', STORE_ID, hoy],
+		queryKey: horariosKeys.timeRecords.dia(STORE_ID, hoy),
 		queryFn: () => getTimeRecords(STORE_ID as number, hoy),
 		enabled: tieneTienda,
 	});
 
 	const { data: eventReportsToday = [] } = useQuery<EventReportHoy[]>({
-		queryKey: ['eventReportsToday', STORE_ID, hoy],
+		queryKey: horariosKeys.eventosHoy.dia(STORE_ID, hoy),
 		queryFn: () => getStoreEventReportsToday(STORE_ID as number, hoy),
 		enabled: tieneTienda,
 	});
 
-	const idsConNovedadHoy = (novedadesDB || [])
-		.map((nov: any) => {
+	const idsConNovedadHoy = useMemo(() => {
+		const ids = new Set<string>();
+		for (const nov of novedadesDB) {
 			const empId = nov.employee_id?.id || nov.employee_id;
 			const fechaReporte = nov.report_date
 				? dayjs(nov.report_date).format('YYYY-MM-DD')
 				: nov.date_created
 					? dayjs(nov.date_created).format('YYYY-MM-DD')
 					: '';
-			return fechaReporte === hoy ? String(empId) : null;
-		})
-		.filter(Boolean);
-
-	const empleadosMapeados: EmpleadoAsistencia[] = empleadosDB.map((emp) => {
-		const records = timeRecords.filter(
-			(r) => idRelacion(r.employee_id) === Number(emp.id),
-		);
-
-		const registros = crearRegistrosVacios();
-		for (const r of records) {
-			const key = keyPorLogType(r.log_type);
-			if (!key) continue;
-			registros[key] = r.record_time ? r.record_time.substring(0, 5) : '';
-			registros.observaciones[key] = r.observations || '';
-			registros.ids[key] = r.id;
-			registros.horasOriginales[key] = r.original_record_time
-				? r.original_record_time.substring(0, 5)
-				: null;
-			registros.horasEditadas[key] = r.original_record_time
-				? r.record_time.substring(0, 5)
-				: null;
+			if (fechaReporte === hoy) ids.add(String(empId));
 		}
+		return ids;
+	}, [novedadesDB, hoy]);
 
-		// El estado es el que deja la última marcación registrada (en orden de jornada).
-		const ultima = [...MARCACIONES].reverse().find((m) => registros[m.key]);
-		const estadoActual: EstadoAsistencia =
-			ultima?.estadoResultante ?? ESTADO.entradaPendiente;
+	// Una pasada por colección (antes: un filter por empleado en cada render).
+	const empleadosMapeados = useMemo<EmpleadoAsistencia[]>(() => {
+		const marcacionesPorEmpleado = agruparPorEmpleado(timeRecords, (r) =>
+			idRelacion(r.employee_id),
+		);
+		const pausasPorEmpleado = agruparPorEmpleado(
+			eventReportsToday.filter(
+				(r) => r.event_type === EVENTO.terminarPausaActiva,
+			),
+			(r) => idRelacion(r.employee_id),
+		);
+		return empleadosDB.map((emp) => {
+			const registros = mapearRegistros(
+				marcacionesPorEmpleado.get(Number(emp.id)) ?? [],
+			);
+			return {
+				...emp,
+				estadoActual: calcularEstado(registros),
+				registros,
+				pausasActivasCount: pausasPorEmpleado.get(Number(emp.id))?.length ?? 0,
+			};
+		});
+	}, [empleadosDB, timeRecords, eventReportsToday]);
 
-		const pausasActivasCount = eventReportsToday.filter(
-			(r) =>
-				idRelacion(r.employee_id) === Number(emp.id) &&
-				r.event_type === EVENTO.terminarPausaActiva,
-		).length;
-
-		return {
-			...emp,
-			estadoActual,
-			registros,
-			pausasActivasCount,
-		};
-	});
-
-	const empleados = empleadosMapeados.filter(
-		(emp) => !idsConNovedadHoy.includes(String(emp.id)),
+	const empleados = useMemo(
+		() =>
+			empleadosMapeados.filter((emp) => !idsConNovedadHoy.has(String(emp.id))),
+		[empleadosMapeados, idsConNovedadHoy],
 	);
 
 	const noveltyMutation = useMutation({
 		mutationFn: createNovedades,
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['novedades'] });
-			queryClient.invalidateQueries({ queryKey: ['empleados'] });
+			queryClient.invalidateQueries({ queryKey: horariosKeys.novedades.todos });
+			queryClient.invalidateQueries({ queryKey: horariosKeys.empleados.todos });
 			showSnackbar('Novedad registrada con éxito', 'success');
 		},
 		onError: (err: any) => {
@@ -167,46 +134,16 @@ export const useHorarios = (storeOverride?: number | null) => {
 		},
 	});
 
-	const createTimeRecordMutation = useMutation({
-		mutationFn: createTimeRecord,
-		onSuccess: (data: any) => {
-			queryClient.invalidateQueries({ queryKey: ['timeRecords'] });
-			showSnackbar(
-				`Registro de "${data?.log_type || 'asistencia'}" guardado con éxito`,
-				'success',
+	const registroIdDe = useCallback(
+		(idEmpleado: string, tipoEvento: LogType): number | undefined => {
+			const key = keyPorLogType(tipoEvento);
+			const emp = empleadosMapeados.find(
+				(e) => String(e.id) === String(idEmpleado),
 			);
+			return key ? emp?.registros.ids[key] : undefined;
 		},
-		onError: (err: any) => {
-			setError(err?.message || 'Error al guardar el registro de asistencia');
-			showSnackbar(
-				err?.message || 'Error al guardar el registro de asistencia',
-				'error',
-			);
-		},
-	});
-
-	const updateTimeRecordMutation = useMutation({
-		mutationFn: ({
-			id,
-			observations,
-			record_time,
-			original_record_time,
-		}: {
-			id: number;
-			observations?: string;
-			record_time?: string;
-			original_record_time?: string;
-		}) =>
-			updateTimeRecord(id, { observations, record_time, original_record_time }),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['timeRecords'] });
-			showSnackbar('Registro actualizado correctamente', 'success');
-		},
-		onError: (err: any) => {
-			setError(err?.message || 'Error al actualizar el registro');
-			showSnackbar(err?.message || 'Error al actualizar el registro', 'error');
-		},
-	});
+		[empleadosMapeados],
+	);
 
 	const registrarEvento = async (
 		idEmpleado: string,
@@ -214,100 +151,50 @@ export const useHorarios = (storeOverride?: number | null) => {
 		horaOverride?: string,
 		observacionOverride?: string,
 		reasonId?: number | null,
-		metadata?: {
-			latitude?: number | null;
-			longitude?: number | null;
-			accuracy?: number | null;
-			photo?: string | null;
-		},
-	) => {
-		setError(null);
-		try {
-			const ahora = horaOverride
-				? dayjs(horaOverride, 'hh:mm A')
-				: getRealColombiaTime();
-			const recordDate = ahora.format('YYYY-MM-DD');
-			const recordTime = ahora.format('HH:mm:ss');
-			const observacion = observacionOverride || '';
-
-			const existingRecord = timeRecords.find(
-				(r) =>
-					idRelacion(r.employee_id) === Number(idEmpleado) &&
-					r.log_type === tipoEvento &&
-					r.record_date === recordDate,
-			);
-
-			let recordId: number | null = null;
-			if (existingRecord) {
-				const originalTime =
-					existingRecord.original_record_time || existingRecord.record_time;
-				await updateTimeRecordMutation.mutateAsync({
-					id: existingRecord.id,
-					record_time: recordTime,
-					original_record_time: originalTime,
-					observations: observacion,
-				});
-				recordId = existingRecord.id;
-			} else {
-				const creado = await createTimeRecordMutation.mutateAsync({
-					employee_id: Number(idEmpleado),
-					store_id: STORE_ID as number,
-					log_type: tipoEvento,
-					record_date: recordDate,
-					record_time: recordTime,
-					observations: observacion,
-					latitude: metadata?.latitude,
-					longitude: metadata?.longitude,
-					accuracy: metadata?.accuracy,
-					photo: metadata?.photo,
-				});
-				recordId = creado?.id != null ? Number(creado.id) : null;
+		metadata?: VerificationData,
+	): Promise<void> => {
+		let resultado: Awaited<ReturnType<typeof acciones.registrar>>;
+		if (horaOverride) {
+			const recordId = registroIdDe(idEmpleado, tipoEvento);
+			if (recordId == null) {
+				showSnackbar(
+					'No se encontró el registro para editar la hora.',
+					'error',
+				);
+				throw new Error('No se encontró el registro para editar la hora.');
 			}
-
-			if (reasonId != null && recordId != null) {
-				await upsertRecordReason(recordId, reasonId);
-			}
-		} catch (err: any) {
-			console.error('Error al registrar evento:', err);
+			resultado = await acciones.editarHora({
+				recordId,
+				hora: horaOverride,
+				motivoId: reasonId,
+				observacion: observacionOverride,
+			});
+		} else {
+			resultado = await acciones.registrar({
+				empleadoId: Number(idEmpleado),
+				marcacion: tipoEvento,
+				verificacion: metadata,
+				observacion: observacionOverride,
+			});
 		}
+		if (!resultado.ok) throw new Error(resultado.error);
 	};
 
 	const guardarObservacion = async (
 		idEmpleado: string,
 		tipoEvento: LogType,
 		texto: string,
-	) => {
-		setError(null);
-		try {
-			const emp = empleadosMapeados.find(
-				(e) => String(e.id) === String(idEmpleado),
+	): Promise<boolean> => {
+		const recordId = registroIdDe(idEmpleado, tipoEvento);
+		if (recordId == null) {
+			showSnackbar(
+				'No se encontró el registro de tiempo para actualizar la observación.',
+				'error',
 			);
-			if (!emp) return;
-
-			const key = keyPorLogType(tipoEvento);
-			const recordId = key ? emp.registros.ids[key] : undefined;
-
-			if (recordId) {
-				await updateTimeRecordMutation.mutateAsync({
-					id: recordId,
-					observations: texto,
-				});
-			} else {
-				setError(
-					'No se encontró el registro de tiempo para actualizar la observación.',
-				);
-			}
-		} catch (err: any) {
-			console.error('Error al guardar observación:', err);
+			return false;
 		}
-	};
-
-	const eliminarEmpleado = (_idEmpleado: string) => {};
-
-	const resetHorarios = async () => {
-		setError(null);
-		await queryClient.invalidateQueries();
-		await queryClient.refetchQueries({ type: 'active' });
+		const resultado = await acciones.observar({ recordId, texto });
+		return resultado.ok;
 	};
 
 	const agregarNovedad = async (novedad: {
@@ -320,6 +207,12 @@ export const useHorarios = (storeOverride?: number | null) => {
 		fechaRegistro: string;
 	}) => {
 		setError(null);
+		if (STORE_ID == null) {
+			setError(
+				'No hay una tienda seleccionada: no se puede guardar la novedad.',
+			);
+			return false;
+		}
 		try {
 			const tipoEncontrado = tiposNovedad.find(
 				(t) => t.name === novedad.tipo || t.nombre === novedad.tipo,
@@ -350,7 +243,7 @@ export const useHorarios = (storeOverride?: number | null) => {
 					newness_id: Number(tipoEncontrado.id),
 					report_date: current.format('YYYY-MM-DD'),
 					observations: novedad.observaciones || '',
-					store_id: STORE_ID as number,
+					store_id: STORE_ID,
 				});
 				current = current.add(1, 'day');
 			}
@@ -367,24 +260,13 @@ export const useHorarios = (storeOverride?: number | null) => {
 		idEmpleado: string,
 		eventType: EventoTipo,
 		observaciones?: string,
-	) => {
-		try {
-			const ahora = getRealColombiaTime();
-			await createEventReport({
-				employee_id: Number(idEmpleado),
-				event_type: eventType,
-				observations: observaciones,
-				store_id: STORE_ID as number,
-				date: ahora.format('YYYY-MM-DD'),
-				hour: ahora.format('HH:mm:ss'),
-			});
-			showSnackbar('Evento reportado con éxito', 'success');
-			queryClient.invalidateQueries({ queryKey: ['eventReportsToday'] });
-			return true;
-		} catch (err: any) {
-			showSnackbar(err?.message || 'Error al reportar el evento', 'error');
-			return false;
-		}
+	): Promise<boolean> => {
+		const resultado = await acciones.reportarEvento({
+			empleadoId: Number(idEmpleado),
+			tipo: eventType,
+			observacion: observaciones,
+		});
+		return resultado.ok;
 	};
 
 	const novedadesMapped: NovedadMapeada[] = (novedadesDB || []).map(
@@ -470,8 +352,6 @@ export const useHorarios = (storeOverride?: number | null) => {
 			error ||
 			(errorE || errorT || errorN || errorTime ? 'Sincronizando...' : null),
 		registrarEvento,
-		resetHorarios,
-		eliminarEmpleado,
 		guardarObservacion,
 		agregarNovedad,
 		reportarEvento,

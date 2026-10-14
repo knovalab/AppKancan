@@ -4,6 +4,7 @@ import { getStores, getCargos, buscarEmpleados, listarEmpleadosTienda } from '..
 import { crearEmpleado, actualizarEmpleado } from '../api/directus/create';
 import { Tienda, Cargo, EmpleadoAdmin } from '../interfaces/horarios.interface';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { horariosKeys } from './registro/keys';
 
 export const TIPOS_DOCUMENTO: string[] = ['Cédula de Ciudadanía'];
 
@@ -61,7 +62,7 @@ export const useAdminEmpleados = (tiendaSel: number | null, setTiendaSel: (id: n
   };
 
   const invalidarEmpleados = () => {
-    queryClient.invalidateQueries({ queryKey: ['empleados'] });
+    queryClient.invalidateQueries({ queryKey: horariosKeys.empleados.todos });
     queryClient.invalidateQueries({ queryKey: ['adminEmpleadosTienda'] });
     queryClient.invalidateQueries({ queryKey: ['adminTodosEmpleados'] });
   };

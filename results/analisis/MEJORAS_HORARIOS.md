@@ -1,6 +1,6 @@
 # Registro de Horarios — Análisis para añadir funcionalidades
 
-> **Reconstruido el 2026-10-13** sobre `setup` @ `ce3316d`. **Actualizado el 2026-10-14** sobre `62a1271`: estado actual (§0.1), foto + GPS (§9) y aceptación de la política (§10).
+> **Reconstruido el 2026-10-13** sobre `setup` @ `ce3316d`. **Actualizado el 2026-10-14** sobre `cd0c6af`: estado actual (§0.1), foto + GPS (§9), aceptación de la política (§10) y análisis de `useHorarios` ([`USE_HORARIOS.md`](USE_HORARIOS.md)).
 > **Objetivo:** dejar el **registro de horarios** (`/horarios/registros`) listo para crecer con nuevas funcionalidades.
 > **Fuera de alcance por ahora:** rendimiento, bugs de otras secciones (Monitoreo, Reportes, Historial, Admin), la duplicación de la lógica de acceso, las normas del header y los avisos generales de Biome. Están en la §8 para no perderlos.
 
@@ -18,18 +18,20 @@ La navegación y el layout ya están resueltos (`23d35de`), igual que la aceptac
 
 La propuesta (§5) es **centralizar el dominio del registro** en un catálogo de marcaciones y unas pocas funciones puras. Con eso, añadir algo pasa a ser "declarar y renderizar".
 
-### 0.1 Estado al 2026-10-14 (`62a1271`)
+### 0.1 Estado al 2026-10-14 (`cd0c6af`)
 
 | Commit | Qué entró | Estado |
 |---|---|---|
 | `ce3316d` | Aceptación de normas por empleado en 1 consulta | ✅ Hecho. Quedan pendientes funcionales: ver §10 |
 | `8a19fc5` | **Foto + GPS en cada marcación** (`TimeRecordVerificationModal`, `useInAppCamera`, `useHighPrecisionLocation`, `upload.ts`) | 🟡 Funciona en el camino feliz. Tiene huecos: ver §9 |
 | `62a1271` | **Fase 1** (catálogo y tipos) + extensión a toda la app + integración de foto/GPS con los tipos | ✅ Hecho |
-| — | **Actualización de la aceptación de la política** (`com_rules_acceptance`) | ⏳ **Siguiente.** Análisis en §10 |
+| `cd0c6af` | Plugin SSL ajustado + **normas antes de la foto y el GPS**: "Comenzar Jornada" consulta Directus en el momento (`verificarAceptacion`) para todos los usuarios y, sin aceptar, no abre la cámara | ✅ Hecho |
+| — | **Actualización de la aceptación de la política** (`com_rules_acceptance`): esquema, evidencia, alcance y header (§10.3 A, B, D, E) | ⏳ Pendiente de definir qué se quiere (§10.4) |
+| — | **`useHorarios`** → fachada + `hooks/registro/` (pasos 1–6 de [`USE_HORARIOS.md`](USE_HORARIOS.md)): dominio `mapeo`/`estado`, query keys, `Resultado`, registrar ≠ editar, **marcación repetida se rechaza**. Cierra G1, G2, B1–B4 en el registro | ✅ Aplicado, sin commitear ([detalle](../USE_HORARIOS_CAMBIOS_APLICADOS.md)). Pendientes: pasos 7–8 |
 
 Comprobaciones a esta fecha:
 - `tsc`: 0 errores en `apps/horarios` fuera de los 3 previos de `MonitoreoPage`.
-- Sin commitear (cambios locales, **no son de horarios**): `vite.config.ts` activa `basicSsl()` (la cámara y el GPS exigen HTTPS al probar desde otro dispositivo de la red), y `package.json` baja `@vitejs/plugin-basic-ssl` de `^2.3.0` a `^1.2.0` y queda reformateado con tabs. Conviene decidir si se commitean o se descartan antes del próximo commit, para no mezclarlos.
+- Sin commitear: solo `vite.config.ts` (activa `basicSsl()`; la cámara y el GPS exigen HTTPS al probar desde otro dispositivo de la red). No es de horarios: decidir si se commitea aparte o queda local.
 
 ---
 
@@ -252,10 +254,10 @@ Cada fase se puede desplegar sola y **no cambia el comportamiento visible**, sal
 
 | Fase | Qué | Archivos | Resuelve | Criterio de aceptación |
 |---|---|---|---|---|
-| **0. Preparación** | Quitar los `console.log` de `useAceptacionNormasEmpleados`; quitar `resetHorarios`, `eliminarEmpleado`/`onEliminarEmpleado` | `useHorarios`, `EmployeeCard`, `RegistrosPage` | Ruido | `tsc` igual que antes |
+| **0. Preparación** 🟡 (código sin uso movido a `legacy/`; faltan los `console.log`) | Quitar los `console.log` de `useAceptacionNormasEmpleados`; quitar `resetHorarios`, `eliminarEmpleado`/`onEliminarEmpleado` | `useHorarios`, `EmployeeCard`, `RegistrosPage` | Ruido | `tsc` igual que antes |
 | **1. Catálogo y tipos** ✅ ([detalle](../FASE1_TIPOS_REGISTRO.md)) | `domain/registro/marcaciones.ts` + `MarcacionKey`, `LogType`, `EstadoAsistencia`; tipar `RegistrosAsistencia` con `Record<MarcacionKey, …>` sin opcionales | `domain/`, `interfaces/` | F1, F9 | Ningún literal `'Comenzar Jornada'` en los archivos del registro |
-| **2. Dominio puro** | `mapeo.ts`, `estado.ts` (`calcularEstado`, `accionesDisponibles`, `validarHoraEditada`), `reglas.ts`. `useHorarios`, `EmployeeCard`, `EmployeeCardUtils` y `EditHourModal` los usan | `domain/`, consumidores | F2, F8 | Los 13 `switch`/`if` del registro desaparecen. Primeros tests unitarios del dominio |
-| **3. Acciones con contrato** | `useAccionesRegistro` con `Resultado`; separar registrar y editar; sin fallback a 90; hora manual con la fecha del servidor; "sin almuerzo" se detiene si falla el 1.º; la verificación foto/GPS forma parte del input de `registrar` (§9, G1–G3) | `hooks/registro/`, `create.ts`, `EmployeeCard` | F4, B1, B2, B3, G1–G3 | "Sin almuerzo" con error simulado: no registra el 2.º y muestra el error. Un fallo al guardar deja el modal de foto abierto con el error |
+| **2. Dominio puro** 🟡 (`mapeo`, `estado` hechos; falta `validarHoraEditada` y `accionesDisponibles`) | `mapeo.ts`, `estado.ts` (`calcularEstado`, `accionesDisponibles`, `validarHoraEditada`), `reglas.ts`. `useHorarios`, `EmployeeCard`, `EmployeeCardUtils` y `EditHourModal` los usan | `domain/`, consumidores | F2, F8 | Los 13 `switch`/`if` del registro desaparecen. Primeros tests unitarios del dominio |
+| **3. Acciones con contrato** ✅ (en `hooks/registro/useAccionesRegistro.ts`; `create.ts` aún con fallback 90 para Monitoreo/Planilla) | `useAccionesRegistro` con `Resultado`; separar registrar y editar; sin fallback a 90; hora manual con la fecha del servidor; "sin almuerzo" se detiene si falla el 1.º; la verificación foto/GPS forma parte del input de `registrar` (§9, G1–G3) | `hooks/registro/`, `create.ts`, `EmployeeCard` | F4, B1, B2, B3, G1–G3 | "Sin almuerzo" con error simulado: no registra el 2.º y muestra el error. Un fallo al guardar deja el modal de foto abierto con el error |
 | **4. Demo con el mismo dominio** | `useDemoRegistro` implementa `AccionesRegistro`; borrar los handlers demo de `RegistrosPage`; centralizar `ID_DEMO` | `components/tour/demo/`, `RegistrosPage` | F6 | `RegistrosPage` sin lógica demo. El tour funciona igual |
 | **5. Partir `EmployeeCard`** | Cada modal con su propio estado; `TimeSlots` recorre el catálogo | `components/employee-card/` | F5 | `EmployeeCard` < 150 líneas y sin lógica de negocio |
 | **6. Decisiones de modelo** *(cambia el comportamiento)* | Según §7: "sin almuerzo" persistido, pausa activa en el servidor, varias marcaciones por día | Directus + dominio | F3, F7, B4, B5 | Lo que se decida |

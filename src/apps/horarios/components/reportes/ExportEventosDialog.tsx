@@ -16,6 +16,7 @@ import { Tienda } from '../../interfaces/horarios.interface';
 import DateRangeFilter from './DateRangeFilter';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
+import { horariosKeys } from '../../hooks/registro/keys';
 
 const AZUL = '#004680';
 
@@ -73,7 +74,7 @@ export default function ExportEventosDialog({ open, onClose, storeId, fechaInici
     : tiendas;
 
   const { data: storeUsuario = null } = useQuery<number | null>({
-    queryKey: ['horariosStoreId'],
+    queryKey: horariosKeys.storeUsuario,
     queryFn: getStoreIdUsuarioActual,
     staleTime: 30 * 60 * 1000,
     enabled: open && storeId == null,

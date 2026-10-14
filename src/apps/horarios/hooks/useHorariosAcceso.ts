@@ -11,6 +11,7 @@ import {
 	type Rol,
 } from '../navigation/secciones';
 import useHorariosPolicies from './useHorariosPolicies';
+import { horariosKeys } from './registro/keys';
 
 /** Tienda que se excluye del listado del Area Manager (mismo criterio que RegistrosPage). */
 const TIENDA_EXCLUIDA_AREA = 5;
@@ -68,7 +69,7 @@ export function useHorariosAcceso(): HorariosAcceso {
 	);
 
 	const { data: tiendaPropia = null } = useQuery<number | null>({
-		queryKey: ['horariosStoreId'],
+		queryKey: horariosKeys.storeUsuario,
 		queryFn: getStoreIdUsuarioActual,
 		enabled: !!user,
 		staleTime: 30 * 60 * 1000,

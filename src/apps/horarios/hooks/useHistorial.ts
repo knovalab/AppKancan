@@ -6,6 +6,7 @@ import {
 } from '../api/directus/read';
 import { LOG_TYPE } from '../domain/registro';
 import type { HistorialRow } from '../interfaces/horarios.interface';
+import { horariosKeys } from './registro/keys';
 
 const agruparRegistros = (records: TimeRecord[]): HistorialRow[] => {
 	const agrupado: Record<string, TimeRecord[]> = {};
@@ -66,7 +67,7 @@ export const useHistorial = (
 	overrideStoreId?: number | number[] | null,
 ) => {
 	const { data: storeId = null } = useQuery<number | null>({
-		queryKey: ['horariosStoreId'],
+		queryKey: horariosKeys.storeUsuario,
 		queryFn: getStoreIdUsuarioActual,
 		staleTime: 30 * 60 * 1000,
 		enabled: overrideStoreId === undefined,

@@ -63,14 +63,8 @@ interface EmployeeCardProps {
 		horaOverride?: string,
 		observacionOverride?: string,
 		reasonId?: number | null,
-		metadata?: {
-			latitude?: number | null;
-			longitude?: number | null;
-			accuracy?: number | null;
-			photo?: string | null;
-		},
+		metadata?: VerificationData,
 	) => Promise<void> | void;
-	onEliminarEmpleado: (idEmpleado: string) => void;
 	onGuardarObservacion: (
 		idEmpleado: string,
 		evento: LogType,
@@ -117,7 +111,6 @@ function EmployeeCardContent({
 	tiposNovedad,
 	reasons,
 	onRegistrarEvento,
-	onEliminarEmpleado,
 	onGuardarObservacion,
 	onAgregarNovedad,
 	onReportarEvento,
@@ -225,10 +218,8 @@ function EmployeeCardContent({
 				observaciones: formData.observaciones,
 				fechaRegistro: dayjs().format('DD/MM/YYYY HH:mm:ss'),
 			});
-			if (success) {
-				onEliminarEmpleado(id);
-				handleCloseNovedadModal();
-			}
+			// El empleado sale de la lista solo: la query de novedades se invalida.
+			if (success) handleCloseNovedadModal();
 		} catch (err) {
 			if (err instanceof yup.ValidationError) {
 				const errors: Record<string, string> = {};
@@ -360,8 +351,9 @@ function EmployeeCardContent({
 				metadata,
 			);
 		} finally {
+			// pendingEvento NO se limpia aquí: si falla, el modal de foto sigue abierto y
+			// "Confirmar" debe poder reintentar. Lo limpia el onClose del modal.
 			setGuardandoRegistro(null);
-			setPendingEvento(null);
 		}
 	};
 
@@ -387,10 +379,13 @@ function EmployeeCardContent({
 	const handleConfirmarSinAlmuerzo = async () => {
 		setOmitiendoAlmuerzo(true);
 		try {
+			// Si falla el 1.º lanza y no se registra el 2.º (el error ya se mostró en el snackbar).
 			await onRegistrarEvento(id, LOG_TYPE.inicioAlmuerzo);
 			await onRegistrarEvento(id, LOG_TYPE.finAlmuerzo);
 			setAlmuerzoOmitidoLocal(true);
 			setOmitirAlmuerzoModalOpen(false);
+		} catch {
+			// El modal sigue abierto para reintentar.
 		} finally {
 			setOmitiendoAlmuerzo(false);
 		}

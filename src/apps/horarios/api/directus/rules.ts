@@ -29,39 +29,6 @@ export async function getNormasActivas(): Promise<Normas | null> {
   }
 }
 
-// ¿El usuario ya aceptó esta versión de las normas?
-// employee_id es la relación (M2O) al usuario logueado.
-export async function yaAceptoNormas(userId: string, version: number): Promise<boolean> {
-  try {
-    const items = await withAutoRefresh(() =>
-      directus.request(
-        readItems("com_rules_acceptance", {
-          fields: ["id"],
-          filter: { _and: [{ employee_id: { _eq: userId } }, { version: { _eq: version } }] },
-          limit: 1,
-        })
-      )
-    );
-    return (items || []).length > 0;
-  } catch (error) {
-    console.error("❌ Error verificando aceptación de normas:", error);
-    // Ante error de lectura, no forzamos el modal repetidamente.
-    return true;
-  }
-}
-
-export async function registrarAceptacionNormas(userId: string, version: number) {
-  return await withAutoRefresh(() =>
-    directus.request(
-      createItem("com_rules_acceptance", {
-        employee_id: userId,
-        version,
-        // date_created lo asigna Directus automáticamente.
-      })
-    )
-  );
-}
-
 // Empleados (de la lista dada) que ya aceptaron las normas vigentes: una sola request
 // para toda la tienda en lugar de una por tarjeta.
 // El _or por version mantiene la compatibilidad con aceptaciones antiguas sin rule_id.

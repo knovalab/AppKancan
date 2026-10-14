@@ -44,7 +44,6 @@ export default function RegistrosPage() {
 		loading,
 		error,
 		registrarEvento,
-		eliminarEmpleado,
 		guardarObservacion,
 		agregarNovedad,
 		reportarEvento,
@@ -230,7 +229,6 @@ export default function RegistrosPage() {
 							tiposNovedad={tiposNovedad}
 							reasons={reasons}
 							onRegistrarEvento={registrarEventoDemo}
-							onEliminarEmpleado={() => {}}
 							onGuardarObservacion={guardarObservacionDemo}
 							onAgregarNovedad={async () => true}
 							onReportarEvento={reportarEventoDemo}
@@ -247,7 +245,6 @@ export default function RegistrosPage() {
 							tiposNovedad={tiposNovedad}
 							reasons={reasons}
 							onRegistrarEvento={registrarEvento}
-							onEliminarEmpleado={eliminarEmpleado}
 							onGuardarObservacion={guardarObservacion}
 							onAgregarNovedad={agregarNovedad}
 							onReportarEvento={reportarEvento}
