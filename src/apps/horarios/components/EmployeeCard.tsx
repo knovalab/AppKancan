@@ -51,7 +51,7 @@ import 'dayjs/locale/es';
 import {
 	TimeRecordVerificationModal,
 	type VerificationData,
-} from './TimeRecordVerificationModal';
+} from './verification/TimeRecordVerificationModal';
 
 interface EmployeeCardProps {
 	empleado: EmpleadoAsistencia;
