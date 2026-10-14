@@ -56,6 +56,7 @@ export default function RegistrosPage() {
 		normas,
 		yaAcepto: yaAceptoNormas,
 		marcarAceptado: marcarNormasAceptadas,
+		verificarAceptacion: verificarAceptacionNormas,
 	} = useAceptacionNormasEmpleados(empleadoIds);
 
 	const [demoEmpleado, setDemoEmpleado] = useState<EmpleadoAsistencia>({
@@ -236,6 +237,7 @@ export default function RegistrosPage() {
 							normas={normas}
 							yaAceptoNormas
 							onNormasAceptadas={marcarNormasAceptadas}
+							verificarAceptacionNormas={verificarAceptacionNormas}
 						/>
 					)}
 					{empleados.map((empleado) => (
@@ -252,6 +254,7 @@ export default function RegistrosPage() {
 							normas={normas}
 							yaAceptoNormas={yaAceptoNormas(empleado.id)}
 							onNormasAceptadas={marcarNormasAceptadas}
+							verificarAceptacionNormas={verificarAceptacionNormas}
 						/>
 					))}
 					{empleados.length === 0 && !modoDemo && (

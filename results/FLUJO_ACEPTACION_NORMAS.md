@@ -122,15 +122,19 @@ Se crea una fila en com_rules_acceptance ────────► Directus (1
 Clic en "Comenzar Jornada"
         │
         ▼
-Se registra la entrada (como siempre)
-        │
-        ▼
-¿El empleado ya aceptó? (lo sabe por la consulta de 4.1, sin pedir nada nuevo)
-        ├── sí ─► nada más
-        └── no ─► a los 2 segundos se abre el mismo modal obligatorio de 4.2
+¿El empleado ya aceptó? → 1 request fresca a com_rules_acceptance solo para ese empleado
+                           (sin caché y para TODOS los usuarios, no solo `temporal`;
+                            el botón muestra el spinner mientras tanto)
+        ├── sí ─► modal de foto + GPS ─► se registra la entrada
+        └── no ─► modal OBLIGATORIO de normas (el de 4.2)
+                      │ ACEPTO
+                      ▼
+                  se guarda la aceptación ─► modal de foto + GPS ─► se registra la entrada
 ```
 
-La entrada **se registra igual**: aceptar las normas no bloquea la marcación, solo la sigue.
+Desde el 2026-10-14 **las normas van antes de la foto y el GPS**: sin aceptar no se llega a la cámara ni se registra la entrada. Las demás marcaciones van directo a la foto + GPS. Si falla la consulta de aceptación, se asume que aceptó y se sigue a la foto, para no bloquear por la red.
+
+> **Historia.** Antes de `ce3316d` el modal salía 2 s *después* de registrar la entrada. Tras `ce3316d` usaba la caché de 4.1: sin `temporal` la consulta estaba deshabilitada y el modal **nunca salía**; con `temporal`, borrar la aceptación no se notaba hasta 5 min o F5. Ambas cosas están corregidas con `verificarAceptacion` (en `useAceptacionNormasEmpleados`).
 
 ### 4.4 La tarjeta de demo
 
@@ -185,7 +189,7 @@ Como **los ids de la tienda forman parte de la clave**, cada tienda tiene su pro
 2. **Se publica una versión nueva de las normas:** quien tenga la app abierta la verá cuando caduquen las normas en memoria (10 min) o al pulsar "Actualizar". A partir de ese momento, todos los empleados vuelven a "no aceptó" hasta que acepten la nueva.
 3. **Falla la consulta a Directus:** se reintenta una vez. Si vuelve a fallar, no hay datos y todos cuentan como "aceptó": no se muestra el botón ni el modal. Es mejor no molestar que bloquear por un error de red.
 4. **Falla el guardado al aceptar:** el modal sigue abierto y el empleado puede volver a intentarlo. No se marca nada en memoria.
-5. **Usuario sin `temporal`:** no ve el botón ni el modal al iniciar jornada. ⚠️ **Esto cambió:** antes el modal de "Comenzar Jornada" sí podía salirle. Hay que confirmarlo con negocio.
+5. **Usuario sin `temporal`:** no ve el botón "Aceptar normas", pero **sí** el modal al iniciar jornada (restaurado el 2026-10-14, igual que antes de `ce3316d`).
 
 ---
 
@@ -197,7 +201,7 @@ Como **los ids de la tienda forman parte de la clave**, cada tienda tiene su pro
 
 ## 9. Preguntas abiertas para negocio
 
-- [ ] ¿El modal de "Comenzar Jornada" debe salir también a usuarios **sin** `temporal`? (§7.5)
+- [x] El modal de "Comenzar Jornada" sale también a usuarios **sin** `temporal` (restaurado, §7.5)
 - [ ] El flujo A (header) ¿debe ser solo de lectura o el usuario debería aceptar formalmente? Hoy no se guarda nada.
 - [ ] ¿Se admiten aceptaciones antiguas sin `rule_id`? Define si se mantiene el "o" de §2.3.
 - [ ] ¿Importan las filas duplicadas por aceptar desde dos dispositivos? (§7.1)

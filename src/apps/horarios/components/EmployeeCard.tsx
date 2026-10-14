@@ -93,6 +93,8 @@ interface EmployeeCardProps {
 	normas: Normas | null;
 	yaAceptoNormas: boolean;
 	onNormasAceptadas: (idEmpleado: string) => void;
+	/** Consulta fresca (sin caché) usada al "Comenzar Jornada". */
+	verificarAceptacionNormas: (idEmpleado: string) => Promise<boolean>;
 }
 
 // El return temprano va en un componente aparte: dentro de EmployeeCardContent
@@ -121,6 +123,7 @@ function EmployeeCardContent({
 	normas: normasActivas,
 	yaAceptoNormas,
 	onNormasAceptadas,
+	verificarAceptacionNormas,
 }: EmployeeCardProps) {
 	const {
 		id,
@@ -301,13 +304,25 @@ function EmployeeCardContent({
 	const [verificationModalOpen, setVerificationModalOpen] = useState(false);
 	const [pendingEvento, setPendingEvento] = useState<LogType | null>(null);
 
-	// El empleado demo (tour) no pasa por cámara/GPS: no se sube su foto a Directus.
-	const handleRegistrarEvento = (tipoEvento: LogType) => {
+	// Orden al marcar: normas (solo "Comenzar Jornada" y si no las aceptó) → foto + GPS → guardar.
+	// El empleado demo (tour) no pasa por normas ni cámara/GPS: no se sube su foto a Directus.
+	const handleRegistrarEvento = async (tipoEvento: LogType) => {
 		if (esEmpleadoDemo(id)) {
 			void registrarMarcacion(tipoEvento);
 			return;
 		}
 		setPendingEvento(tipoEvento);
+		if (tipoEvento === LOG_TYPE.inicioJornada && normasActivas) {
+			// Se pregunta a Directus en el momento (no a la caché ni solo con `temporal`):
+			// así una aceptación borrada o hecha en otro dispositivo se refleja enseguida.
+			setGuardandoRegistro(tipoEvento);
+			const acepto = await verificarAceptacionNormas(id);
+			setGuardandoRegistro(null);
+			if (!acepto) {
+				setEmployeeNormasOpen(true);
+				return;
+			}
+		}
 		setVerificationModalOpen(true);
 	};
 
@@ -327,7 +342,6 @@ function EmployeeCardContent({
 	) => {
 		setGuardandoRegistro(tipoEvento);
 		try {
-			// yaAceptoNormas ya viene de la consulta de la página: no se vuelve a preguntar.
 			await onRegistrarEvento(
 				id,
 				tipoEvento,
@@ -336,16 +350,6 @@ function EmployeeCardContent({
 				null,
 				metadata,
 			);
-			if (
-				tipoEvento === LOG_TYPE.inicioJornada &&
-				normasActivas &&
-				!esEmpleadoDemo(id) &&
-				!yaAceptoNormas
-			) {
-				setTimeout(() => {
-					setEmployeeNormasOpen(true);
-				}, 2000);
-			}
 		} finally {
 			setGuardandoRegistro(null);
 			setPendingEvento(null);
@@ -363,6 +367,7 @@ function EmployeeCardContent({
 			);
 			setEmployeeNormasOpen(false);
 			onNormasAceptadas(id);
+			if (pendingEvento) setVerificationModalOpen(true);
 		} catch (e) {
 			console.error('Error al registrar aceptación de normas del empleado:', e);
 		} finally {
@@ -454,7 +459,10 @@ function EmployeeCardContent({
 				obligatorio={true}
 				aceptando={aceptandoNormas}
 				titleOverride={`Normativa de Registro de Horarios — ${nombre}`}
-				onClose={() => setEmployeeNormasOpen(false)}
+				onClose={() => {
+					setEmployeeNormasOpen(false);
+					setPendingEvento(null);
+				}}
 				onAceptar={handleAceptarNormasEmpleado}
 			/>
 

@@ -1,6 +1,6 @@
 # Registro de Horarios — Análisis para añadir funcionalidades
 
-> **Reconstruido el 2026-10-13** sobre `setup` @ `ce3316d`.
+> **Reconstruido el 2026-10-13** sobre `setup` @ `ce3316d`. **Actualizado el 2026-10-14** sobre `62a1271`: estado actual (§0.1), foto + GPS (§9) y aceptación de la política (§10).
 > **Objetivo:** dejar el **registro de horarios** (`/horarios/registros`) listo para crecer con nuevas funcionalidades.
 > **Fuera de alcance por ahora:** rendimiento, bugs de otras secciones (Monitoreo, Reportes, Historial, Admin), la duplicación de la lógica de acceso, las normas del header y los avisos generales de Biome. Están en la §8 para no perderlos.
 
@@ -17,6 +17,19 @@ La navegación y el layout ya están resueltos (`23d35de`), igual que la aceptac
 5. **La demo reimplementa la lógica** en `RegistrosPage`: cada funcionalidad nueva hay que programarla dos veces.
 
 La propuesta (§5) es **centralizar el dominio del registro** en un catálogo de marcaciones y unas pocas funciones puras. Con eso, añadir algo pasa a ser "declarar y renderizar".
+
+### 0.1 Estado al 2026-10-14 (`62a1271`)
+
+| Commit | Qué entró | Estado |
+|---|---|---|
+| `ce3316d` | Aceptación de normas por empleado en 1 consulta | ✅ Hecho. Quedan pendientes funcionales: ver §10 |
+| `8a19fc5` | **Foto + GPS en cada marcación** (`TimeRecordVerificationModal`, `useInAppCamera`, `useHighPrecisionLocation`, `upload.ts`) | 🟡 Funciona en el camino feliz. Tiene huecos: ver §9 |
+| `62a1271` | **Fase 1** (catálogo y tipos) + extensión a toda la app + integración de foto/GPS con los tipos | ✅ Hecho |
+| — | **Actualización de la aceptación de la política** (`com_rules_acceptance`) | ⏳ **Siguiente.** Análisis en §10 |
+
+Comprobaciones a esta fecha:
+- `tsc`: 0 errores en `apps/horarios` fuera de los 3 previos de `MonitoreoPage`.
+- Sin commitear (cambios locales, **no son de horarios**): `vite.config.ts` activa `basicSsl()` (la cámara y el GPS exigen HTTPS al probar desde otro dispositivo de la red), y `package.json` baja `@vitejs/plugin-basic-ssl` de `^2.3.0` a `^1.2.0` y queda reformateado con tabs. Conviene decidir si se commitean o se descartan antes del próximo commit, para no mezclarlos.
 
 ---
 
@@ -38,14 +51,17 @@ RegistrosPage (/horarios/registros?tienda=…)
    └─ EmployeeCard × N   (+ 1 tarjeta demo, id 99999, con handlers propios)
          ├─ Header: nombre, novedad, evento (pausa activa), aceptar normas
          ├─ TimeSlots: 4 botones en línea + editar hora + observación + "sin almuerzo"
-         └─ Modales: novedad, evento, observación, editar hora, sin almuerzo, normas
+         └─ Modales: novedad, evento, observación, editar hora, sin almuerzo, normas,
+                     verificación foto + GPS (antes de cada marcación, salvo demo)  ← 8a19fc5
 ```
 
 ### 1.2 Datos en Directus
 
 | Colección | Qué guarda | Clave lógica |
 |---|---|---|
-| `com_time_records` | Una marcación: `log_type`, `record_date`, `record_time`, `observations`, `original_record_time` | **(empleado, día, `log_type`)**: si ya existe se actualiza |
+| `com_time_records` | Una marcación: `log_type`, `record_date`, `record_time`, `observations`, `original_record_time` y, desde `8a19fc5`, `latitude`, `longitude`, `accuracy`, `photo` (UUID de `directus_files`) | **(empleado, día, `log_type`)**: si ya existe se actualiza |
+| `directus_files` | Fotos de las marcaciones (`marcacion_<log_type>_<timestamp>.jpg`, 720×900, JPEG 0.82), sin carpeta | — |
+| `com_rules` / `com_rules_acceptance` | Normas vigentes y quién las aceptó | Ver §10 |
 | `com_records_reasons` | Motivo de una edición de hora | 1 por marcación (upsert) |
 | `com_event_reports` | Eventos sueltos: `Iniciar Pausa Activa` y `Terminar Pausa Activa` | Sin unicidad |
 | `com_newness_reports` | Novedades (una fila por día del rango) | Sin unicidad |
@@ -239,7 +255,7 @@ Cada fase se puede desplegar sola y **no cambia el comportamiento visible**, sal
 | **0. Preparación** | Quitar los `console.log` de `useAceptacionNormasEmpleados`; quitar `resetHorarios`, `eliminarEmpleado`/`onEliminarEmpleado` | `useHorarios`, `EmployeeCard`, `RegistrosPage` | Ruido | `tsc` igual que antes |
 | **1. Catálogo y tipos** ✅ ([detalle](../FASE1_TIPOS_REGISTRO.md)) | `domain/registro/marcaciones.ts` + `MarcacionKey`, `LogType`, `EstadoAsistencia`; tipar `RegistrosAsistencia` con `Record<MarcacionKey, …>` sin opcionales | `domain/`, `interfaces/` | F1, F9 | Ningún literal `'Comenzar Jornada'` en los archivos del registro |
 | **2. Dominio puro** | `mapeo.ts`, `estado.ts` (`calcularEstado`, `accionesDisponibles`, `validarHoraEditada`), `reglas.ts`. `useHorarios`, `EmployeeCard`, `EmployeeCardUtils` y `EditHourModal` los usan | `domain/`, consumidores | F2, F8 | Los 13 `switch`/`if` del registro desaparecen. Primeros tests unitarios del dominio |
-| **3. Acciones con contrato** | `useAccionesRegistro` con `Resultado`; separar registrar y editar; sin fallback a 90; hora manual con la fecha del servidor; "sin almuerzo" se detiene si falla el 1.º | `hooks/registro/`, `create.ts`, `EmployeeCard` | F4, B1, B2, B3 | "Sin almuerzo" con error simulado: no registra el 2.º y muestra el error |
+| **3. Acciones con contrato** | `useAccionesRegistro` con `Resultado`; separar registrar y editar; sin fallback a 90; hora manual con la fecha del servidor; "sin almuerzo" se detiene si falla el 1.º; la verificación foto/GPS forma parte del input de `registrar` (§9, G1–G3) | `hooks/registro/`, `create.ts`, `EmployeeCard` | F4, B1, B2, B3, G1–G3 | "Sin almuerzo" con error simulado: no registra el 2.º y muestra el error. Un fallo al guardar deja el modal de foto abierto con el error |
 | **4. Demo con el mismo dominio** | `useDemoRegistro` implementa `AccionesRegistro`; borrar los handlers demo de `RegistrosPage`; centralizar `ID_DEMO` | `components/tour/demo/`, `RegistrosPage` | F6 | `RegistrosPage` sin lógica demo. El tour funciona igual |
 | **5. Partir `EmployeeCard`** | Cada modal con su propio estado; `TimeSlots` recorre el catálogo | `components/employee-card/` | F5 | `EmployeeCard` < 150 líneas y sin lógica de negocio |
 | **6. Decisiones de modelo** *(cambia el comportamiento)* | Según §7: "sin almuerzo" persistido, pausa activa en el servidor, varias marcaciones por día | Directus + dominio | F3, F7, B4, B5 | Lo que se decida |
@@ -267,9 +283,108 @@ Las fases 1 y 2 son las que más desbloquean. A partir de la 2, una marcación n
 | Rendimiento: `useHorarios` sin `useMemo`, novedades con todo el histórico, 7 queries en `DetallePlanillaPage`/`ModalDetalleTienda`/`NovedadesSeccion` | — |
 | Las `queryFn` devuelven `[]` ante errores (21 casos en `read`, `readBulk` y `reports`) | Afecta a todas las secciones |
 | Lógica de acceso duplicada (`useHorariosPolicies` en 9 archivos, "tiendas permitidas" ×5, tienda 5 a mano) | Migrar a `useHorariosLayout().acceso` |
-| Normas del header que nunca se guardan; modal de "Comenzar Jornada" restringido a `temporal`; filtro `rule_id`/`version` | [`../FLUJO_ACEPTACION_NORMAS.md`](../FLUJO_ACEPTACION_NORMAS.md) |
+| ~~Normas del header que nunca se guardan; modal de "Comenzar Jornada" restringido a `temporal`; filtro `rule_id`/`version`~~ | **Pasa a alcance:** §10 |
 | Sub-rutas de Monitoreo y Reportes con `SubSeccionLayout` | [`../LAYOUT_HORARIOS.md`](../LAYOUT_HORARIOS.md) |
 | `agregarNovedad` sin límite de rango; `getNovedades` ≈ `getStoreNovedades`; `TipoNovedad` con `name` y `nombre` | Novedades |
 | Query key factory (`horariosKeys`) | Conviene hacerla junto con la fase 3 si se tocan las claves |
 | Archivos grandes fuera del registro (`MonitoreoPage` 760, `ModalCierreMasivo` 723, `ReportePage` 674…) y 3 errores de `tsc` en `MonitoreoPage` | — |
 | 292 `noExplicitAny` y otros avisos de Biome en toda la app | Se reducirán en el registro con las fases 1–3 |
+
+---
+
+## 9. Funcionalidad agregada: foto + GPS en cada marcación (`8a19fc5`)
+
+### 9.1 Cómo funciona
+
+```
+Clic en una marcación (TimeSlots)
+   │
+   ├─ empleado demo ─► registra directo, sin cámara (cambio de 62a1271)
+   │
+   └─ resto ─► TimeRecordVerificationModal
+                 ├─ abre la cámara frontal (getUserMedia, sin galería) y pide GPS
+                 │  (enableHighAccuracy, maximumAge 0, timeout 12 s)
+                 ├─ "Capturar" ─► JPEG 720×900 recortado ─► vista previa ─► "Tomar otra" / "Confirmar"
+                 └─ "Confirmar" (exige foto + coords)
+                        1. sube la foto a directus_files ─► UUID
+                        2. onConfirm ─► registrarEvento(..., { latitude, longitude, accuracy, photo })
+                        3. cierra el modal
+```
+
+Piezas: `components/TimeRecordVerificationModal.tsx` (468 líneas), `hooks/useInAppCamera.ts`, `hooks/useHighPrecisionLocation.ts`, `api/directus/upload.ts`. En `create.ts`, los 4 campos solo se envían si no son `null`.
+
+### 9.2 Huecos encontrados
+
+| # | Hueco | Dónde | Impacto | Se resuelve en |
+|---|---|---|---|---|
+| G1 | **Si el guardado falla, el modal se cierra igual y la foto queda subida sin marcación.** `registrarEvento` atrapa el error y no lo relanza | `useHorarios.registrarEvento` | El empleado cree que marcó; archivos huérfanos en `directus_files` | Fase 3 (`Resultado`) |
+| G2 | **Si la marcación ya existía, se ignoran la foto y el GPS**: la rama `existingRecord` actualiza la hora pero no `metadata` | `useHorarios.ts` (rama update) | La evidencia guardada no corresponde a la hora guardada | Fase 3 (separar registrar/editar) |
+| G3 | **"Sin almuerzo" registra 2 marcaciones sin foto ni GPS** | `EmployeeCard.handleConfirmarSinAlmuerzo` | Hueco de control: se marcan almuerzos sin verificación | Decisión de negocio (§9.3) + fase 3 |
+| G4 | **Coordenadas viejas:** al reabrir el modal, `coords` conserva la lectura anterior mientras llega la nueva, y "Confirmar" solo se bloquea si `!coords`. Si la nueva lectura falla, se guarda la vieja | `useHighPrecisionLocation` (no limpia `coords`) + modal | Contradice el `maximumAge: 0`; ubicación no fiable | Arreglo pequeño: limpiar `coords` al pedir lectura, o bloquear mientras `isGpsLoading` |
+| G5 | **No hay umbral de precisión ni validación contra la tienda.** Se muestra "GPS asegurado" con cualquier `accuracy` (±2 km incluido) y no se compara con la ubicación de la tienda | Modal | El GPS se guarda pero no controla nada | Decisión de negocio (§9.3) |
+| G6 | **Nadie lee la foto ni el GPS:** ni Monitoreo, ni Historial, ni Planilla, ni el tipo `TimeRecord` tienen esos campos | Lectura en toda la app | La evidencia existe solo en Directus | Funcionalidad nueva (visor) |
+| G7 | Editar hora (`EditHourModal`) no pide verificación | `EditHourModal` | Probablemente correcto: es una corrección con motivo | Confirmar con negocio |
+| G8 | Fotos en la raíz de `directus_files`, sin carpeta ni política de retención; permisos de lectura sin revisar | `upload.ts` | Datos personales (rostro + ubicación) sin gobierno | Directus: carpeta + permisos + retención |
+| G9 | Tipado: `payload: Record<string, any>` en `create.ts`, `result: any` en `upload.ts`, `catch (err: any)` en los hooks; la firma de `metadata` está repetida en `EmployeeCard` y `useHorarios` | `create.ts`, `upload.ts`, hooks | Suma `any`; si cambia el contrato hay que tocar 3 sitios | Fase 3 (usar `VerificationData`) |
+| G10 | Requiere HTTPS (cámara + GPS). En local se resolvió con `basicSsl()`, que está **sin commitear** | `vite.config.ts` | En producción debe servirse por HTTPS | Ya cubierto si prod es HTTPS |
+
+### 9.3 Preguntas de negocio
+
+- [ ] ¿Precisión mínima del GPS para aceptar la marcación (p. ej. ≤ 100 m)? ¿Se valida la distancia a la tienda (geocerca)?
+- [ ] "Sin almuerzo": ¿debe pedir foto + GPS como cualquier marcación?
+- [ ] ¿Quién debe ver la foto y la ubicación (Monitoreo, Historial)? ¿Durante cuánto tiempo se conservan?
+- [ ] Si no hay cámara o se niega el permiso, ¿se bloquea la marcación (hoy sí) o se permite con una justificación?
+
+---
+
+## 10. Aceptación de la política (`com_rules_acceptance`) — estado actual
+
+> Es lo **siguiente** en la hoja de ruta. El flujo completo está explicado en [`../FLUJO_ACEPTACION_NORMAS.md`](../FLUJO_ACEPTACION_NORMAS.md); aquí solo el estado y los huecos.
+
+### 10.1 Qué hay hoy
+
+| Pieza | Estado |
+|---|---|
+| Lectura de normas vigentes (`getNormasActivas`, clave `normasActivas`) | ✅ Una sola request compartida, pero **la query está declarada 2 veces** (`useNormas` y `useAceptacionNormasEmpleados`) |
+| ¿Quién de la tienda aceptó? (`getEmpleadosQueAceptaronNormas`) | ✅ 1 request con `_in` (bloques de 200), solo con la política `temporal` |
+| Registrar aceptación del empleado (`registrarAceptacionNormasEmpleado`) | 🟡 Funciona. Se llama **directo desde `EmployeeCard`**, sin mutation; si falla solo hay `console.error` y el modal sigue abierto sin mensaje |
+| Aceptación del usuario del header (`useNormas`) | 🔴 **Nunca se guarda**: el modal en modo no obligatorio no tiene botón "Aceptar". `debeAceptar` no lo usa nadie y la persistencia sería `localStorage` |
+| `yaAceptoNormas` / `registrarAceptacionNormas` (por usuario, en Directus) | ⚫ Código muerto |
+| `legacy/rules.yaAceptoNormasEmpleado.ts` | ⚫ Código muerto (la versión N+1 anterior) |
+| Modal tras "Comenzar Jornada" | ✅ **Corregido el 2026-10-14:** ahora va **antes** de la foto + GPS. Consulta Directus en el momento (`verificarAceptacion`) para todos los usuarios; sin aceptar no se abre la cámara ni se registra la entrada. Antes iba 2 s después de registrar y, tras `ce3316d`, no salía sin `temporal` |
+
+### 10.2 Huecos
+
+| # | Hueco | Impacto |
+|---|---|---|
+| N1 | **Nombre y esquema sin confirmar.** El código usa `com_rules_acceptance` con `employee_id`, `rule_id`, `version` (+ `date_created`). `docs/DOCUMENTACION_HORARIOS.md` §6.1 (línea 599) habla de **`com_employee_rule_acceptances`** con `accepted_at`. Una de las dos está desactualizada | Antes de tocar nada hay que confirmar en Directus cuál es la colección real |
+| N2 | **Filtro permisivo `rule_id` O `version`:** una aceptación de la versión 3 de *otra* norma cuenta como aceptación de la vigente | Falsos "ya aceptó" si hay varias normas o si se reinician versiones |
+| N3 | **No hay unicidad**: dos dispositivos, o dos clics, crean filas duplicadas | Ruido en reportes de cumplimiento |
+| N4 | **La aceptación no deja evidencia**: no guarda qué declaraciones se marcaron, ni el texto aceptado, ni foto/GPS/dispositivo. Las 5 declaraciones están **fijas en `NormasModal`**, no en `com_rules` | Valor probatorio bajo; cambiar una declaración obliga a desplegar y no sube la versión |
+| N5 | **Solo la política `temporal` ve el botón** "Aceptar normas" (el modal al iniciar jornada ya sale a todos, corregido 2026-10-14) | Empleados de tiendas sin `temporal` marcan sin haber aceptado |
+| N6 | ~~No bloquea~~ ✅ Desde el 2026-10-14 bloquea "Comenzar Jornada" hasta aceptar. Las demás marcaciones no lo comprueban | Si la entrada ya estaba registrada antes del cambio, el resto del día no se pide |
+| N7 | Ante un error de lectura, todos cuentan como "aceptó" (decisión consciente: no bloquear por red) | Silencioso: nadie se entera de que la consulta falló |
+| N8 | `employee_id` se envía como `Number(id)`; la demo se excluye por `esEmpleadoDemo` ✅ | — |
+
+### 10.3 Qué puede significar "actualizar la aceptación" (a definir)
+
+| Opción | Qué implica | Toca |
+|---|---|---|
+| **A. Migrar de colección/esquema** (si `com_employee_rule_acceptances` es la nueva) | Cambiar las 2 lecturas y la escritura de `rules.ts`; decidir si las aceptaciones viejas cuentan (N2) | `rules.ts` + datos |
+| **B. Añadir evidencia** a cada aceptación: declaraciones marcadas, `accepted_at`, y **reutilizar la foto + GPS** de la marcación con la que se acepta | Nuevos campos en la colección; `NormasModal` devuelve qué marcó; `EmployeeCard` pasa la foto de la última verificación | `rules.ts`, `NormasModal`, `EmployeeCard` |
+| ~~**C. Hacerla obligatoria antes de marcar**~~ ✅ Hecho el 2026-10-14 | El modal de normas va **antes** del de foto en "Comenzar Jornada"; sin aceptar no se registra | `EmployeeCard` (orden de modales) |
+| **D. Extender a todos los usuarios** (no solo `temporal`) | Quitar la condición `temporal` del hook y de la tarjeta; ojo: vuelve a haber 1 request por tienda para todos | `useAceptacionNormasEmpleados`, `EmployeeCard` |
+| **E. Normas del header** | O se elimina el guardado muerto (solo lectura) o se guarda de verdad en Directus con `registrarAceptacionNormas` | `useNormas`, `HorariosHeader` |
+
+Independientemente de la opción, conviene hacer primero esta **limpieza sin cambio de comportamiento**:
+1. Hook `useNormasActivas()` único para la query `normasActivas` (hoy duplicada).
+2. `useAceptarNormas()` con `useMutation`: mueve la escritura fuera de `EmployeeCard`, actualiza la caché con `marcarAceptado` y muestra el error con snackbar.
+3. Borrar `legacy/rules.yaAceptoNormasEmpleado.ts`; decidir con E si se borran `yaAceptoNormas`/`registrarAceptacionNormas`.
+4. Tipar las respuestas de `rules.ts` (`Normas`, `{ employee_id }`) y quitar el `any` del `catch`.
+
+### 10.4 Preguntas para cerrar antes de implementar
+
+- [ ] ¿Cuál es la colección real en Directus y qué campos tiene? (N1)
+- [ ] ¿Qué se quiere "actualizar": esquema (A), evidencia (B), obligatoriedad (C), alcance (D) o el header (E)? Pueden ser varias.
+- [ ] ¿Hay filas sin `rule_id` en producción? Si no, se quita el `_or` (N2).
+- [ ] ¿Se puede añadir un índice único `(employee_id, rule_id, version)`? (N3)

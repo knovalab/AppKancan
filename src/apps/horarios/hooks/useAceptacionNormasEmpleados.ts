@@ -17,8 +17,6 @@ import useHorariosPolicies from './useHorariosPolicies';
  * `yaAcepto` devuelve true para no mostrar el botón ni el modal por error.
  */
 export function useAceptacionNormasEmpleados(empleadoIds: readonly string[]) {
-	console.log('useAceptacionNormasEmpleados', empleadoIds);
-	console.log('cuando');
 	const queryClient = useQueryClient();
 	const { tieneTemporal } = useHorariosPolicies();
 	const temporal = tieneTemporal();
@@ -77,5 +75,45 @@ export function useAceptacionNormasEmpleados(empleadoIds: readonly string[]) {
 		[queryClient, queryKey],
 	);
 
-	return { normas, puedeAceptar: temporal, yaAcepto, marcarAceptado };
+	// Consulta fresca a Directus para un empleado, sin caché ni la condición `temporal`:
+	// la usa "Comenzar Jornada" para decidir si abre el modal de normas (como antes de ce3316d).
+	// Ante error asume que aceptó, para no bloquear por la red.
+	const verificarAceptacion = useCallback(
+		async (empleadoId: string): Promise<boolean> => {
+			if (!normas || esEmpleadoDemo(empleadoId)) return true;
+			const idNum = Number(empleadoId);
+			try {
+				const aceptaronAhora = await getEmpleadosQueAceptaronNormas(
+					[idNum],
+					normas.id,
+					normas.version,
+				);
+				const acepto = aceptaronAhora.has(idNum);
+				// Sincroniza la caché de la tienda (si existe) para que el botón refleje el dato real.
+				queryClient.setQueryData<Set<number>>(queryKey, (prev) => {
+					if (!prev || prev.has(idNum) === acepto) return prev;
+					const next = new Set(prev);
+					if (acepto) next.add(idNum);
+					else next.delete(idNum);
+					return next;
+				});
+				return acepto;
+			} catch (error) {
+				console.error(
+					'❌ Error verificando aceptación de normas del empleado:',
+					error,
+				);
+				return true;
+			}
+		},
+		[normas, queryClient, queryKey],
+	);
+
+	return {
+		normas,
+		puedeAceptar: temporal,
+		yaAcepto,
+		marcarAceptado,
+		verificarAceptacion,
+	};
 }
