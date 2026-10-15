@@ -391,7 +391,9 @@ describe('useHorarios', () => {
 			const { result } = renderHookWithQuery(() => useHorarios(5));
 
 			await waitFor(() => {
-				expect(result.current.empleados[0]?.registros.ids.inicioJornada).toBe(42);
+				expect(result.current.empleados[0]?.registros.ids.inicioJornada).toBe(
+					42,
+				);
 			});
 
 			await act(async () => {
