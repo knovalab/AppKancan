@@ -1,5 +1,4 @@
 import {
-	Button,
 	Chip,
 	Dialog,
 	DialogContent,
@@ -11,21 +10,17 @@ import {
 	Camera,
 	CheckCircle2,
 	Clock,
-	Coffee,
-	ExternalLink,
 	FileText,
-	LogOut,
-	MapPin,
-	Play,
-	UtensilsCrossed,
 	X,
 	ZoomIn,
 } from 'lucide-react';
 import { useState } from 'react';
-import { LOG_TYPE } from '../domain/registro';
 import type { HistorialEventoDetalle } from '../interfaces/horarios.interface';
 import { getDirectusPreviewUrl } from '../utils/directusAssets';
 import { formatDocumentNumber } from '../utils/format';
+import { AttendanceGpsAccordion } from './attendance/AttendanceGpsAccordion';
+import { AttendancePhotoLightbox } from './attendance/AttendancePhotoLightbox';
+import { getEventoMeta, getIniciales } from './attendance/attendanceMeta';
 
 export interface SingleRecordDetailModalProps {
 	open: boolean;
@@ -38,34 +33,6 @@ export interface SingleRecordDetailModalProps {
 	documento?: string | null;
 	esReporte?: boolean;
 }
-
-const EVENTO_META: Record<
-	string,
-	{ icon: typeof Play; color: string; bg: string }
-> = {
-	[LOG_TYPE.inicioJornada]: {
-		icon: Play,
-		color: '#16a34a',
-		bg: '#dcfce7',
-	},
-	[LOG_TYPE.inicioAlmuerzo]: {
-		icon: Coffee,
-		color: '#ea580c',
-		bg: '#ffedd5',
-	},
-	[LOG_TYPE.finAlmuerzo]: {
-		icon: UtensilsCrossed,
-		color: '#ca8a04',
-		bg: '#fef9c3',
-	},
-	[LOG_TYPE.finJornada]: {
-		icon: LogOut,
-		color: '#004680',
-		bg: '#eaf2fb',
-	},
-};
-
-const inicial = (nombre: string) => (nombre.trim()[0] || '?').toUpperCase();
 
 export function SingleRecordDetailModal({
 	open,
@@ -82,11 +49,7 @@ export function SingleRecordDetailModal({
 
 	if (!evento) return null;
 
-	const meta = EVENTO_META[evento.evento] ?? {
-		icon: Play,
-		color: '#64748b',
-		bg: '#f1f5f9',
-	};
+	const meta = getEventoMeta(evento.evento);
 	const Icono = meta.icon;
 
 	const lat =
@@ -165,7 +128,7 @@ export function SingleRecordDetailModal({
 				<div className="px-5 py-3 bg-[#f6f9fd] border-b border-slate-100 flex items-center justify-between gap-3">
 					<div className="flex items-center gap-2.5 min-w-0">
 						<div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#004680] text-white text-xs font-bold shrink-0">
-							{inicial(empleado)}
+							{getIniciales(empleado)}
 						</div>
 						<div className="min-w-0">
 							<p className="text-xs font-bold text-[#0f2c4a] truncate capitalize">
@@ -251,47 +214,16 @@ export function SingleRecordDetailModal({
 							</div>
 						) : null}
 
-						{/* Geolocalización GPS (Solo visible para administradores) */}
+						{/* Geolocalización GPS con Leaflet interactivo (Solo administradores) */}
 						{tieneCoords && (
-							<div className="p-3 rounded-2xl bg-[#f0f7ff] border border-[#d0e3fa]">
-								<div className="flex items-center justify-between gap-2">
-									<div className="flex items-center gap-2 min-w-0">
-										<div className="w-7 h-7 rounded-lg bg-blue-100 text-[#004680] flex items-center justify-center shrink-0">
-											<MapPin size={15} />
-										</div>
-										<div className="min-w-0">
-											<p className="text-xs font-bold text-[#0f2c4a] truncate">
-												{lat?.toFixed(5)}, {lon?.toFixed(5)}
-											</p>
-											{evento.accuracy != null && (
-												<p className="text-[11px] text-slate-500">
-													Margen de precisión: ±{Math.round(evento.accuracy)}m
-												</p>
-											)}
-										</div>
-									</div>
-									<Button
-										href={`https://www.google.com/maps?q=${lat},${lon}`}
-										target="_blank"
-										rel="noopener noreferrer"
-										size="small"
-										endIcon={<ExternalLink size={12} />}
-										sx={{
-											fontSize: '0.72rem',
-											textTransform: 'none',
-											fontWeight: 700,
-											bgcolor: '#004680',
-											color: '#fff',
-											borderRadius: 2,
-											px: 1.5,
-											py: 0.5,
-											'&:hover': { bgcolor: '#003366' },
-										}}
-									>
-										Abrir mapa
-									</Button>
-								</div>
-							</div>
+							<AttendanceGpsAccordion
+								lat={lat}
+								lon={lon}
+								accuracy={evento.accuracy}
+								title={evento.evento}
+								hora={evento.hora}
+								defaultExpanded={false}
+							/>
 						)}
 
 						{/* Observación o nota de texto */}
@@ -314,52 +246,23 @@ export function SingleRecordDetailModal({
 				</DialogContent>
 			</Dialog>
 
-			{/* Modal Lightbox de la foto a pantalla completa */}
-			{evento.photo && (
-				<Dialog
-					open={zoomOpen}
-					onClose={() => setZoomOpen(false)}
-					maxWidth="sm"
-					fullWidth
-					slotProps={{
-						paper: {
-							sx: {
-								borderRadius: 3.5,
-								overflow: 'hidden',
-								bgcolor: '#0f172a',
-							},
-						},
-					}}
-				>
-					<div className="flex items-center justify-between px-4 py-3 bg-[#004680] text-white">
-						<div>
-							<h3 className="text-sm font-bold capitalize">{evento.evento}</h3>
-							<p className="text-xs text-white/80">
-								{empleado} • {evento.hora?.slice(0, 5) || ''}
-							</p>
-						</div>
-						<MuiIconButton
-							onClick={() => setZoomOpen(false)}
-							sx={{ color: '#fff' }}
-							size="small"
-						>
-							<X size={18} />
-						</MuiIconButton>
-					</div>
-					<div className="p-3 flex items-center justify-center min-h-[300px]">
-						<img
-							src={getDirectusPreviewUrl(evento.photo, {
+			{/* Modal Lightbox reutilizable de la foto a pantalla completa */}
+			<AttendancePhotoLightbox
+				open={zoomOpen}
+				onClose={() => setZoomOpen(false)}
+				photoUrl={
+					evento.photo
+						? getDirectusPreviewUrl(evento.photo, {
 								width: 600,
 								height: 600,
 								quality: 90,
 								blur: esReporte ? 0 : 10,
-							})}
-							alt={evento.evento}
-							className="max-h-[70vh] w-auto rounded-xl object-contain shadow-2xl"
-						/>
-					</div>
-				</Dialog>
-			)}
+							})
+						: null
+				}
+				title={evento.evento}
+				subtitle={`${empleado} • ${evento.hora?.slice(0, 5) || ''}`}
+			/>
 		</>
 	);
 }

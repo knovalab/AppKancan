@@ -1,26 +1,8 @@
-import {
-	Dialog,
-	DialogContent,
-	DialogTitle,
-	IconButton as MuiIconButton,
-} from '@mui/material';
-import {
-	Camera,
-	Clock,
-	Coffee,
-	ExternalLink,
-	FileText,
-	LogOut,
-	MapPin,
-	Play,
-	UtensilsCrossed,
-	X,
-	ZoomIn,
-} from 'lucide-react';
+import { Chip, IconButton as MuiIconButton } from '@mui/material';
+import { Camera, Clock, FileText, X, ZoomIn } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { LOG_TYPE } from '../domain/registro';
 import type {
 	HistorialEventoDetalle,
 	ObservacionEvento,
@@ -29,6 +11,9 @@ import {
 	getDirectusPreviewUrl,
 	getDirectusThumbnailUrl,
 } from '../utils/directusAssets';
+import { AttendanceGpsAccordion } from './attendance/AttendanceGpsAccordion';
+import { AttendancePhotoLightbox } from './attendance/AttendancePhotoLightbox';
+import { getEventoMeta, getIniciales } from './attendance/attendanceMeta';
 
 export interface DailyAttendanceModalProps {
 	open: boolean;
@@ -42,38 +27,6 @@ export interface DailyAttendanceModalProps {
 	esAdmin?: boolean;
 	esReporte?: boolean;
 }
-
-const EVENTO_META: Record<
-	string,
-	{ orden: number; icon: typeof Play; color: string; bg: string }
-> = {
-	[LOG_TYPE.inicioJornada]: {
-		orden: 0,
-		icon: Play,
-		color: '#16a34a',
-		bg: '#dcfce7',
-	},
-	[LOG_TYPE.inicioAlmuerzo]: {
-		orden: 1,
-		icon: Coffee,
-		color: '#ea580c',
-		bg: '#ffedd5',
-	},
-	[LOG_TYPE.finAlmuerzo]: {
-		orden: 2,
-		icon: UtensilsCrossed,
-		color: '#ca8a04',
-		bg: '#fef9c3',
-	},
-	[LOG_TYPE.finJornada]: {
-		orden: 3,
-		icon: LogOut,
-		color: '#004680',
-		bg: '#eaf2fb',
-	},
-};
-
-const inicial = (nombre: string) => (nombre.trim()[0] || '?').toUpperCase();
 
 export function DailyAttendanceModal({
 	open,
@@ -107,9 +60,7 @@ export function DailyAttendanceModal({
 	).filter((e) => e.hora || e.observacion?.trim() || e.photo);
 
 	const ordenadas = [...listaEventos].sort(
-		(a, b) =>
-			(EVENTO_META[a.evento]?.orden ?? 99) -
-			(EVENTO_META[b.evento]?.orden ?? 99),
+		(a, b) => getEventoMeta(a.evento).orden - getEventoMeta(b.evento).orden,
 	);
 
 	return createPortal(
@@ -138,66 +89,88 @@ export function DailyAttendanceModal({
 						>
 							<div className="pointer-events-auto w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-white flex flex-col max-h-[90vh]">
 								{/* Header */}
-								<div className="flex items-center justify-between px-5 py-3.5 bg-[#004680] shrink-0">
-									<div className="flex items-center gap-2">
-										<FileText size={18} className="text-white/80" />
-										<h2 className="text-sm font-semibold tracking-wide text-white uppercase">
-											Jornada Diaria de Asistencia
-										</h2>
-									</div>
-									<button
-										type="button"
-										onClick={onClose}
-										aria-label="Cerrar"
-										className="flex items-center justify-center w-7 h-7 rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-colors duration-150 cursor-pointer"
-									>
-										<X size={16} strokeWidth={2} />
-									</button>
-								</div>
-
-								{/* Info del empleado y resumen del día */}
-								<div className="px-5 py-3 bg-[#f6f9fd] border-b border-slate-100 flex items-center justify-between gap-3 shrink-0">
-									<div className="flex items-center gap-3 min-w-0">
-										<div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#004680] text-white text-sm font-bold shrink-0">
-											{inicial(empleado)}
+								<div className="bg-[#004680] text-white px-5 py-4 flex items-center justify-between">
+									<div className="flex items-center gap-3">
+										<div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-sm font-bold border border-white/20">
+											{getIniciales(empleado)}
 										</div>
-										<div className="min-w-0 flex-1">
-											<p className="text-sm font-bold text-[#0f2c4a] truncate capitalize">
+										<div>
+											<h2 className="text-base font-bold leading-tight capitalize text-white">
 												{empleado}
-											</p>
-											<p className="text-xs text-slate-500 font-medium">
-												{fecha} {tiendaNombre ? `• ${tiendaNombre}` : ''}
-											</p>
+											</h2>
+											<div className="flex items-center gap-2 mt-0.5">
+												<span className="text-xs text-white/80 font-medium">
+													{fecha}
+												</span>
+												{tiendaNombre && (
+													<>
+														<span className="text-white/40 text-xs">•</span>
+														<span className="text-xs text-white/90 font-medium">
+															{tiendaNombre}
+														</span>
+													</>
+												)}
+											</div>
 										</div>
 									</div>
-									<div className="flex items-center gap-2 shrink-0">
-										{totalHoras && totalHoras !== '--' && (
-											<span className="inline-flex items-center text-xs font-bold text-[#004680] bg-white border border-[#d6e6f7] px-2.5 py-1 rounded-lg shadow-2xs">
-												{totalHoras}
-											</span>
-										)}
+
+									<div className="flex items-center gap-2">
 										{esAdmin && (
-											<span className="inline-flex items-center text-[10px] font-semibold tracking-wider text-[#004680] bg-[#eaf2fb] border border-[#d6e6f7] px-2 py-0.5 rounded-full uppercase">
-												Admin
-											</span>
+											<Chip
+												label="Admin"
+												size="small"
+												sx={{
+													height: 22,
+													fontSize: '0.7rem',
+													fontWeight: 700,
+													bgcolor: 'rgba(255, 255, 255, 0.15)',
+													color: '#fff',
+													border: '1px solid rgba(255, 255, 255, 0.25)',
+												}}
+											/>
 										)}
+										<MuiIconButton
+											onClick={onClose}
+											size="small"
+											aria-label="Cerrar modal"
+											sx={{
+												color: 'rgba(255, 255, 255, 0.8)',
+												'&:hover': {
+													color: '#fff',
+													bgcolor: 'rgba(255, 255, 255, 0.15)',
+												},
+											}}
+										>
+											<X size={18} />
+										</MuiIconButton>
 									</div>
 								</div>
 
-								{/* Timeline cronológico de todos los eventos del día */}
-								<div className="px-5 py-4 overflow-y-auto space-y-4">
+								{/* Resumen Superior */}
+								<div className="bg-[#f0f7ff] px-5 py-2.5 border-b border-slate-100 flex items-center justify-between">
+									<div className="flex items-center gap-1.5 text-xs text-[#0f2c4a] font-semibold">
+										<Clock size={14} className="text-[#004680]" />
+										<span>Jornada Diaria</span>
+									</div>
+									{totalHoras && totalHoras !== '--' && (
+										<div className="flex items-center gap-1.5 bg-[#004680] text-white px-2.5 py-0.5 rounded-full text-xs font-bold">
+											<span>Total: {totalHoras}</span>
+										</div>
+									)}
+								</div>
+
+								{/* Línea de tiempo de eventos */}
+								<div className="p-5 overflow-y-auto space-y-4 max-h-[calc(90vh-140px)]">
 									{ordenadas.length === 0 ? (
-										<p className="text-sm text-slate-400 text-center py-6">
-											No hay registros de asistencia para este día.
-										</p>
+										<div className="py-8 text-center text-slate-400">
+											<FileText size={32} className="mx-auto mb-2 opacity-50" />
+											<p className="text-sm font-medium">
+												No hay marcaciones registradas para este día
+											</p>
+										</div>
 									) : (
 										ordenadas.map((item, idx) => {
-											const meta = EVENTO_META[item.evento] ?? {
-												icon: FileText,
-												color: '#64748b',
-												bg: '#f1f5f9',
-												orden: 99,
-											};
+											const meta = getEventoMeta(item.evento);
 											const Icono = meta.icon;
 											const esUltimo = idx === ordenadas.length - 1;
 											const lat =
@@ -243,7 +216,7 @@ export function DailyAttendanceModal({
 															)}
 														</div>
 
-														{/* Foto de verificación con thumbnail transformado desde el origen */}
+														{/* Foto de verificación con thumbnail transformado en Directus */}
 														{item.photo && (
 															<div className="mt-2.5 flex items-center gap-3">
 																<button
@@ -290,33 +263,18 @@ export function DailyAttendanceModal({
 															</div>
 														)}
 
-														{/* Geolocalización GPS (Solo visible para administradores) */}
+														{/* Geolocalización GPS con Leaflet interactivo (Solo administradores) */}
 														{tieneCoords && (
-															<div className="mt-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2">
-																<div className="flex items-center gap-2 min-w-0">
-																	<div className="w-6 h-6 rounded-md bg-blue-100/70 text-[#004680] flex items-center justify-center shrink-0">
-																		<MapPin size={13} />
-																	</div>
-																	<div className="min-w-0 text-xs">
-																		<span className="font-semibold text-slate-700 block truncate">
-																			{lat?.toFixed(5)}, {lon?.toFixed(5)}
-																		</span>
-																		{item.accuracy != null && (
-																			<span className="text-[11px] text-slate-400">
-																				Precisión: ±{Math.round(item.accuracy)}m
-																			</span>
-																		)}
-																	</div>
-																</div>
-																<a
-																	href={`https://www.google.com/maps?q=${lat},${lon}`}
-																	target="_blank"
-																	rel="noopener noreferrer"
-																	className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#004680] hover:text-white bg-[#eaf2fb] hover:bg-[#004680] rounded-lg transition-colors duration-150 shrink-0"
-																>
-																	Mapa
-																	<ExternalLink size={11} />
-																</a>
+															<div className="mt-2.5">
+																<AttendanceGpsAccordion
+																	lat={lat}
+																	lon={lon}
+																	accuracy={item.accuracy}
+																	title={item.evento}
+																	hora={item.hora}
+																	compact={true}
+																	defaultExpanded={false}
+																/>
 															</div>
 														)}
 
@@ -341,66 +299,14 @@ export function DailyAttendanceModal({
 				)}
 			</AnimatePresence>
 
-			{/* Modal Dialog accesible para la foto ampliada */}
-			<Dialog
+			{/* Modal Lightbox reutilizable para foto ampliada */}
+			<AttendancePhotoLightbox
 				open={!!photoPreview}
 				onClose={() => setPhotoPreview(null)}
-				maxWidth="xs"
-				fullWidth
-				slotProps={{
-					paper: {
-						sx: {
-							borderRadius: 4,
-							overflow: 'hidden',
-						},
-					},
-				}}
-			>
-				<DialogTitle
-					component="div"
-					sx={{
-						bgcolor: '#004680',
-						color: '#fff',
-						py: 1.5,
-						px: 2,
-					}}
-				>
-					<div className="flex items-center justify-between">
-						<div>
-							<h3 className="text-sm font-bold capitalize text-white">
-								{photoPreview?.titulo}
-							</h3>
-							<p className="text-xs text-white/80">
-								{empleado} • {photoPreview?.hora?.slice(0, 5) || ''}
-							</p>
-						</div>
-						<MuiIconButton
-							onClick={() => setPhotoPreview(null)}
-							sx={{ color: '#fff' }}
-							size="small"
-						>
-							<X size={18} />
-						</MuiIconButton>
-					</div>
-				</DialogTitle>
-				<DialogContent
-					sx={{
-						p: 2,
-						bgcolor: '#0f172a',
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-					}}
-				>
-					{photoPreview && (
-						<img
-							src={photoPreview.url}
-							alt={photoPreview.titulo}
-							className="max-h-[380px] w-auto rounded-xl object-contain shadow-md"
-						/>
-					)}
-				</DialogContent>
-			</Dialog>
+				photoUrl={photoPreview?.url ?? null}
+				title={photoPreview?.titulo}
+				subtitle={`${empleado} • ${photoPreview?.hora?.slice(0, 5) || ''}`}
+			/>
 		</>,
 		document.body,
 	);
