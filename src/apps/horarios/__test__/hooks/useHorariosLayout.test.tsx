@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAuth } from '@/auth/hooks/useAuth';
 import {
-	type HorariosAcceso,
 	useHorariosAcceso,
 } from '../../hooks/useHorariosAcceso';
 import {
@@ -13,10 +12,11 @@ import {
 } from '../../hooks/useHorariosLayout';
 import { useIrA, useSeccionActiva } from '../../hooks/useSeccionActiva';
 import {
-	type TiendaSeleccionada,
 	useTiendaSeleccionada,
 } from '../../hooks/useTiendaSeleccionada';
 import { SECCIONES } from '../../navigation/secciones';
+import type { HorariosAcceso } from '../../interfaces/acceso';
+import type { TiendaSeleccionada } from '../../interfaces/tiendas';
 
 vi.mock('@/auth/hooks/useAuth', () => ({
 	useAuth: vi.fn(),

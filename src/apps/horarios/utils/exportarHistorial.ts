@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
-import type { TimeRecord } from '../api/directus/read';
 import { LOG_TYPE } from '../domain/registro';
-import type { Tienda } from '../interfaces/horarios.interface';
+import type { TimeRecordDto } from '../interfaces/api/timeRecords';
+import type { Tienda } from '../interfaces/tiendas';
 
 const EVENTOS = [
 	{ tipo: LOG_TYPE.inicioJornada, etiqueta: 'Inicio turno' },
@@ -15,7 +15,7 @@ const DELIM = ';';
 const hhmm = (hora: string | null | undefined): string =>
 	hora ? String(hora).slice(0, 5) : '';
 
-const nombreEmpleado = (emp: TimeRecord['employee_id']): string =>
+const nombreEmpleado = (emp: TimeRecordDto['employee_id']): string =>
 	emp
 		? [emp.first_name, emp.middle_name, emp.last_name, emp.second_last_name]
 				.filter((n) => n && String(n).trim())
@@ -88,11 +88,11 @@ interface FilaExport {
 }
 
 const agruparParaExport = (
-	records: TimeRecord[],
+	records: TimeRecordDto[],
 	storesMap: Map<number, string>,
 	reasonsMap: Map<number, string>,
 ): FilaExport[] => {
-	const grupos: Record<string, TimeRecord[]> = {};
+	const grupos: Record<string, TimeRecordDto[]> = {};
 
 	records.forEach((r) => {
 		const cc = r.employee_id?.document_number ?? nombreEmpleado(r.employee_id);
@@ -184,7 +184,7 @@ const csvCampo = (valor: string): string => {
 };
 
 interface ExportarParams {
-	records: TimeRecord[];
+	records: TimeRecordDto[];
 	stores: Tienda[];
 	reasonsMap: Map<number, string>;
 	detallada: boolean;

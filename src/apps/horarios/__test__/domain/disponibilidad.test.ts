@@ -8,7 +8,7 @@ import {
 	LOG_TYPE,
 	MAX_PAUSAS_ACTIVAS,
 } from '@/apps/horarios/domain/registro';
-import type { RegistrosAsistencia } from '@/apps/horarios/interfaces/horarios.interface';
+import type { RegistrosAsistencia } from '../../domain/registro/modelo';
 
 const CTX: ContextoTarjeta = {
 	pausaEnCurso: false,

@@ -4,8 +4,8 @@ import { Box, Typography, Button, IconButton, Chip, Tooltip } from '@mui/materia
 import WarningIcon from '@mui/icons-material/Warning';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import { ESTADO, type EstadoAsistencia, ETIQUETA_ESTADO, EVENTO } from '../../domain/registro';
-import { EmpleadoAsistencia } from '../../interfaces/horarios.interface';
 import { NombreEmpleado } from './EmployeeCardUtils';
+import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
 
 interface EmployeeCardHeaderProps {
   empleado: EmpleadoAsistencia;

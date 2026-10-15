@@ -1,13 +1,8 @@
 import directus from "@/services/directus/directus";
 import { withAutoRefresh } from "@/auth/services/directusInterceptor";
 import { readItems, createItem } from "@directus/sdk";
+import type { Normas } from "../../interfaces/normas";
 
-export interface Normas {
-  id: number;
-  version: number;
-  title: string;
-  content: string;
-}
 
 // Normas vigentes (la fila activa de com_rules con la mayor versión).
 export async function getNormasActivas(): Promise<Normas | null> {

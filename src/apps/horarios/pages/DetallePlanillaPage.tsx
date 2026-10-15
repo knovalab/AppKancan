@@ -27,14 +27,14 @@ import EditHourModal from '../components/EditHourModal';
 import { horariosKeys } from '../hooks/registro/keys';
 import { useMotivosEdicion } from '../hooks/registro/useCatalogosHorarios';
 import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
-import type { Tienda } from '../interfaces/horarios.interface';
 import { DetallePlanillaTabla } from './planilla/DetallePlanillaTabla';
 import {
 	calcularMinutosDia,
 	formatearHoras,
 } from './planilla/DetallePlanillaUtils';
+import type { Tienda } from '../interfaces/tiendas';
 
-interface EmpleadoFila {
+interface FilaEmpleadoPlanilla {
 	id: string;
 	nombre: string;
 	cargo: string;
@@ -294,8 +294,8 @@ export default function DetallePlanillaPage({
 	// Solo necesita los motivos: 1 query en lugar de las 7 de useHorarios.
 	const reasons = useMotivosEdicion();
 
-	const filasEmpleadosBase: EmpleadoFila[] = useMemo(() => {
-		const rows: EmpleadoFila[] = [];
+	const filasEmpleadosBase: FilaEmpleadoPlanilla[] = useMemo(() => {
+		const rows: FilaEmpleadoPlanilla[] = [];
 
 		tiendasAConsultar.forEach((tienda) => {
 			const empleados = empleadosPorTienda[tienda.id] || [];
@@ -433,7 +433,7 @@ export default function DetallePlanillaPage({
 	}, [filasEmpleados, page]);
 
 	const handleOpenEditHour = async (
-		fila: EmpleadoFila,
+		fila: FilaEmpleadoPlanilla,
 		evento: string,
 		recordId: number,
 		horaActual: string | null,

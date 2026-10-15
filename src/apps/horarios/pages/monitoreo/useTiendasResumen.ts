@@ -5,8 +5,8 @@ import { LOG_TYPE } from '../../domain/registro';
 dayjs.extend(isSameOrBefore);
 
 import { getEmpleadosBulk, getTimeRecordsBulkRange, getNovedadesBulkRange, getStoreClosedDays } from '../../api/directus/read';
-import { Tienda } from '../../interfaces/horarios.interface';
 import { TiendaResumen } from './MonitoreoUtils';
+import type { Tienda } from '../../interfaces/tiendas';
 
 export function useTiendasResumen(tiendas: Tienda[], fechas: { inicio: Dayjs | null; fin: Dayjs | null }) {
   const [resumen, setResumen] = useState<TiendaResumen[]>([]);

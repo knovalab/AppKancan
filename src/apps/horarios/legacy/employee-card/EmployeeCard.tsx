@@ -7,7 +7,6 @@ import * as yup from 'yup';
 import { useHolidays } from '../../../reservas/hooks/useHolidays';
 import { getRecordReasonId } from '../../api/directus/read';
 import {
-	type Normas,
 	registrarAceptacionNormasEmpleado,
 } from '../../api/directus/rules';
 import {
@@ -24,10 +23,6 @@ import {
 	requiereVerificacion,
 } from '../../domain/registro';
 import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
-import type {
-	EmpleadoAsistencia,
-	Motivo,
-} from '../../interfaces/horarios.interface';
 import EditHourModal from '../../components/EditHourModal';
 import { EmployeeCardHeader } from './EmployeeCardHeader';
 import {
@@ -54,6 +49,9 @@ import {
 	TimeRecordVerificationModal,
 	type VerificationData,
 } from '../../components/verification/TimeRecordVerificationModal';
+import type { Normas } from '../../interfaces/normas';
+import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
+import type { Motivo } from '../../interfaces/registro';
 
 interface EmployeeCardProps {
 	empleado: EmpleadoAsistencia;

@@ -1,29 +1,14 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { Tienda } from '../interfaces/horarios.interface';
 import type { ModoTienda } from '../navigation/secciones';
-import type { HorariosAcceso } from './useHorariosAcceso';
+import type { HorariosAcceso } from '../interfaces/acceso';
+import type { TiendaSeleccion, TiendaSeleccionada } from '../interfaces/tiendas';
+import type { Tienda } from '../interfaces/tiendas';
 
 /** Query param donde viaja la tienda: `?tienda=12` · `?tienda=todas` · (ausente = por defecto). */
 export const PARAM_TIENDA = 'tienda';
 const VALOR_TODAS = 'todas';
 
-export type TiendaSeleccion =
-	| { tipo: 'propia' }
-	| { tipo: 'todas' }
-	| { tipo: 'una'; id: number };
-
-export interface TiendaSeleccionada {
-	/** Selección efectiva, ya validada contra el rol y la sección. */
-	seleccion: TiendaSeleccion;
-	/** Tienda concreta, o null cuando la selección es "todas". */
-	storeId: number | null;
-	/** Siempre explícito: [id] para una tienda, las permitidas para "todas". */
-	storeIds: number[];
-	/** Nombre para mostrar en el header ('' si es "todas" o se desconoce). */
-	nombre: string;
-	setSeleccion: (s: TiendaSeleccion) => void;
-}
 
 const leerParam = (valor: string | null): TiendaSeleccion | null => {
 	if (valor === VALOR_TODAS) return { tipo: 'todas' };

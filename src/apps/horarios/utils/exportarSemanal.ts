@@ -1,6 +1,5 @@
 import dayjs, { type Dayjs } from 'dayjs';
-import type { Tienda } from '../interfaces/horarios.interface';
-import { calcularMinutosSemanales } from '../pages/reporte/ReporteUtils';
+import { calcularMinutosSemanales } from './horasTrabajadas';
 
 const formatMinutesExport = (totalMin: number): string => {
 	if (totalMin <= 0) return '00:00';
@@ -11,7 +10,8 @@ const formatMinutesExport = (totalMin: number): string => {
 	return `${hh}:${mm}`;
 };
 
-import { calcularMinutosDia } from '../components/ModalDetalleTiendaUtils';
+import type { Tienda } from '../interfaces/tiendas';
+import { calcularMinutosDia } from './horasTrabajadas';
 
 export interface TramoSemana {
 	start: string;

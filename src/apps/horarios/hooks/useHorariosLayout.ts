@@ -1,16 +1,17 @@
 import { createContext, useContext, useMemo } from 'react';
 import { useAuth } from '@/auth/hooks/useAuth';
 import { SECCIONES, type Seccion } from '../navigation/secciones';
-import { type HorariosAcceso, useHorariosAcceso } from './useHorariosAcceso';
+import { useHorariosAcceso } from './useHorariosAcceso';
 import {
 	type SeccionActiva,
 	useIrA,
 	useSeccionActiva,
 } from './useSeccionActiva';
 import {
-	type TiendaSeleccionada,
 	useTiendaSeleccionada,
 } from './useTiendaSeleccionada';
+import type { HorariosAcceso } from '../interfaces/acceso';
+import type { TiendaSeleccionada } from '../interfaces/tiendas';
 
 export interface HorariosLayoutValue extends SeccionActiva {
 	acceso: HorariosAcceso;

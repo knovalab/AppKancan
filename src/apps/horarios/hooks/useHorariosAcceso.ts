@@ -4,7 +4,6 @@ import { useAuth } from '@/auth/hooks/useAuth';
 import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
 
 import { getStoreIdUsuarioActual, getStores } from '../api/directus/read';
-import type { Tienda } from '../interfaces/horarios.interface';
 import {
 	INICIO_POR_ROL,
 	PRIORIDAD_ROL,
@@ -12,23 +11,12 @@ import {
 } from '../navigation/secciones';
 import useHorariosPolicies from './useHorariosPolicies';
 import { horariosKeys } from './registro/keys';
+import type { HorariosAcceso } from '../interfaces/acceso';
+import type { Tienda } from '../interfaces/tiendas';
 
 /** Tienda que se excluye del listado del Area Manager (mismo criterio que RegistrosPage). */
 const TIENDA_EXCLUIDA_AREA = 5;
 
-export interface HorariosAcceso {
-	cargando: boolean;
-	roles: ReadonlySet<Rol>;
-	rolPrincipal: Rol;
-	puede: (roles: readonly Rol[]) => boolean;
-	/** Sección inicial (relativa a BASE) según el rol principal. */
-	inicio: string;
-	puedeVerDemo: boolean;
-	/** Tienda asignada al usuario en Directus (`readMe().store_id`). */
-	tiendaPropia: number | null;
-	/** admin/report: todas · areaManager: sus tiendas asignadas · tienda: ninguna. */
-	tiendasPermitidas: Tienda[];
-}
 
 const idDeTienda = (valor: unknown): number => {
 	if (valor && typeof valor === 'object') {

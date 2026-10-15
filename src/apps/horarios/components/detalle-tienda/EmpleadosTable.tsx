@@ -8,8 +8,9 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import HistoryIcon from '@mui/icons-material/History';
 import EditIcon from '@mui/icons-material/Edit';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import { EmpleadoFila, getNovedadIcon } from '../ModalDetalleTiendaUtils';
+import { getNovedadIcon } from '../ModalDetalleTiendaUtils';
 import { ESTADO, LOG_TYPE } from '../../domain/registro';
+import type { FilaEmpleadoDetalle } from '../../interfaces/ui/monitoreo';
 
 interface EmpleadosTableProps {
   loading: boolean;
@@ -18,15 +19,15 @@ interface EmpleadosTableProps {
   page: number;
   setPage: (p: number) => void;
   rowsPerPage: number;
-  empleadosPagina: EmpleadoFila[];
-  empleadosFiltrados: EmpleadoFila[];
+  empleadosPagina: FilaEmpleadoDetalle[];
+  empleadosFiltrados: FilaEmpleadoDetalle[];
   fechaSeleccionada: string;
   esAdminUser: boolean;
   getRecordId: (empId: string | number, logType: string) => number | null;
   handleOpenEditHour: (empleadoId: string, empleadoNombre: string, evento: string, recordId: number) => void;
   handleOpenCreateHour: (empleadoId: string, empleadoNombre: string, evento: string) => void;
-  handleOpenHistorial: (fila: EmpleadoFila) => void;
-  handleNovedadClick: (fila: EmpleadoFila) => void;
+  handleOpenHistorial: (fila: FilaEmpleadoDetalle) => void;
+  handleNovedadClick: (fila: FilaEmpleadoDetalle) => void;
 }
 
 export default function EmpleadosTable({
@@ -104,7 +105,7 @@ export default function EmpleadosTable({
                         </Box>
                       </TableCell>
                       {eventos.map(({ key, label }) => {
-                        const hora = fila[key as keyof EmpleadoFila] as string | null;
+                        const hora = fila[key as keyof FilaEmpleadoDetalle] as string | null;
                         const recordId = getRecordId(fila.id, label);
                         const isHoraExistente = !!hora;
 

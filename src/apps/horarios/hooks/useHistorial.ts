@@ -2,14 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import {
 	fetchTimeRecords,
 	getStoreIdUsuarioActual,
-	type TimeRecord,
 } from '../api/directus/read';
 import { LOG_TYPE } from '../domain/registro';
-import type { HistorialRow } from '../interfaces/horarios.interface';
 import { horariosKeys } from './registro/keys';
+import { coordenadasDe } from '../domain/ubicacion';
+import type { TimeRecordDto } from '../interfaces/api/timeRecords';
+import type { HistorialRow } from '../interfaces/historial';
 
-const agruparRegistros = (records: TimeRecord[]): HistorialRow[] => {
-	const agrupado: Record<string, TimeRecord[]> = {};
+const agruparRegistros = (records: TimeRecordDto[]): HistorialRow[] => {
+	const agrupado: Record<string, TimeRecordDto[]> = {};
 
 	records.forEach((record) => {
 		const clave = `${record.employee_id?.first_name ?? record.employee_id}-${record.record_date}`;
@@ -47,8 +48,10 @@ const agruparRegistros = (records: TimeRecord[]): HistorialRow[] => {
 				return (a.record_time || '').localeCompare(b.record_time || '');
 			})
 			.map((r) => {
-				const lat = r.location?.coordinates ? r.location.coordinates[1] : null;
-				const lon = r.location?.coordinates ? r.location.coordinates[0] : null;
+				// Solo se lee `location` (los campos sueltos no se piden en la consulta).
+				const { latitud: lat, longitud: lon } = coordenadasDe({
+					location: r.location,
+				});
 
 				return {
 					evento: r.log_type,

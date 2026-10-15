@@ -72,3 +72,9 @@ export interface AccionesTarjeta {
 		marcacion: LogType;
 	}): Promise<number | null>;
 }
+
+/** Motivo de edición de una hora (`com_reasons`). */
+export interface Motivo {
+	id: number;
+	name: string;
+}

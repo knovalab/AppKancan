@@ -28,6 +28,7 @@ import {
 } from '@/apps/horarios/utils/directusAssets';
 import { REGISTRO_META } from '../HistorialHorasModal';
 import { formatearHoras } from '../ModalDetalleTiendaUtils';
+import { coordenadasDe } from '../../domain/ubicacion';
 
 interface HistorialTimelineViewProps {
 	diaSeleccionado: any | null;
@@ -168,8 +169,7 @@ export const HistorialTimelineView: React.FC<HistorialTimelineViewProps> =
 												const esUltimo = idx === marcasOrdenadas.length - 1;
 												const horaStr = r.record_time || r.time || '--:--';
 												const comentario = r.observations;
-												const lat = r.latitude ?? r.location?.coordinates?.[1];
-												const lon = r.longitude ?? r.location?.coordinates?.[0];
+												const { latitud: lat, longitud: lon } = coordenadasDe(r);
 												const tieneCoords =
 													esUsuarioAdmin && lat != null && lon != null;
 

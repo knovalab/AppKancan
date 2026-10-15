@@ -1,8 +1,8 @@
 import dayjs from 'dayjs';
-import type { EventReportExport } from '../api/directus/read';
-import type { Tienda } from '../interfaces/horarios.interface';
+import type { EventReportExportDto } from '../interfaces/api/eventReports';
+import type { Tienda } from '../interfaces/tiendas';
 
-const nombreEmpleado = (emp: EventReportExport['employee_id']): string =>
+const nombreEmpleado = (emp: EventReportExportDto['employee_id']): string =>
 	emp
 		? [emp.first_name, emp.middle_name, emp.last_name, emp.second_last_name]
 				.filter((n) => n && String(n).trim())
@@ -21,7 +21,7 @@ interface FilaExport {
 }
 
 interface ExportarParams {
-	reports: EventReportExport[];
+	reports: EventReportExportDto[];
 	stores: Tienda[];
 }
 

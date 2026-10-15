@@ -15,12 +15,13 @@ import {
 	ZoomIn,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { HistorialEventoDetalle } from '../interfaces/horarios.interface';
 import { getDirectusPreviewUrl } from '../utils/directusAssets';
 import { formatDocumentNumber } from '../utils/format';
 import { AttendanceGpsAccordion } from './attendance/AttendanceGpsAccordion';
 import { AttendancePhotoLightbox } from './attendance/AttendancePhotoLightbox';
 import { getEventoMeta, getIniciales } from './attendance/attendanceMeta';
+import { coordenadasDe } from '../domain/ubicacion';
+import type { HistorialEventoDetalle } from '../interfaces/historial';
 
 export interface SingleRecordDetailModalProps {
 	open: boolean;
@@ -52,12 +53,7 @@ export function SingleRecordDetailModal({
 	const meta = getEventoMeta(evento.evento);
 	const Icono = meta.icon;
 
-	const lat =
-		evento.latitude ??
-		(evento.location?.coordinates ? evento.location.coordinates[1] : null);
-	const lon =
-		evento.longitude ??
-		(evento.location?.coordinates ? evento.location.coordinates[0] : null);
+	const { latitud: lat, longitud: lon } = coordenadasDe(evento);
 	const tieneCoords = esAdmin && lat != null && lon != null;
 
 	return (

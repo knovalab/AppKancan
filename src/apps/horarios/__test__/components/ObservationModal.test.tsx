@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ObservationModal } from '../../components/ObservationModal';
 import { LOG_TYPE } from '../../domain/registro';
-import type { ObservacionEvento } from '../../interfaces/horarios.interface';
+import type { ObservacionEvento } from '../../interfaces/historial';
 
 vi.mock('../../components/attendance/LeafletMap', () => ({
 	LeafletMap: () => <div data-testid="mock-leaflet-map" />,

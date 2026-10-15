@@ -1,4 +1,4 @@
-import type { Normas } from '@/apps/horarios/api/directus/rules';
+import type { Normas } from '../../../interfaces/normas';
 
 export function createMockNormas(overrides: Partial<Normas> = {}): Normas {
 	return {

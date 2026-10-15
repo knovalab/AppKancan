@@ -1,9 +1,9 @@
-import type { TimeRecord } from '@/apps/horarios/api/directus/read';
 import { LOG_TYPE } from '@/apps/horarios/domain/registro';
+import type { TimeRecordDto } from '../../../interfaces/api/timeRecords';
 
 export function createMockTimeRecord(
-	overrides: Partial<TimeRecord> = {},
-): TimeRecord {
+	overrides: Partial<TimeRecordDto> = {},
+): TimeRecordDto {
 	return {
 		id: 1,
 		record_date: '2026-10-14',
@@ -27,7 +27,7 @@ export function createMockTimeRecord(
 	};
 }
 
-export function createMockFullDayRecords(): TimeRecord[] {
+export function createMockFullDayRecords(): TimeRecordDto[] {
 	return [
 		createMockTimeRecord({
 			id: 1,

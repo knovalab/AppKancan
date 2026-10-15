@@ -2,9 +2,9 @@ import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import type { HorariosAcceso } from '../../hooks/useHorariosAcceso';
 import { useTiendaSeleccionada } from '../../hooks/useTiendaSeleccionada';
 import { createMockTiendas } from '../utils/mocks/stores.mock';
+import type { HorariosAcceso } from '../../interfaces/acceso';
 
 describe('useTiendaSeleccionada', () => {
 	const mockStores = createMockTiendas(); // IDs: 1, 2, 3, 5

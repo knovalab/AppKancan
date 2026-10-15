@@ -1,6 +1,6 @@
-import type { RegistrosAsistencia } from '../../interfaces/horarios.interface';
 import { ESTADO, type EstadoAsistencia } from './estados';
 import { MARCACIONES, type Marcacion } from './marcaciones';
+import type { RegistrosAsistencia } from './modelo';
 
 /** El estado es el que deja la última marcación registrada, en orden de jornada. */
 export function calcularEstado(

@@ -18,8 +18,9 @@ import { listarTodosEmpleados } from '../api/directus/read';
 import DialogNuevoEmpleado from '../components/admin/DialogNuevoEmpleado';
 import DialogEditarEmpleado from '../components/admin/DialogEditarEmpleado';
 import DialogPerfilEmpleado from '../components/admin/DialogPerfilEmpleado';
-import { EmpleadoAdmin, Tienda } from '../interfaces/horarios.interface';
 import { formatDocumentNumber } from '../utils/format';
+import type { EmpleadoAdmin } from '../interfaces/empleados';
+import type { Tienda } from '../interfaces/tiendas';
 
 const AZUL = '#004680';
 

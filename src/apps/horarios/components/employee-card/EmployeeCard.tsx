@@ -1,7 +1,6 @@
 import { Card, CircularProgress, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { useCallback, useMemo, useState } from 'react';
-import type { Normas } from '../../api/directus/rules';
 import {
 	calcularVistaTarjeta,
 	EVENTO,
@@ -10,11 +9,6 @@ import {
 	type LogType,
 } from '../../domain/registro';
 import type { Resultado } from '../../interfaces/comunes';
-import type {
-	EmpleadoAsistencia,
-	Motivo,
-	TipoNovedad,
-} from '../../interfaces/horarios.interface';
 import type { AccionesTarjeta } from '../../interfaces/registro';
 import NormasModal from '../NormasModal';
 import { TimeRecordVerificationModal } from '../verification/TimeRecordVerificationModal';
@@ -29,6 +23,10 @@ import { ObservacionModal } from './modales/ObservacionModal';
 import { OmitirAlmuerzoModal } from './modales/OmitirAlmuerzoModal';
 import { TimeSlots } from './slots/TimeSlots';
 import type { NovedadFormValues } from './utils/novedadSchema';
+import type { Normas } from '../../interfaces/normas';
+import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
+import type { TipoNovedad } from '../../interfaces/novedades';
+import type { Motivo } from '../../interfaces/registro';
 
 interface EmployeeCardProps {
 	empleado: EmpleadoAsistencia;

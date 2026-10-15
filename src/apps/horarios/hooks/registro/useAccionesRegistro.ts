@@ -10,7 +10,6 @@ import {
 import {
 	getMarcacionExistenteId,
 	idRelacion,
-	type TimeRecord,
 } from '../../api/directus/read';
 import type { Resultado } from '../../interfaces/comunes';
 import type {
@@ -31,6 +30,7 @@ export type {
 	RegistrarInput,
 	ReportarEventoInput,
 } from '../../interfaces/registro';
+import type { TimeRecordDto } from '../../interfaces/api/timeRecords';
 
 export const MENSAJE_MARCACION_REPETIDA =
 	'Esta marcación ya está registrada hoy. Para cambiar la hora usa "Editar hora".';
@@ -62,8 +62,8 @@ export function useAccionesRegistro(storeId: number | null) {
 
 	/** Registro de la caché de la tienda (cualquier fecha) por id. */
 	const buscarEnCache = useCallback(
-		(recordId: number): TimeRecord | undefined => {
-			const consultas = queryClient.getQueriesData<TimeRecord[]>({
+		(recordId: number): TimeRecordDto | undefined => {
+			const consultas = queryClient.getQueriesData<TimeRecordDto[]>({
 				queryKey: horariosKeys.timeRecords.tienda(storeId),
 			});
 			for (const [, records] of consultas) {
@@ -96,7 +96,7 @@ export function useAccionesRegistro(storeId: number | null) {
 
 			// 1) Caché del día: respuesta inmediata en el caso normal.
 			const enCache = queryClient
-				.getQueryData<TimeRecord[]>(
+				.getQueryData<TimeRecordDto[]>(
 					horariosKeys.timeRecords.dia(storeId, fecha),
 				)
 				?.some(

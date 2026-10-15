@@ -1,31 +1,19 @@
 import directus from "@/services/directus/directus";
 import { withAutoRefresh } from "@/auth/services/directusInterceptor";
 import { readItems } from "@directus/sdk";
-import type { EventReportHoy } from "../../interfaces/horarios.interface";
-import { STORE_PRUEBAS, TimeRecord } from "./read";
+import { STORE_PRUEBAS } from "./read";
+import type { EventReportExportDto } from '../../interfaces/api/eventReports';
+import type { NewnessReportDto } from '../../interfaces/api/newness';
+import type { EventReportHoyDto } from '../../interfaces/api/eventReports';
+import type { TimeRecordDto } from '../../interfaces/api/timeRecords';
 
-export interface NewnessReport {
-  id: number;
-  report_date: string | null;
-  date_created: string | null;
-  observations: string | null;
-  newness_id: { name?: string | null } | null;
-  store_id: string | number | null;
-  employee_id: {
-    document_number?: string | number | null;
-    first_name: string;
-    middle_name: string | null;
-    last_name: string;
-    second_last_name: string | null;
-  } | null;
-}
 
 export const fetchTimeRecordsExport = async (
   fechaInicio?: string,
   fechaFin?: string,
   storeIds?: number[],
   incluirPruebas = false
-): Promise<TimeRecord[]> => {
+): Promise<TimeRecordDto[]> => {
   const filter: any = {};
 
   if (storeIds && storeIds.length > 0) {
@@ -50,7 +38,7 @@ export const fetchTimeRecordsExport = async (
         limit: -1,
       })
     )
-  ) as TimeRecord[];
+  ) as TimeRecordDto[];
 };
 
 export const fetchNewnessReportsExport = async (
@@ -58,7 +46,7 @@ export const fetchNewnessReportsExport = async (
   fechaFin?: string,
   storeIds?: number[],
   incluirPruebas = false
-): Promise<NewnessReport[]> => {
+): Promise<NewnessReportDto[]> => {
   const filter: any = { _and: [] };
 
   if (storeIds && storeIds.length > 0) {
@@ -111,30 +99,16 @@ export const fetchNewnessReportsExport = async (
         limit: -1,
       })
     )
-  ) as NewnessReport[];
+  ) as NewnessReportDto[];
 };
 
-export interface EventReportExport {
-  event_type: string;
-  date: string | null;
-  hour: string | null;
-  observations: string | null;
-  store_id: string | number | null;
-  employee_id: {
-    document_number?: string | number | null;
-    first_name: string;
-    middle_name: string | null;
-    last_name: string;
-    second_last_name: string | null;
-  } | null;
-}
 
 export const fetchEventReportsExport = async (
   fechaInicio?: string,
   fechaFin?: string,
   storeIds?: number[],
   incluirPruebas = false
-): Promise<EventReportExport[]> => {
+): Promise<EventReportExportDto[]> => {
   const filter: any = {};
   if (storeIds && storeIds.length > 0) filter.store_id = { _in: storeIds };
   if (!incluirPruebas) filter.store_id = { ...(filter.store_id || {}), _neq: STORE_PRUEBAS };
@@ -161,7 +135,7 @@ export const fetchEventReportsExport = async (
         limit: -1,
       })
     )
-  ) as EventReportExport[];
+  ) as EventReportExportDto[];
 };
 
 export async function getEmployeeTimeRecords(
@@ -229,7 +203,7 @@ export async function getEmployeeEventReports(
 export async function getStoreEventReportsToday(
   storeId: number,
   date: string
-): Promise<EventReportHoy[]> {
+): Promise<EventReportHoyDto[]> {
   try {
     return await withAutoRefresh(() =>
       directus.request(
@@ -242,7 +216,7 @@ export async function getStoreEventReportsToday(
           limit: -1,
         })
       )
-    ) as EventReportHoy[];
+    ) as EventReportHoyDto[];
   } catch (error) {
     console.error('❌ Error cargando eventos de la tienda:', error);
     return [];

@@ -1,6 +1,6 @@
-import type { EmpleadoAsistencia } from '../../interfaces/horarios.interface';
 import { ESTADO, type EstadoAsistencia } from './estados';
 import { LOG_TYPE, MARCACIONES, type Marcacion } from './marcaciones';
+import type { EmpleadoAsistencia } from './modelo';
 import { MAX_PAUSAS_ACTIVAS } from './reglas';
 
 /** Lo que la tarjeta sabe y el empleado no: estado local o de la página. */

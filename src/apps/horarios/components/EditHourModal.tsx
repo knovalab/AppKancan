@@ -14,8 +14,8 @@ import {
   type MarcacionKey,
   MIN_CARACTERES_NOTA_MOTIVO_OTRO,
 } from '../domain/registro';
-import { Motivo } from '../interfaces/horarios.interface';
 import { formatTo12Hour } from '../utils/format';
+import type { Motivo } from '../interfaces/registro';
 
 interface EditHourModalProps {
   open: boolean;

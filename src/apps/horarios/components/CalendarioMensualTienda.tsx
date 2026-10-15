@@ -17,9 +17,10 @@ import { LOG_TYPE } from '../domain/registro';
 
 dayjs.extend(isSameOrBefore);
 
-import { fetchTimeRecords, getStoreClosedDays, StoreClosedDay } from '../api/directus/read';
-import { EstadoDia } from './ModalDetalleTiendaUtils';
+import { fetchTimeRecords, getStoreClosedDays } from '../api/directus/read';
 import { useHolidays } from '../../reservas/hooks/useHolidays';
+import type { StoreClosedDayDto } from '../interfaces/api/stores';
+import type { EstadoDia } from '../interfaces/ui/monitoreo';
 
 interface CalendarioMensualTiendaProps {
     tiendaId: number;
@@ -75,7 +76,7 @@ export default function CalendarioMensualTienda({
                 )
             ]);
 
-            const closedMap: Record<string, StoreClosedDay> = {};
+            const closedMap: Record<string, StoreClosedDayDto> = {};
             diasCerrados.forEach((d) => {
                 closedMap[d.date] = d;
             });

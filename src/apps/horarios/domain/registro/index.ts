@@ -7,6 +7,7 @@ export * from './estados';
 export * from './eventos';
 export * from './mapeo';
 export * from './marcaciones';
+export * from './modelo';
 export * from './pasos';
 export * from './registros';
 export * from './reglas';

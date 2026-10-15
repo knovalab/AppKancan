@@ -2,16 +2,9 @@ import { readItems } from '@directus/sdk';
 import { withAutoRefresh } from '@/auth/services/directusInterceptor';
 import directus from '@/services/directus/directus';
 import { crearRegistrosVacios, ESTADO } from '../../domain/registro';
-import type { EmpleadoAsistencia } from '../../interfaces/horarios.interface';
+import type { StoreClosedDayDto } from '../../interfaces/api/stores';
+import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
 
-export interface StoreClosedDay {
-	id: number;
-	store_id: number;
-	date: string;
-	status?: boolean;
-	user_created?: string;
-	date_created?: string;
-}
 
 /**
  * Obtiene empleados activos en lote (bulk) para un listado de tiendas
@@ -167,7 +160,7 @@ export const getStoreClosedDays = async (
 	storeIds?: number | number[],
 	startDate?: string,
 	endDate?: string,
-): Promise<StoreClosedDay[]> => {
+): Promise<StoreClosedDayDto[]> => {
 	try {
 		const filter: any = {};
 		if (storeIds != null) {
@@ -212,7 +205,7 @@ export const getStoreClosedDays = async (
 			status: item.status !== false,
 			user_created: item.user_created,
 			date_created: item.date_created,
-		})) as StoreClosedDay[];
+		})) as StoreClosedDayDto[];
 	} catch (err) {
 		console.error('❌ Error al obtener días cerrados de la tienda:', err);
 		return [];

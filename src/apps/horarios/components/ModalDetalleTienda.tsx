@@ -10,17 +10,16 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/es';
 
-import { getNovedades, fetchTimeRecords, getRecordReasonId, getStoreClosedDays, StoreClosedDay } from '../api/directus/read';
+import { getNovedades, fetchTimeRecords, getRecordReasonId, getStoreClosedDays } from '../api/directus/read';
 import { createTimeRecord, updateTimeRecord, upsertRecordReason, setStoreClosedDayStatus } from '../api/directus/create';
 import { useHorarios } from '../hooks/useHorarios';
 import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 
 import {
-  EmpleadoFila,
-  calcularMinutosDia,
-  formatearHoras,
-  calcularHorasSemana,
+	calcularMinutosDia,
+	formatearHoras,
+	calcularHorasSemana,
 } from './ModalDetalleTiendaUtils';
 
 import NovedadDetalleModal from './NovedadDetalleModal';
@@ -35,6 +34,8 @@ import { ModalDetalleTiendaHeader } from './detalle-tienda/ModalDetalleTiendaHea
 import CreateHourModal from './detalle-tienda/CreateHourModal';
 import { ESTADO, LOG_TYPE } from '../domain/registro';
 import { horariosKeys } from '../hooks/registro/keys';
+import type { StoreClosedDayDto } from '../interfaces/api/stores';
+import type { FilaEmpleadoDetalle } from '../interfaces/ui/monitoreo';
 
 // ============================================================
 //  COMPONENTE PRINCIPAL
@@ -64,7 +65,7 @@ export default function ModalDetalleTienda({
     const [novedadModalOpen, setNovedadModalOpen] = useState(false);
     const [novedadSeleccionada, setNovedadSeleccionada] = useState<any>(null);
     const [historialOpen, setHistorialOpen] = useState(false);
-    const [empleadoHistorial, setEmpleadoHistorial] = useState<EmpleadoFila | null>(null);
+    const [empleadoHistorial, setEmpleadoHistorial] = useState<FilaEmpleadoDetalle | null>(null);
 
     const { showSnackbar } = useGlobalSnackbar();
     const puedeGestionarDiasCerrados = esAdmin() || esAreaManager();
@@ -194,7 +195,7 @@ export default function ModalDetalleTienda({
         enabled: !!tiendaId,
         staleTime: 5 * 60 * 1000,
     });
-    const diaCerradoActual = diasCerrados.find((d: StoreClosedDay) => d.date === fechaSeleccionada);
+    const diaCerradoActual = diasCerrados.find((d: StoreClosedDayDto) => d.date === fechaSeleccionada);
     const esDiaCerrado = !!(diaCerradoActual && diaCerradoActual.status === true);
 
     const handleToggleDiaCerradoClick = () => {
@@ -296,7 +297,7 @@ export default function ModalDetalleTienda({
         }
     });
 
-    const filasEmpleados: EmpleadoFila[] = Array.from(empleadosMap.values()).map((emp) => {
+    const filasEmpleados: FilaEmpleadoDetalle[] = Array.from(empleadosMap.values()).map((emp) => {
         const inicioJornada = getHora(emp.id, LOG_TYPE.inicioJornada);
         const inicioAlmuerzo = getHora(emp.id, LOG_TYPE.inicioAlmuerzo);
         const finAlmuerzo = getHora(emp.id, LOG_TYPE.finAlmuerzo);
@@ -324,12 +325,12 @@ export default function ModalDetalleTienda({
     const empleadosPagina = empleadosFiltrados.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
     const fechaDisplay = dayjs(fechaSeleccionada).locale('es').format('dddd, D [de] MMMM [de] YYYY');
 
-    const handleNovedadClick = (fila: EmpleadoFila) => {
+    const handleNovedadClick = (fila: FilaEmpleadoDetalle) => {
         setNovedadSeleccionada({ tipo: fila.novedadTipo || 'Novedad', observacion: fila.novedadObservacion || 'Sin observación', empleadoNombre: fila.nombre });
         setNovedadModalOpen(true);
     };
 
-    const handleOpenHistorial = (fila: EmpleadoFila) => {
+    const handleOpenHistorial = (fila: FilaEmpleadoDetalle) => {
         setEmpleadoHistorial(fila);
         setHistorialOpen(true);
     };

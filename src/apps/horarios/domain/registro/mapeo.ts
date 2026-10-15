@@ -1,15 +1,6 @@
-import type { RegistrosAsistencia } from '../../interfaces/horarios.interface';
 import { keyPorLogType } from './marcaciones';
+import type { MarcacionCruda, RegistrosAsistencia } from './modelo';
 import { crearRegistrosVacios } from './registros';
-
-/** Lo mínimo de una fila de `com_time_records` que necesita el registro. */
-export interface MarcacionCruda {
-	id: number;
-	log_type: string;
-	record_time: string | null;
-	original_record_time?: string | null;
-	observations?: string | null;
-}
 
 /** 'HH:mm:ss' → 'HH:mm'. */
 const aHHmm = (hora: string) => hora.substring(0, 5);

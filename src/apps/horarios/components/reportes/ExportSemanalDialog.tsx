@@ -12,10 +12,10 @@ import { useQuery } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import { getStores, getEmpleadosBulk, getTimeRecordsBulkRange, fetchNewnessReportsExport, getStoreClosedDays } from '../../api/directus/read';
 import { exportarSemanalExcel } from '../../utils/exportarSemanal';
-import { Tienda } from '../../interfaces/horarios.interface';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 import DateRangeFilter from './DateRangeFilter';
 import { DIAS_DE_LA_SEMANA } from '../../pages/reporte/ReporteUtils';
+import type { Tienda } from '../../interfaces/tiendas';
 
 interface ExportSemanalDialogProps {
   open: boolean;

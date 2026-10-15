@@ -9,7 +9,6 @@ dayjs.locale('es');
 import { getStores, getEditedTimeRecords } from '../api/directus/read';
 import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
 import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
-import { Tienda } from '../interfaces/horarios.interface';
 import ModalDetalleTienda from '../components/ModalDetalleTienda';
 import ModalCierreMasivo from '../components/ModalCierreMasivo';
 import DateRangeFilter from '../components/reportes/DateRangeFilter';
@@ -28,6 +27,7 @@ import {
 import { Paginador, TarjetaResumen, TarjetaEstadistica } from './monitoreo/MonitoreoComponents';
 import { useTiendasResumen } from './monitoreo/useTiendasResumen';
 import ModalRankingTiendas from '../components/ModalRankingTiendas';
+import type { Tienda } from '../interfaces/tiendas';
 
 
 // ---------- COMPONENTE PRINCIPAL ----------

@@ -9,8 +9,8 @@ import {
 	MAX_PAUSAS_ACTIVAS,
 	marcacionPorLogType,
 } from '../../domain/registro';
-import type { EmpleadoAsistencia } from '../../interfaces/horarios.interface';
 import type { AccionesTarjeta } from '../../interfaces/registro';
+import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
 
 const OK = { ok: true } as const;
 

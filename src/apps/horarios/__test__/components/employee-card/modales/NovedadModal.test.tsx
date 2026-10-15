@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NovedadModal } from '../../../../components/employee-card/modales/NovedadModal';
-import type { TipoNovedad } from '../../../../interfaces/horarios.interface';
+import type { TipoNovedad } from '../../../../interfaces/novedades';
 
 vi.mock('@/apps/reservas/hooks/useHolidays', () => ({
 	useHolidays: () => ({ data: {} }),

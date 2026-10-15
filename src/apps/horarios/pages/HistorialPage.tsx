@@ -32,8 +32,7 @@ import useHorariosPolicies from '../hooks/useHorariosPolicies';
 import type {
 	HistorialEventoDetalle,
 	HistorialRow,
-} from '../interfaces/horarios.interface';
-
+} from '../interfaces/historial';
 import { formatDocumentNumber } from '../utils/format';
 
 const DailyAttendanceModal = lazy(() =>

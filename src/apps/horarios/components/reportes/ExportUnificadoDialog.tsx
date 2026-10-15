@@ -28,13 +28,13 @@ import { exportarSemanalExcel } from '../../utils/exportarSemanal';
 import { exportarHistorialExcel } from '../../utils/exportarHistorial';
 import { exportarNovedadesExcel } from '../../utils/exportarNovedades';
 import { exportarEventosExcel } from '../../utils/exportarEventos';
-import { Tienda } from '../../interfaces/horarios.interface';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 import DateRangeFilter from './DateRangeFilter';
 import { DIAS_DE_LA_SEMANA } from '../../pages/reporte/ReporteUtils';
 import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
 import { useAuth } from '@/auth/hooks/useAuth';
 import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
+import type { Tienda } from '../../interfaces/tiendas';
 
 export interface ExportUnificadoDialogProps {
   open: boolean;

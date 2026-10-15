@@ -7,12 +7,10 @@ import {
 	ESTADO,
 	LOG_TYPE,
 } from '../../../domain/registro';
-import type {
-	EmpleadoAsistencia,
-	Motivo,
-	TipoNovedad,
-} from '../../../interfaces/horarios.interface';
 import type { AccionesTarjeta } from '../../../interfaces/registro';
+import type { EmpleadoAsistencia } from '../../../domain/registro/modelo';
+import type { TipoNovedad } from '../../../interfaces/novedades';
+import type { Motivo } from '../../../interfaces/registro';
 
 vi.mock('../../../components/verification/TimeRecordVerificationModal', () => ({
 	TimeRecordVerificationModal: ({ open }: { open: boolean }) =>

@@ -2,15 +2,15 @@ import { useMemo, useRef } from 'react';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 import { getRecordReasonId } from '../../api/directus/read';
 import {
-	type Normas,
 	registrarAceptacionNormasEmpleado,
 } from '../../api/directus/rules';
 import { keyPorLogType, type LogType } from '../../domain/registro';
 import type { Resultado } from '../../interfaces/comunes';
-import type { EmpleadoAsistencia } from '../../interfaces/horarios.interface';
 import type { NuevaNovedadInput } from '../../interfaces/novedades';
 import type { AccionesTarjeta } from '../../interfaces/registro';
 import { useAccionesRegistro } from './useAccionesRegistro';
+import type { Normas } from '../../interfaces/normas';
+import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
 
 interface Opciones {
 	storeId: number | null;

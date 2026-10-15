@@ -17,8 +17,8 @@ import {
   MAX_CARACTERES_OBSERVACION,
   type MarcacionKey,
 } from '../../domain/registro';
-import type { RegistrosAsistencia } from '../../interfaces/horarios.interface';
 import { formatTo12Hour } from '../../utils/format';
+import type { RegistrosAsistencia } from '../../domain/registro/modelo';
 
 /** Icono del botón de cada marcación. */
 const ICONO_MARCACION: Record<MarcacionKey, ReactElement> = {

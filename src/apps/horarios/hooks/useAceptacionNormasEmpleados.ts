@@ -3,10 +3,10 @@ import { useCallback, useMemo } from 'react';
 import {
 	getEmpleadosQueAceptaronNormas,
 	getNormasActivas,
-	type Normas,
 } from '../api/directus/rules';
 import { esEmpleadoDemo } from '../domain/registro';
 import useHorariosPolicies from './useHorariosPolicies';
+import type { Normas } from '../interfaces/normas';
 
 /**
  * Aceptación de normas de todos los empleados de la tienda en una sola consulta.

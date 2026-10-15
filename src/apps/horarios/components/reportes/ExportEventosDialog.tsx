@@ -12,11 +12,11 @@ import { useQuery } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import { getStores, getStoreIdUsuarioActual, fetchEventReportsExport } from '../../api/directus/read';
 import { exportarEventosExcel } from '../../utils/exportarEventos';
-import { Tienda } from '../../interfaces/horarios.interface';
 import DateRangeFilter from './DateRangeFilter';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
 import { horariosKeys } from '../../hooks/registro/keys';
+import type { Tienda } from '../../interfaces/tiendas';
 
 const AZUL = '#004680';
 

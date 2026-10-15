@@ -28,16 +28,16 @@ import { getStoreClosedDays } from '../api/directus/readBulk';
 import DateRangeFilter from './reportes/DateRangeFilter';
 import { HistorialTimelineView } from './historial/HistorialTimelineView';
 import {
-    EmpleadoFila,
-    getNovedadIcon,
-    calcularMinutosDia,
-    formatearHoras,
+	getNovedadIcon,
+	calcularMinutosDia,
+	formatearHoras,
 } from './ModalDetalleTiendaUtils';
+import type { FilaEmpleadoDetalle } from '../interfaces/ui/monitoreo';
 
 interface HistorialHorasModalProps {
     open: boolean;
     onClose: () => void;
-    empleado: EmpleadoFila | null;
+    empleado: FilaEmpleadoDetalle | null;
     tiendaId: number;
     todasNovedades: any[];
     onDayClick?: (fecha: string, empleadoNombre: string) => void;

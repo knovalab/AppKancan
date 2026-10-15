@@ -2,15 +2,13 @@ import { readItems, readMe } from '@directus/sdk';
 import dayjs from 'dayjs';
 import { withAutoRefresh } from '@/auth/services/directusInterceptor';
 import directus from '@/services/directus/directus';
-import type {
-	Cargo,
-	EmpleadoAdmin,
-	EmpleadoAsistencia,
-	Motivo,
-	Tienda,
-	TipoNovedad,
-} from '../../interfaces/horarios.interface';
 import { getEmpleadosBulk, getStoreClosedDays } from './readBulk';
+import type { TimeRecordDto } from '../../interfaces/api/timeRecords';
+import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
+import type { Cargo, EmpleadoAdmin } from '../../interfaces/empleados';
+import type { TipoNovedad } from '../../interfaces/novedades';
+import type { Motivo } from '../../interfaces/registro';
+import type { Tienda } from '../../interfaces/tiendas';
 
 export { getStoreClosedDays };
 
@@ -261,40 +259,14 @@ export async function getStoreNovedades(
 	}
 }
 
-export interface GeoJsonPoint {
-	type: 'Point';
-	coordinates: [number, number]; // [longitude, latitude]
-}
 
-export interface TimeRecord {
-	id: number;
-	record_date: string;
-	record_time: string;
-	original_record_time: string | null;
-	log_type: string;
-	employee_id: {
-		id?: number | string;
-		document_number?: string | number | null;
-		first_name: string;
-		middle_name: string | null;
-		last_name: string;
-		second_last_name: string | null;
-	} | null;
-	store_id: { id: number; name: string } | string | null;
-	observations: string | null;
-	photo?: string | null;
-	location?: GeoJsonPoint | null;
-	latitude?: number | null;
-	longitude?: number | null;
-	accuracy?: number | null;
-}
 
 export const fetchTimeRecords = async (
 	fechaInicio?: string,
 	fechaFin?: string,
 	storeId?: number | number[],
 	employeeId?: number | string,
-): Promise<TimeRecord[]> => {
+): Promise<TimeRecordDto[]> => {
 	const filter: any = {};
 
 	if (
@@ -344,7 +316,7 @@ export const fetchTimeRecords = async (
 				limit: -1,
 			}),
 		),
-	)) as TimeRecord[];
+	)) as TimeRecordDto[];
 };
 
 /**
@@ -381,7 +353,7 @@ export async function getMarcacionExistenteId(
 export async function getTimeRecords(
 	storeId: number,
 	date: string,
-): Promise<TimeRecord[]> {
+): Promise<TimeRecordDto[]> {
 	return fetchTimeRecords(date, date, storeId);
 }
 

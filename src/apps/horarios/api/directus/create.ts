@@ -7,14 +7,16 @@ import {
 } from '@directus/sdk';
 import { withAutoRefresh } from '@/auth/services/directusInterceptor';
 import directus from '@/services/directus/directus';
+import { aPunto } from '../../domain/ubicacion';
+import type { CreateEmployeeDto, UpdateEmployeeDto } from '../../interfaces/api/employees';
+import type { CreateEventReportDto } from '../../interfaces/api/eventReports';
+import type { CreateNewnessReportDto } from '../../interfaces/api/newness';
+import type {
+	CreateTimeRecordDto,
+	UpdateTimeRecordDto,
+} from '../../interfaces/api/timeRecords';
 
-export async function createNovedad(data: {
-	employee_id: number;
-	newness_id: number;
-	report_date: string;
-	observations?: string;
-	store_id?: number;
-}) {
+export async function createNovedad(data: CreateNewnessReportDto) {
 	try {
 		const payload = {
 			employee_id: Number(data.employee_id),
@@ -35,13 +37,7 @@ export async function createNovedad(data: {
 }
 
 export async function createNovedades(
-	items: {
-		employee_id: number;
-		newness_id: number;
-		report_date: string;
-		observations?: string;
-		store_id?: number;
-	}[],
+	items: CreateNewnessReportDto[],
 ) {
 	try {
 		const payloads = items.map((data) => ({
@@ -63,14 +59,7 @@ export async function createNovedades(
 	}
 }
 
-export async function createEventReport(data: {
-	employee_id: number;
-	store_id?: number;
-	event_type: string;
-	observations?: string;
-	date?: string;
-	hour?: string;
-}) {
+export async function createEventReport(data: CreateEventReportDto) {
 	try {
 		const payload = {
 			employee_id: Number(data.employee_id),
@@ -91,19 +80,7 @@ export async function createEventReport(data: {
 	}
 }
 
-export async function createTimeRecord(data: {
-	employee_id: number;
-	store_id?: number;
-	log_type: string;
-	record_date: string;
-	record_time: string;
-	observations?: string;
-	latitude?: number | null;
-	longitude?: number | null;
-	location?: { type: 'Point'; coordinates: [number, number] } | null;
-	accuracy?: number | null;
-	photo?: string | null;
-}) {
+export async function createTimeRecord(data: CreateTimeRecordDto) {
 	try {
 		const payload: Record<string, any> = {
 			employee_id: Number(data.employee_id),
@@ -121,10 +98,10 @@ export async function createTimeRecord(data: {
 			data.longitude !== undefined &&
 			data.longitude !== null
 		) {
-			payload.location = {
-				type: 'Point',
-				coordinates: [Number(data.longitude), Number(data.latitude)],
-			};
+			payload.location = aPunto({
+				latitud: data.latitude,
+				longitud: data.longitude,
+			});
 		}
 		if (data.accuracy !== undefined && data.accuracy !== null) {
 			payload.accuracy = data.accuracy;
@@ -145,11 +122,7 @@ export async function createTimeRecord(data: {
 
 export async function updateTimeRecord(
 	id: number,
-	data: {
-		observations?: string;
-		record_time?: string;
-		original_record_time?: string;
-	},
+	data: UpdateTimeRecordDto,
 ) {
 	try {
 		const payload: any = {};
@@ -209,16 +182,7 @@ export async function upsertRecordReason(recordId: number, reasonId: number) {
 const EMAIL_DEFECTO = 'correo@dominio.com';
 const TELEFONO_DEFECTO = '1';
 
-export async function crearEmpleado(data: {
-	document_type: string;
-	document_number: string;
-	first_name: string;
-	middle_name?: string;
-	last_name: string;
-	second_last_name?: string;
-	store_id: number;
-	position_id: number;
-}) {
+export async function crearEmpleado(data: CreateEmployeeDto) {
 	try {
 		const payload: any = {
 			document_type: data.document_type,
@@ -248,15 +212,7 @@ export async function crearEmpleado(data: {
 
 export async function actualizarEmpleado(
 	id: number,
-	data: {
-		store_id?: number;
-		position_id?: number;
-		status?: string;
-		first_name?: string;
-		middle_name?: string;
-		last_name?: string;
-		second_last_name?: string;
-	},
+	data: UpdateEmployeeDto,
 ) {
 	try {
 		const payload: any = {};

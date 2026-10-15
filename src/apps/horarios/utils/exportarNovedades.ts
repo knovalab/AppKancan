@@ -1,17 +1,17 @@
 import dayjs from 'dayjs';
-import type { NewnessReport } from '../api/directus/read';
-import type { Tienda } from '../interfaces/horarios.interface';
+import type { NewnessReportDto } from '../interfaces/api/newness';
+import type { Tienda } from '../interfaces/tiendas';
 
 const DELIM = ';';
 
-const nombreEmpleado = (emp: NewnessReport['employee_id']): string =>
+const nombreEmpleado = (emp: NewnessReportDto['employee_id']): string =>
 	emp
 		? [emp.first_name, emp.middle_name, emp.last_name, emp.second_last_name]
 				.filter((n) => n && String(n).trim())
 				.join(' ')
 		: 'Sin nombre';
 
-const fechaDayjs = (nov: NewnessReport) => {
+const fechaDayjs = (nov: NewnessReportDto) => {
 	const raw = nov.report_date || nov.date_created;
 	if (!raw) return null;
 	const d = dayjs(raw);
@@ -42,7 +42,7 @@ const csvCampo = (valor: string): string => {
 };
 
 interface ExportarParams {
-	reports: NewnessReport[];
+	reports: NewnessReportDto[];
 	stores: Tienda[];
 }
 

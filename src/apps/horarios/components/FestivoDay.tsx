@@ -4,10 +4,10 @@ import {
 	type PickersDayProps,
 } from '@mui/x-date-pickers/PickersDay';
 import dayjs from 'dayjs';
-import type { HolidayMap } from '../../reservas/hooks/useHolidays';
+import type { MapaFestivos } from '../interfaces/comunes';
 
 interface FestivoDayProps extends PickersDayProps {
-	holidays?: HolidayMap;
+	holidays?: MapaFestivos;
 }
 
 export const FestivoDay = (props: FestivoDayProps) => {

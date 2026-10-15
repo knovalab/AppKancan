@@ -1,4 +1,4 @@
-import type { Tienda } from '@/apps/horarios/interfaces/horarios.interface';
+import type { Tienda } from '../../../interfaces/tiendas';
 
 export function createMockTienda(overrides: Partial<Tienda> = {}): Tienda {
 	return {

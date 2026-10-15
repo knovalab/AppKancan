@@ -2,3 +2,6 @@
 export type Resultado =
 	| { ok: true; id?: number }
 	| { ok: false; error: string };
+
+/** Festivos por fecha: `'YYYY-MM-DD' → nombre` (misma forma que `HolidayMap` de reservas/useHolidays). */
+export type MapaFestivos = Record<string, string>;

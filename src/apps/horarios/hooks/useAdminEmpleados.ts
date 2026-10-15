@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getStores, getCargos, buscarEmpleados, listarEmpleadosTienda } from '../api/directus/read';
 import { crearEmpleado, actualizarEmpleado } from '../api/directus/create';
-import { Tienda, Cargo, EmpleadoAdmin } from '../interfaces/horarios.interface';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 import { horariosKeys } from './registro/keys';
+import type { Cargo, EmpleadoAdmin } from '../interfaces/empleados';
+import type { Tienda } from '../interfaces/tiendas';
 
 export const TIPOS_DOCUMENTO: string[] = ['Cédula de Ciudadanía'];
 

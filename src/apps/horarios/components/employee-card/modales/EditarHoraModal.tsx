@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import { keyPorLogType, type LogType } from '../../../domain/registro';
 import type { Resultado } from '../../../interfaces/comunes';
-import type {
-	Motivo,
-	RegistrosAsistencia,
-} from '../../../interfaces/horarios.interface';
 import EditHourModal from '../../EditHourModal';
+import type { RegistrosAsistencia } from '../../../domain/registro/modelo';
+import type { Motivo } from '../../../interfaces/registro';
 
 interface EditarHoraModalProps {
 	open: boolean;

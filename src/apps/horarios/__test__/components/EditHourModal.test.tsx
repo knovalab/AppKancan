@@ -7,7 +7,7 @@ import {
 	LOG_TYPE,
 	MIN_CARACTERES_NOTA_MOTIVO_OTRO,
 } from '../../domain/registro';
-import type { Motivo } from '../../interfaces/horarios.interface';
+import type { Motivo } from '../../interfaces/registro';
 
 vi.mock('@mui/x-date-pickers/TimePicker', () => ({
 	TimePicker: ({

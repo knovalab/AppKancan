@@ -1,9 +1,6 @@
 import { crearRegistrosVacios, ESTADO } from '@/apps/horarios/domain/registro';
-import type {
-	Cargo,
-	EmpleadoAdmin,
-	EmpleadoAsistencia,
-} from '@/apps/horarios/interfaces/horarios.interface';
+import type { EmpleadoAsistencia } from '../../../domain/registro/modelo';
+import type { Cargo, EmpleadoAdmin } from '../../../interfaces/empleados';
 
 export function createMockCargo(overrides: Partial<Cargo> = {}): Cargo {
 	return {

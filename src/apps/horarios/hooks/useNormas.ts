@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/auth/hooks/useAuth';
-import { getNormasActivas, Normas } from '../api/directus/rules';
+import { getNormasActivas } from '../api/directus/rules';
+import type { Normas } from '../interfaces/normas';
 
 export function useNormas() {
   const { user } = useAuth();

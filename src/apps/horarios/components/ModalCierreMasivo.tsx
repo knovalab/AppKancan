@@ -22,45 +22,23 @@ import { PickersDay, PickersDayProps } from '@mui/x-date-pickers/PickersDay';
 
 import { ConfirmCierreMasivoDialog } from './cierre-masivo/ConfirmCierreMasivoDialog';
 import { setStoreClosedDayStatus } from '../api/directus/create';
-import { getStoreClosedDays, StoreClosedDay } from '../api/directus/read';
+import { getStoreClosedDays } from '../api/directus/read';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-
-interface Tienda {
-    id: number;
-    nombre: string;
-}
+import type { StoreClosedDayDto } from '../interfaces/api/stores';
+import { useHolidays } from '../../reservas/hooks/useHolidays';
+import type { MapaFestivos } from '../interfaces/comunes';
+import type { TiendaOpcion } from '../interfaces/tiendas';
 
 interface ModalCierreMasivoProps {
     open: boolean;
     onClose: () => void;
-    tiendas: Tienda[];
-}
-
-// ─── Hook de festivos (reutilizado de reservas) ────────────────────────────────
-interface HolidayMap { [date: string]: string; }
-async function fetchHolidaysCO(year: number): Promise<HolidayMap> {
-    try {
-        const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/CO`);
-        if (!res.ok) return {};
-        const data: { date: string; localName: string }[] = await res.json();
-        const map: HolidayMap = {};
-        for (const f of data) map[f.date] = f.localName;
-        return map;
-    } catch { return {}; }
-}
-function useHolidaysCO(year: number) {
-    return useQuery<HolidayMap>({
-        queryKey: ['holidays', 'CO', year],
-        queryFn: () => fetchHolidaysCO(year),
-        staleTime: 1000 * 60 * 60 * 24,
-        gcTime: 1000 * 60 * 60 * 24 * 7,
-    });
+    tiendas: TiendaOpcion[];
 }
 
 // ─── Day slot personalizado: festivos + multiselección ────────────────────────
 interface MultiSelectDayProps extends PickersDayProps {
-    holidays?: HolidayMap;
+    holidays?: MapaFestivos;
     selectedDates?: Set<string>;
     modoAccion?: 'cerrar' | 'reabrir';
     tiendasCerradasPorFecha?: Map<string, string[]>;
@@ -209,7 +187,7 @@ function CalendarioCierreMasivo({
     onMonthChange: (date: Date) => void;
 }) {
     const calendarYear = currentMonth.getFullYear();
-    const { data: festivos = {} } = useHolidaysCO(calendarYear);
+    const { data: festivos = {} } = useHolidays(calendarYear);
 
     const handleChange = (value: unknown) => {
         if (value) {
@@ -304,7 +282,7 @@ export default function ModalCierreMasivo({ open, onClose, tiendas }: ModalCierr
 
     // Consulta de todos los días cerrados para las tiendas
     const storeIds = useMemo(() => tiendas.map(t => t.id), [tiendas]);
-    const { data: todosDiasCerrados = [] } = useQuery<StoreClosedDay[]>({
+    const { data: todosDiasCerrados = [] } = useQuery<StoreClosedDayDto[]>({
         queryKey: ['todosDiasCerradosMasivo', storeIds],
         queryFn: () => getStoreClosedDays(storeIds),
         enabled: open,

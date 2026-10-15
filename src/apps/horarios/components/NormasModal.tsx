@@ -4,7 +4,7 @@ import {
   Checkbox, FormControlLabel, CircularProgress,
 } from '@mui/material';
 import GavelIcon from '@mui/icons-material/Gavel';
-import { Normas } from '../api/directus/rules';
+import type { Normas } from '../interfaces/normas';
 
 const AZUL = '#004880';
 

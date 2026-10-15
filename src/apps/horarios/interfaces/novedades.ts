@@ -9,3 +9,32 @@ export interface NuevaNovedadInput {
 	observaciones: string;
 	fechaRegistro: string;
 }
+
+export interface Novedad {
+	id: string;
+	empleadoId: string;
+	empleadoNombre: string;
+	empleadoDocumento?: string;
+	tipo: string;
+	fecha: string;
+	description?: string;
+	notes?: string;
+	fechaRegistro: string;
+}
+
+export interface TipoNovedad {
+	id: number;
+	nombre: string;
+	name: string;
+}
+
+export interface NovedadMapeada {
+	id: string | number;
+	fecha: string;
+	empleadoNombre: string;
+	tipo: string;
+	observaciones: string;
+	empleadoActivo?: boolean;
+	empleadoDocumento?: string | null;
+	tiendaNombre?: string;
+}

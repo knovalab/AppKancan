@@ -19,13 +19,13 @@ import {
   getEmployeeTimeRecords, getEmployeeNovedades, getEmployeeEventReports,
 } from '../../api/directus/read';
 import { eliminarNovedad } from '../../api/directus/create';
-import { EmpleadoAdmin } from '../../interfaces/horarios.interface';
 import { getIconForTipo, getChipColor } from '../../utils/novedadVisual';
 import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
 import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 import { formatDocumentNumber } from '../../utils/format';
 import { LOG_TYPE } from '../../domain/registro';
 import { horariosKeys } from '../../hooks/registro/keys';
+import type { EmpleadoAdmin } from '../../interfaces/empleados';
 
 const AZUL = '#004680';
 const AVATAR_COLORS = ['#0284c7', '#7c3aed', '#16a34a', '#ea580c', '#db2777', '#0891b2', '#4f46e5', '#ca8a04', '#dc2626', '#059669', '#2563eb', '#9333ea'];

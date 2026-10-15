@@ -1,5 +1,5 @@
-import type { RegistrosAsistencia } from '../../interfaces/horarios.interface';
 import { MARCACIONES } from './marcaciones';
+import type { RegistrosAsistencia } from './modelo';
 
 /** `RegistrosAsistencia` sin ninguna marcación (las 4 horas en null). */
 export function crearRegistrosVacios(): RegistrosAsistencia {

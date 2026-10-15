@@ -12,11 +12,12 @@ import StorefrontIcon from '@mui/icons-material/Storefront';
 import WorkIcon from '@mui/icons-material/Work';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
-import { Tienda, Cargo, NuevoEmpleadoPayload } from '../../interfaces/horarios.interface';
 import { useParseNombreIA } from '../../hooks/useParseNombreIA';
 import { SILEO_STATE_FILL } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 import { existeDocumentoEmpleado } from '../../api/directus/read';
 import { formatDocumentNumber, formatNombrePropio } from '../../utils/format';
+import type { Cargo, NuevoEmpleadoPayload } from '../../interfaces/empleados';
+import type { Tienda } from '../../interfaces/tiendas';
 
 interface Props {
   open: boolean;

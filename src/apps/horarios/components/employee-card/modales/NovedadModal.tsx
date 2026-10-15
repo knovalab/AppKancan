@@ -21,13 +21,13 @@ import 'dayjs/locale/es';
 import { useState } from 'react';
 import { useHolidays } from '../../../../reservas/hooks/useHolidays';
 import type { Resultado } from '../../../interfaces/comunes';
-import type { TipoNovedad } from '../../../interfaces/horarios.interface';
 import { FestivoDay } from '../../FestivoDay';
 import {
 	erroresDeValidacion,
 	type NovedadFormValues,
 	novedadSchema,
 } from '../utils/novedadSchema';
+import type { TipoNovedad } from '../../../interfaces/novedades';
 
 interface NovedadModalProps {
 	open: boolean;

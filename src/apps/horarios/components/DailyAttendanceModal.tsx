@@ -3,10 +3,6 @@ import { Camera, Clock, FileText, X, ZoomIn } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import type {
-	HistorialEventoDetalle,
-	ObservacionEvento,
-} from '../interfaces/horarios.interface';
 import {
 	getDirectusPreviewUrl,
 	getDirectusThumbnailUrl,
@@ -14,6 +10,8 @@ import {
 import { AttendanceGpsAccordion } from './attendance/AttendanceGpsAccordion';
 import { AttendancePhotoLightbox } from './attendance/AttendancePhotoLightbox';
 import { getEventoMeta, getIniciales } from './attendance/attendanceMeta';
+import { coordenadasDe } from '../domain/ubicacion';
+import type { HistorialEventoDetalle, ObservacionEvento } from '../interfaces/historial';
 
 export interface DailyAttendanceModalProps {
 	open: boolean;
@@ -173,10 +171,7 @@ export function DailyAttendanceModal({
 											const meta = getEventoMeta(item.evento);
 											const Icono = meta.icon;
 											const esUltimo = idx === ordenadas.length - 1;
-											const lat =
-												item.latitude ?? item.location?.coordinates?.[1];
-											const lon =
-												item.longitude ?? item.location?.coordinates?.[0];
+											const { latitud: lat, longitud: lon } = coordenadasDe(item);
 											const tieneCoords = esAdmin && lat != null && lon != null;
 											const itemKey = `${item.evento}-${item.hora || idx}`;
 

@@ -9,7 +9,6 @@ import {
 	getStoreEventReportsToday,
 	getTimeRecords,
 	idRelacion,
-	type TimeRecord,
 } from '../api/directus/read';
 import type { VerificationData } from '../interfaces/verificacion';
 import {
@@ -21,16 +20,15 @@ import {
 	type LogType,
 	mapearRegistros,
 } from '../domain/registro';
-import type {
-	EmpleadoAsistencia,
-	EventReportHoy,
-	NovedadMapeada,
-} from '../interfaces/horarios.interface';
 import { getRealColombiaTime } from '../utils/timeSync';
 import { horariosKeys } from './registro/keys';
 import { useAccionesRegistro } from './registro/useAccionesRegistro';
 import { useCatalogosHorarios } from './registro/useCatalogosHorarios';
 import { useTiendaActual } from './registro/useTiendaActual';
+import type { EventReportHoyDto } from '../interfaces/api/eventReports';
+import type { TimeRecordDto } from '../interfaces/api/timeRecords';
+import type { EmpleadoAsistencia } from '../domain/registro/modelo';
+import type { NovedadMapeada } from '../interfaces/novedades';
 
 export const useHorarios = (storeOverride?: number | null) => {
 	const queryClient = useQueryClient();
@@ -65,13 +63,13 @@ export const useHorarios = (storeOverride?: number | null) => {
 		data: timeRecords = [],
 		isLoading: loadingTimeRecords,
 		error: errorTime,
-	} = useQuery<TimeRecord[]>({
+	} = useQuery<TimeRecordDto[]>({
 		queryKey: horariosKeys.timeRecords.dia(STORE_ID, hoy),
 		queryFn: () => getTimeRecords(STORE_ID as number, hoy),
 		enabled: tieneTienda,
 	});
 
-	const { data: eventReportsToday = [] } = useQuery<EventReportHoy[]>({
+	const { data: eventReportsToday = [] } = useQuery<EventReportHoyDto[]>({
 		queryKey: horariosKeys.eventosHoy.dia(STORE_ID, hoy),
 		queryFn: () => getStoreEventReportsToday(STORE_ID as number, hoy),
 		enabled: tieneTienda,

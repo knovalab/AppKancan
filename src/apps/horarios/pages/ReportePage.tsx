@@ -20,13 +20,13 @@ import ExportUnificadoDialog from '../components/reportes/ExportUnificadoDialog'
 import HistorialPage from './HistorialPage';
 import NovedadesTab from '../components/NovedadesTab';
 import { getStores, getStoreEventReports, getStoreNovedades, getEmpleadosBulk, getTimeRecordsBulkRange, getPrimerPeriodoRegistro } from '../api/directus/read';
-import { Tienda } from '../interfaces/horarios.interface';
 
 import { getSemanasDelMes, NOMBRES_MESES } from './reporte/ReporteUtils';
 import { getTourSteps, STEP_TAB_REGISTROS, STEP_TAB_NOVEDADES, STEP_TAB_PAUSAS, STEP_FAKE_START, STEP_FAKE_END } from './reporte/ReporteTourConfig';
 import FakeExportModal from '../components/tour/FakeExportModal';
 import ReportePausasTab from './reporte/ReportePausasTab';
 import ReporteSemanalTab from './reporte/ReporteSemanalTab';
+import type { Tienda } from '../interfaces/tiendas';
 
 interface ReportePageProps {
   storeSel: number | null;

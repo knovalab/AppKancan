@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EditarHoraModal } from '../../../../components/employee-card/modales/EditarHoraModal';
 import { crearRegistrosVacios, LOG_TYPE } from '../../../../domain/registro';
-import type { Motivo } from '../../../../interfaces/horarios.interface';
+import type { Motivo } from '../../../../interfaces/registro';
 
 describe('EditarHoraModal', () => {
 	const motivos: Motivo[] = [

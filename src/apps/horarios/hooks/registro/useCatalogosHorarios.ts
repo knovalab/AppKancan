@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { getReasons, getTiposNovedad } from '../../api/directus/read';
-import type { Motivo, TipoNovedad } from '../../interfaces/horarios.interface';
 import { horariosKeys } from './keys';
+import type { TipoNovedad } from '../../interfaces/novedades';
+import type { Motivo } from '../../interfaces/registro';
 
 /** Catálogos del registro: motivos de edición de hora y tipos de novedad (2 queries compartidas). */
 export function useCatalogosHorarios() {
