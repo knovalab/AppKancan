@@ -13,16 +13,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { uploadAttendancePhoto } from '../../api/directus/upload';
 import { useHighPrecisionLocation } from '../../hooks/useHighPrecisionLocation';
 import { type CapturedPhoto, useInAppCamera } from '../../hooks/useInAppCamera';
+import type { VerificationData } from '../../interfaces/verificacion';
 import { VerificationActions } from './VerificationActions';
 import { VerificationGpsBanner } from './VerificationGpsBanner';
 import { VerificationViewfinder } from './VerificationViewfinder';
 
-export interface VerificationData {
-	latitude: number;
-	longitude: number;
-	accuracy: number;
-	photo: string; // Directus file UUID
-}
+// El tipo vive en interfaces/ para que los hooks no dependan de este componente.
+export type { VerificationData } from '../../interfaces/verificacion';
 
 interface TimeRecordVerificationModalProps {
 	open: boolean;

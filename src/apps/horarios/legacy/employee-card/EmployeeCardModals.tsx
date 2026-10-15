@@ -1,3 +1,4 @@
+// LEGACY: modales controlados de la tarjeta antes del refactor; sustituidos por components/employee-card/modales/.
 import React from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Typography, Alert,
@@ -11,7 +12,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { EVENTOS_REPORTABLES, type EventoTipo, type LogType, MAX_CARACTERES_OBSERVACION } from '../../domain/registro';
-import { FestivoDay } from '../FestivoDay';
+import { FestivoDay } from '../../components/FestivoDay';
 
 interface EmployeeCardObsModalProps {
   open: boolean;

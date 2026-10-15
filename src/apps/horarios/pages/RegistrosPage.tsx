@@ -1,30 +1,20 @@
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Alert, Box, Button, Chip, Tooltip, Typography } from '@mui/material';
-import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import { useTutorial } from '@/shared/hooks/TutorialContext';
 import { botonHeaderSx } from '../components/botonHeaderSx';
-import EmployeeCard from '../components/EmployeeCard';
+import EmployeeCard from '../components/employee-card/EmployeeCard';
 import { HeaderActions } from '../components/HeaderActions';
 import ExportEventosDialog from '../components/reportes/ExportEventosDialog';
 import { useHorariosTour } from '../components/tour/HorariosTourContext';
-import {
-	crearRegistrosVacios,
-	ESTADO,
-	EVENTO,
-	type EventoTipo,
-	ID_EMPLEADO_DEMO,
-	keyPorLogType,
-	type LogType,
-	MAX_PAUSAS_ACTIVAS,
-	marcacionPorLogType,
-} from '../domain/registro';
+import { ID_EMPLEADO_DEMO } from '../domain/registro';
+import { useAccionesDemo } from '../hooks/registro/useAccionesDemo';
+import { useAccionesTarjeta } from '../hooks/registro/useAccionesTarjeta';
 import { useAceptacionNormasEmpleados } from '../hooks/useAceptacionNormasEmpleados';
 import { useHorarios } from '../hooks/useHorarios';
 import { useHorariosLayout } from '../hooks/useHorariosLayout';
-import type { EmpleadoAsistencia } from '../interfaces/horarios.interface';
 
 /**
  * Sección "Registros" (/horarios/registros): marcación de asistencia del día.
@@ -37,95 +27,33 @@ export default function RegistrosPage() {
 	const [modoDemo, setModoDemo] = useState(false);
 	const [exportEventosOpen, setExportEventosOpen] = useState(false);
 
-	const {
-		empleados,
-		tiposNovedad,
-		reasons,
-		loading,
-		error,
-		registrarEvento,
-		guardarObservacion,
-		agregarNovedad,
-		reportarEvento,
-	} = useHorarios(tienda.storeId);
+	const { empleados, tiposNovedad, reasons, loading, error, agregarNovedad } =
+		useHorarios(tienda.storeId);
 
 	// Una sola consulta de aceptación de normas para toda la tienda (antes, una por tarjeta).
 	const empleadoIds = useMemo(() => empleados.map((e) => e.id), [empleados]);
 	const {
 		normas,
+		puedeAceptar: puedeAceptarNormas,
 		yaAcepto: yaAceptoNormas,
-		marcarAceptado: marcarNormasAceptadas,
-		verificarAceptacion: verificarAceptacionNormas,
+		marcarAceptado,
+		verificarAceptacion,
 	} = useAceptacionNormasEmpleados(empleadoIds);
 
-	const [demoEmpleado, setDemoEmpleado] = useState<EmpleadoAsistencia>({
-		id: ID_EMPLEADO_DEMO,
-		documento: '0000000000',
-		nombre: 'USUARIO DE EJEMPLO',
-		cargo: '',
-		estadoActual: ESTADO.entradaPendiente,
-		pausasActivasCount: 0,
-		registros: crearRegistrosVacios(),
+	// Mismo contrato para las tarjetas reales (Directus) y la del tour (en memoria).
+	const acciones = useAccionesTarjeta({
+		storeId: tienda.storeId,
+		empleados,
+		agregarNovedad,
+		normas,
+		verificarAceptacion,
+		marcarAceptado,
 	});
-
-	// Demo en memoria: usa el mismo catálogo de marcaciones que el registro real.
-	const registrarEventoDemo = (
-		_idEmpleado: string,
-		tipoEvento: LogType,
-		horaOverride?: string,
-		observacionOverride?: string,
-	) => {
-		const marcacion = marcacionPorLogType(tipoEvento);
-		if (!marcacion) return;
-		const ahora = horaOverride || dayjs().format('HH:mm');
-		setDemoEmpleado((prev) => ({
-			...prev,
-			estadoActual: marcacion.estadoResultante,
-			registros: {
-				...prev.registros,
-				[marcacion.key]: ahora,
-				observaciones: observacionOverride
-					? {
-							...prev.registros.observaciones,
-							[marcacion.key]: observacionOverride,
-						}
-					: { ...prev.registros.observaciones },
-			},
-		}));
-	};
-
-	const reportarEventoDemo = (
-		_idEmpleado: string,
-		eventType: EventoTipo,
-		_observaciones?: string,
-	) => {
-		if (eventType === EVENTO.terminarPausaActiva) {
-			setDemoEmpleado((prev) => ({
-				...prev,
-				pausasActivasCount: Math.min(
-					(prev.pausasActivasCount ?? 0) + 1,
-					MAX_PAUSAS_ACTIVAS,
-				),
-			}));
-		}
-		return true;
-	};
-
-	const guardarObservacionDemo = (
-		_idEmpleado: string,
-		evento: LogType,
-		texto: string,
-	) => {
-		const key = keyPorLogType(evento);
-		if (!key) return;
-		setDemoEmpleado((prev) => ({
-			...prev,
-			registros: {
-				...prev.registros,
-				observaciones: { ...prev.registros.observaciones, [key]: texto },
-			},
-		}));
-	};
+	const demo = useAccionesDemo();
+	const catalogos = useMemo(
+		() => ({ tiposNovedad, motivos: reasons }),
+		[tiposNovedad, reasons],
+	);
 
 	// Tutorial lanzado desde el PeekButton global (navega a /horarios/registros).
 	useEffect(() => {
@@ -225,33 +153,28 @@ export default function RegistrosPage() {
 					{modoDemo && (
 						<EmployeeCard
 							key={`demo-${ID_EMPLEADO_DEMO}`}
-							empleado={demoEmpleado}
-							tiposNovedad={tiposNovedad}
-							reasons={reasons}
-							onRegistrarEvento={registrarEventoDemo}
-							onGuardarObservacion={guardarObservacionDemo}
-							onAgregarNovedad={async () => true}
-							onReportarEvento={reportarEventoDemo}
-							normas={normas}
-							yaAceptoNormas
-							onNormasAceptadas={marcarNormasAceptadas}
-							verificarAceptacionNormas={verificarAceptacionNormas}
+							demo
+							empleado={demo.empleado}
+							catalogos={catalogos}
+							normas={{
+								vigentes: normas,
+								aceptadas: true,
+								puedeAceptar: false,
+							}}
+							acciones={demo.acciones}
 						/>
 					)}
 					{empleados.map((empleado) => (
 						<EmployeeCard
 							key={empleado.id}
 							empleado={empleado}
-							tiposNovedad={tiposNovedad}
-							reasons={reasons}
-							onRegistrarEvento={registrarEvento}
-							onGuardarObservacion={guardarObservacion}
-							onAgregarNovedad={agregarNovedad}
-							onReportarEvento={reportarEvento}
-							normas={normas}
-							yaAceptoNormas={yaAceptoNormas(empleado.id)}
-							onNormasAceptadas={marcarNormasAceptadas}
-							verificarAceptacionNormas={verificarAceptacionNormas}
+							catalogos={catalogos}
+							normas={{
+								vigentes: normas,
+								aceptadas: yaAceptoNormas(empleado.id),
+								puedeAceptar: puedeAceptarNormas,
+							}}
+							acciones={acciones}
 						/>
 					))}
 					{empleados.length === 0 && !modoDemo && (

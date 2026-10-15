@@ -12,44 +12,25 @@ import {
 	idRelacion,
 	type TimeRecord,
 } from '../../api/directus/read';
-import type { VerificationData } from '../../components/TimeRecordVerificationModal';
-import type { EventoTipo, LogType } from '../../domain/registro';
+import type { Resultado } from '../../interfaces/comunes';
+import type {
+	EditarHoraInput,
+	ObservarInput,
+	RegistrarInput,
+	ReportarEventoInput,
+} from '../../interfaces/registro';
 import { hora24 } from '../../utils/format';
 import { getRealColombiaTime } from '../../utils/timeSync';
 import { horariosKeys } from './keys';
 
-/** Resultado de toda acción del registro: quien llama decide qué hacer con el error. */
-export type Resultado =
-	| { ok: true; id?: number }
-	| { ok: false; error: string };
-
-export interface RegistrarInput {
-	empleadoId: number;
-	marcacion: LogType;
-	/** Foto + GPS del modal de verificación (ausente en "sin almuerzo"). */
-	verificacion?: VerificationData;
-	observacion?: string;
-}
-
-export interface EditarHoraInput {
-	recordId: number;
-	/** '08:05 PM' o '20:05'; se guarda sobre la fecha del propio registro. */
-	hora: string;
-	motivoId?: number | null;
-	/** undefined = no se toca la observación guardada. */
-	observacion?: string;
-}
-
-export interface ObservarInput {
-	recordId: number;
-	texto: string;
-}
-
-export interface ReportarEventoInput {
-	empleadoId: number;
-	tipo: EventoTipo;
-	observacion?: string;
-}
+// Contratos en interfaces/ (se reexportan para no romper imports existentes).
+export type { Resultado } from '../../interfaces/comunes';
+export type {
+	EditarHoraInput,
+	ObservarInput,
+	RegistrarInput,
+	ReportarEventoInput,
+} from '../../interfaces/registro';
 
 export const MENSAJE_MARCACION_REPETIDA =
 	'Esta marcación ya está registrada hoy. Para cambiar la hora usa "Editar hora".';

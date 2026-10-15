@@ -1,13 +1,15 @@
+// LEGACY: versión de EmployeeCard anterior al refactor C1–C8 (results/EMPLOYEE_CARD_CAMBIOS_APLICADOS.md).
+// No se usa: la tarjeta actual está en components/employee-card/EmployeeCard.tsx.
 import { Card, CircularProgress, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import * as yup from 'yup';
-import { useHolidays } from '../../reservas/hooks/useHolidays';
-import { getRecordReasonId } from '../api/directus/read';
+import { useHolidays } from '../../../reservas/hooks/useHolidays';
+import { getRecordReasonId } from '../../api/directus/read';
 import {
 	type Normas,
 	registrarAceptacionNormasEmpleado,
-} from '../api/directus/rules';
+} from '../../api/directus/rules';
 import {
 	ESTADO,
 	EVENTO,
@@ -20,24 +22,24 @@ import {
 	MAX_CARACTERES_OBSERVACION,
 	MAX_PAUSAS_ACTIVAS,
 	requiereVerificacion,
-} from '../domain/registro';
-import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
+} from '../../domain/registro';
+import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
 import type {
 	EmpleadoAsistencia,
 	Motivo,
-} from '../interfaces/horarios.interface';
-import EditHourModal from './EditHourModal';
-import { EmployeeCardHeader } from './employee-card/EmployeeCardHeader';
+} from '../../interfaces/horarios.interface';
+import EditHourModal from '../../components/EditHourModal';
+import { EmployeeCardHeader } from './EmployeeCardHeader';
 import {
 	EmployeeCardEventoModal,
 	EmployeeCardNovedadModal,
 	EmployeeCardObsModal,
 	EmployeeCardOmitirAlmuerzoModal,
-} from './employee-card/EmployeeCardModals';
+} from './EmployeeCardModals';
 import {
 	type BotonSlot,
 	EmployeeCardTimeSlots,
-} from './employee-card/EmployeeCardTimeSlots';
+} from './EmployeeCardTimeSlots';
 import {
 	getEditadoStatus,
 	getHoraEvento,
@@ -45,13 +47,13 @@ import {
 	getRecordIdEvento,
 	novedadSchema,
 	useActiveBreak,
-} from './employee-card/EmployeeCardUtils';
-import NormasModal from './NormasModal';
+} from './EmployeeCardUtils';
+import NormasModal from '../../components/NormasModal';
 import 'dayjs/locale/es';
 import {
 	TimeRecordVerificationModal,
 	type VerificationData,
-} from './verification/TimeRecordVerificationModal';
+} from '../../components/verification/TimeRecordVerificationModal';
 
 interface EmployeeCardProps {
 	empleado: EmpleadoAsistencia;

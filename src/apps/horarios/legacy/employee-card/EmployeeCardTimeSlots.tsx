@@ -1,3 +1,4 @@
+// LEGACY: sustituido por components/employee-card/slots/ (refactor C1–C8).
 import React from 'react';
 import { Box, Typography, Button, IconButton, Stack, Tooltip, CircularProgress } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';

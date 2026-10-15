@@ -30,6 +30,8 @@ vi.mock('../../api/directus/read', async (importOriginal) => {
 		getNovedades: vi.fn(),
 		getTimeRecords: vi.fn(),
 		getStoreEventReportsToday: vi.fn(),
+		// Consulta fresca de "¿ya existe esta marcación?" (rechazo de repetidas).
+		getMarcacionExistenteId: vi.fn().mockResolvedValue(null),
 	};
 });
 
@@ -375,11 +377,38 @@ describe('useHorarios', () => {
 			);
 		});
 
-		it('should call upsertRecordReason when reasonId is provided', async () => {
-			mockedCreateTimeRecord.mockResolvedValue({
-				id: 88,
-				log_type: LOG_TYPE.inicioJornada,
+		it('should call upsertRecordReason when editing the hour with a reasonId', async () => {
+			mockedGetTimeRecords.mockResolvedValue([
+				createMockTimeRecord({
+					id: 42,
+					log_type: LOG_TYPE.inicioJornada,
+					record_date: '2026-10-14',
+					record_time: '08:00:00',
+					original_record_time: null,
+				}),
+			]);
+
+			const { result } = renderHookWithQuery(() => useHorarios(5));
+
+			await waitFor(() => {
+				expect(result.current.empleados[0]?.registros.ids.inicioJornada).toBe(42);
 			});
+
+			await act(async () => {
+				await result.current.registrarEvento(
+					'101',
+					LOG_TYPE.inicioJornada,
+					'08:15 AM',
+					'',
+					2,
+				);
+			});
+
+			expect(mockedUpsertRecordReason).toHaveBeenCalledWith(42, 2);
+		});
+
+		it('should reject a repeated mark that already exists in Directus', async () => {
+			vi.mocked(directusRead.getMarcacionExistenteId).mockResolvedValueOnce(77);
 
 			const { result } = renderHookWithQuery(() => useHorarios(5));
 
@@ -388,19 +417,15 @@ describe('useHorarios', () => {
 			});
 
 			await act(async () => {
-				await result.current.registrarEvento(
-					'101',
-					LOG_TYPE.inicioJornada,
-					undefined,
-					'',
-					2,
-				);
+				await expect(
+					result.current.registrarEvento('101', LOG_TYPE.inicioJornada),
+				).rejects.toThrow('ya está registrada');
 			});
 
-			expect(mockedUpsertRecordReason).toHaveBeenCalledWith(88, 2);
+			expect(mockedCreateTimeRecord).not.toHaveBeenCalled();
 		});
 
-		it('should handle creation error and show error snackbar', async () => {
+		it('should throw and show error snackbar when creation fails', async () => {
 			mockedCreateTimeRecord.mockRejectedValueOnce(
 				new Error('Error de conexión con el servidor'),
 			);
@@ -411,15 +436,17 @@ describe('useHorarios', () => {
 				expect(result.current.loading).toBe(false);
 			});
 
+			// La fachada lanza para que el modal de foto muestre el error y no se cierre.
 			await act(async () => {
-				await result.current.registrarEvento('101', LOG_TYPE.inicioJornada);
+				await expect(
+					result.current.registrarEvento('101', LOG_TYPE.inicioJornada),
+				).rejects.toThrow('Error de conexión con el servidor');
 			});
 
 			expect(mockShowSnackbar).toHaveBeenCalledWith(
 				'Error de conexión con el servidor',
 				'error',
 			);
-			expect(result.current.error).toBe('Error de conexión con el servidor');
 		});
 	});
 
@@ -457,24 +484,27 @@ describe('useHorarios', () => {
 			);
 		});
 
-		it('should set an error when no time record exists for that event', async () => {
+		it('should show an error snackbar and return false when no time record exists', async () => {
 			const { result } = renderHookWithQuery(() => useHorarios(5));
 
 			await waitFor(() => {
 				expect(result.current.loading).toBe(false);
 			});
 
+			let guardado = true;
 			await act(async () => {
-				await result.current.guardarObservacion(
+				guardado = await result.current.guardarObservacion(
 					'101',
 					LOG_TYPE.finJornada,
 					'Nota sin registro previo',
 				);
 			});
 
+			expect(guardado).toBe(false);
 			expect(mockedUpdateTimeRecord).not.toHaveBeenCalled();
-			expect(result.current.error).toBe(
+			expect(mockShowSnackbar).toHaveBeenCalledWith(
 				'No se encontró el registro de tiempo para actualizar la observación.',
+				'error',
 			);
 		});
 	});
@@ -583,7 +613,7 @@ describe('useHorarios', () => {
 		});
 	});
 
-	describe('reportarEvento and resetHorarios', () => {
+	describe('reportarEvento', () => {
 		it('should report event with real time, show snackbar and return true', async () => {
 			const { result } = renderHookWithQuery(() => useHorarios(5));
 
@@ -639,20 +669,6 @@ describe('useHorarios', () => {
 				'Fallo al reportar evento',
 				'error',
 			);
-		});
-
-		it('should reset horarios and invalidate queries without error', async () => {
-			const { result } = renderHookWithQuery(() => useHorarios(5));
-
-			await waitFor(() => {
-				expect(result.current.loading).toBe(false);
-			});
-
-			await act(async () => {
-				await result.current.resetHorarios();
-			});
-
-			expect(result.current.error).toBeNull();
 		});
 	});
 });

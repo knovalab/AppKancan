@@ -11,7 +11,7 @@ import {
 	idRelacion,
 	type TimeRecord,
 } from '../api/directus/read';
-import type { VerificationData } from '../components/TimeRecordVerificationModal';
+import type { VerificationData } from '../interfaces/verificacion';
 import {
 	agruparPorEmpleado,
 	calcularEstado,

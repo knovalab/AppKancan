@@ -1,3 +1,4 @@
+// LEGACY: repartido en components/employee-card/{utils,hooks}/ (refactor C1–C8).
 import { type ReactElement, useState, useEffect, useRef } from 'react';
 import { Typography, Tooltip } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';

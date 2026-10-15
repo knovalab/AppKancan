@@ -1,3 +1,4 @@
+// LEGACY: sustituido por components/employee-card/header/ (refactor C1–C8).
 import React from 'react';
 import { Box, Typography, Button, IconButton, Chip, Tooltip } from '@mui/material';
 import WarningIcon from '@mui/icons-material/Warning';
