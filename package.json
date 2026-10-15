@@ -7,7 +7,7 @@
 	"scripts": {
 		"dev": "vite --host",
 		"build": "vite build",
-		"check": "biome check -write .src/apps/horarios",
+		"check": "biome check ./src/apps/horarios",
 		"lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
 		"preview": "vite preview",
 		"tailwind:init": "tailwindcss init -p",

@@ -100,6 +100,7 @@ export async function createTimeRecord(data: {
 	observations?: string;
 	latitude?: number | null;
 	longitude?: number | null;
+	location?: { type: 'Point'; coordinates: [number, number] } | null;
 	accuracy?: number | null;
 	photo?: string | null;
 }) {
@@ -112,11 +113,18 @@ export async function createTimeRecord(data: {
 			record_time: data.record_time,
 			observations: data.observations || '',
 		};
-		if (data.latitude !== undefined && data.latitude !== null) {
-			payload.latitude = data.latitude;
-		}
-		if (data.longitude !== undefined && data.longitude !== null) {
-			payload.longitude = data.longitude;
+		if (data.location) {
+			payload.location = data.location;
+		} else if (
+			data.latitude !== undefined &&
+			data.latitude !== null &&
+			data.longitude !== undefined &&
+			data.longitude !== null
+		) {
+			payload.location = {
+				type: 'Point',
+				coordinates: [Number(data.longitude), Number(data.latitude)],
+			};
 		}
 		if (data.accuracy !== undefined && data.accuracy !== null) {
 			payload.accuracy = data.accuracy;

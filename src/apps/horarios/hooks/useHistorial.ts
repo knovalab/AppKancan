@@ -24,13 +24,43 @@ const agruparRegistros = (records: TimeRecord[]): HistorialRow[] => {
 			return match.record_time || null;
 		};
 
+		const ordenEventos: Record<string, number> = {
+			[LOG_TYPE.inicioJornada]: 0,
+			[LOG_TYPE.inicioAlmuerzo]: 1,
+			[LOG_TYPE.finAlmuerzo]: 2,
+			[LOG_TYPE.finJornada]: 3,
+		};
+
 		const observaciones_evento = registros
-			.filter((r) => r.observations && r.observations.trim())
+			.filter((r) => r.observations?.trim())
 			.map((r) => ({
 				evento: r.log_type,
 				hora: r.record_time,
-				observacion: r.observations!,
+				observacion: r.observations ?? '',
 			}));
+
+		const eventos_detalle = [...registros]
+			.sort((a, b) => {
+				const oa = ordenEventos[a.log_type] ?? 99;
+				const ob = ordenEventos[b.log_type] ?? 99;
+				if (oa !== ob) return oa - ob;
+				return (a.record_time || '').localeCompare(b.record_time || '');
+			})
+			.map((r) => {
+				const lat = r.location?.coordinates ? r.location.coordinates[1] : null;
+				const lon = r.location?.coordinates ? r.location.coordinates[0] : null;
+
+				return {
+					evento: r.log_type,
+					hora: r.record_time || null,
+					observacion: r.observations || '',
+					photo: r.photo || null,
+					location: r.location ?? null,
+					latitude: lat,
+					longitude: lon,
+					accuracy: r.accuracy ?? null,
+				};
+			});
 
 		return {
 			fecha: registros[0].record_date,
@@ -41,7 +71,7 @@ const agruparRegistros = (records: TimeRecord[]): HistorialRow[] => {
 						registros[0].employee_id.last_name,
 						registros[0].employee_id.second_last_name,
 					]
-						.filter((n) => n && n.trim())
+						.filter((n) => n?.trim())
 						.join(' ')
 				: 'Sin nombre',
 			documento:
@@ -53,6 +83,7 @@ const agruparRegistros = (records: TimeRecord[]): HistorialRow[] => {
 			fin_almuerzo: buscar(LOG_TYPE.finAlmuerzo),
 			fin_turno: buscar(LOG_TYPE.finJornada),
 			observaciones_evento,
+			eventos_detalle,
 			tiendaNombre:
 				registros[0].store_id && typeof registros[0].store_id === 'object'
 					? registros[0].store_id.name
