@@ -18,6 +18,7 @@ import type {
 	RegistrarInput,
 	ReportarEventoInput,
 } from '../../interfaces/registro';
+import { mensajeDeError } from '../../utils/errores';
 import { hora24 } from '../../utils/format';
 import { getRealColombiaTime } from '../../utils/timeSync';
 import { horariosKeys } from './keys';
@@ -37,8 +38,6 @@ export const MENSAJE_MARCACION_REPETIDA =
 const MENSAJE_SIN_TIENDA =
 	'No hay una tienda seleccionada: no se puede guardar el registro.';
 
-const mensajeDe = (err: unknown, porDefecto: string) =>
-	err instanceof Error && err.message ? err.message : porDefecto;
 
 /**
  * Acciones de escritura del registro de horarios. Ninguna lanza: todas devuelven
@@ -143,7 +142,7 @@ export function useAccionesRegistro(storeId: number | null) {
 			} catch (err) {
 				console.error('Error al registrar marcación:', err);
 				return fallo(
-					mensajeDe(err, 'Error al guardar el registro de asistencia'),
+					mensajeDeError(err, 'Error al guardar el registro de asistencia'),
 				);
 			}
 		},
@@ -178,7 +177,7 @@ export function useAccionesRegistro(storeId: number | null) {
 				return { ok: true, id: recordId };
 			} catch (err) {
 				console.error('Error al editar la hora:', err);
-				return fallo(mensajeDe(err, 'Error al actualizar el registro'));
+				return fallo(mensajeDeError(err, 'Error al actualizar el registro'));
 			}
 		},
 		[buscarEnCache, fallo, invalidarMarcaciones, showSnackbar],
@@ -193,7 +192,7 @@ export function useAccionesRegistro(storeId: number | null) {
 				return { ok: true, id: recordId };
 			} catch (err) {
 				console.error('Error al guardar observación:', err);
-				return fallo(mensajeDe(err, 'Error al actualizar el registro'));
+				return fallo(mensajeDeError(err, 'Error al actualizar el registro'));
 			}
 		},
 		[fallo, invalidarMarcaciones, showSnackbar],
@@ -222,7 +221,7 @@ export function useAccionesRegistro(storeId: number | null) {
 				});
 				return { ok: true };
 			} catch (err) {
-				return fallo(mensajeDe(err, 'Error al reportar el evento'));
+				return fallo(mensajeDeError(err, 'Error al reportar el evento'));
 			}
 		},
 		[storeId, queryClient, fallo, showSnackbar],

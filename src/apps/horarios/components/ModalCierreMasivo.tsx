@@ -29,6 +29,7 @@ import type { StoreClosedDayDto } from '../interfaces/api/stores';
 import { useHolidays } from '../../reservas/hooks/useHolidays';
 import type { MapaFestivos } from '../interfaces/comunes';
 import type { TiendaOpcion } from '../interfaces/tiendas';
+import { mensajeDeError } from '../utils/errores';
 
 interface ModalCierreMasivoProps {
     open: boolean;
@@ -422,9 +423,9 @@ export default function ModalCierreMasivo({ open, onClose, tiendas }: ModalCierr
                 );
             }
             handleCerrar();
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error al procesar acción masiva:', err);
-            showSnackbar(err?.message || 'Error al guardar los cambios', 'error');
+            showSnackbar(mensajeDeError(err, 'Error al guardar los cambios'), 'error');
         } finally {
             setGuardando(false);
             setConfirmOpen(false);

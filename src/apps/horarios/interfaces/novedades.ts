@@ -1,3 +1,6 @@
+import type { EmployeeDto } from './api/employees';
+import type { NewnessReportFullDto } from './api/newness';
+
 /** Novedad que se registra desde la tarjeta del empleado (una fila por día del rango). */
 export interface NuevaNovedadInput {
 	empleadoId: string;
@@ -38,3 +41,21 @@ export interface NovedadMapeada {
 	empleadoDocumento?: string | null;
 	tiendaNombre?: string;
 }
+
+/** Novedad de una tienda ya mapeada por `getNovedades` / `getStoreNovedades`. */
+export type NovedadTienda = Omit<
+	NewnessReportFullDto,
+	'report_date' | 'employee_id'
+> & {
+	fecha: string;
+	report_date: string;
+	/** El empleado expandido (`{}` si no vino). */
+	employee_id: Partial<EmployeeDto>;
+	empleadoId: number | undefined;
+	empleadoNombre: string;
+	empleadoDocumento?: string;
+	tipo: string;
+	observaciones: string;
+	empleadoActivo: boolean;
+	tiendaNombre: string;
+};

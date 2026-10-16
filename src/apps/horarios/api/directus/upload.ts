@@ -1,4 +1,11 @@
 import directus from '@/services/directus/directus';
+import { errorDeApi } from '../../utils/errores';
+
+/** Lo que se usa de la respuesta de `uploadFiles` (fila de `directus_files`). */
+interface ArchivoSubido {
+	id?: string;
+}
+
 import { uploadFiles } from '@directus/sdk';
 import { withAutoRefresh } from '@/auth/services/directusInterceptor';
 
@@ -16,21 +23,21 @@ export async function uploadAttendancePhoto(
 		const formData = new FormData();
 		formData.append('file', photoBlob, filename);
 
-		const result: any = await withAutoRefresh(() =>
+		// uploadFiles devuelve el archivo creado (o una lista si se suben varios).
+		const result = (await withAutoRefresh(() =>
 			directus.request(uploadFiles(formData)),
-		);
+		)) as ArchivoSubido | ArchivoSubido[] | null;
 
-		const fileId = result?.id || (Array.isArray(result) ? result[0]?.id : null);
+		const fileId = Array.isArray(result) ? result[0]?.id : result?.id;
 		if (!fileId) {
 			throw new Error('No se recibió el identificador del archivo subido.');
 		}
 
 		return String(fileId);
-	} catch (error: any) {
-		console.error('❌ Error subiendo foto de marcación a Directus:', error);
-		throw new Error(
-			error?.errors?.[0]?.message ||
-			error?.message ||
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error subiendo foto de marcación a Directus',
 			'Error al subir la fotografía de la marcación',
 		);
 	}

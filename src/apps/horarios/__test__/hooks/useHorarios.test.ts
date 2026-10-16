@@ -6,6 +6,7 @@ import * as directusCreate from '../../api/directus/create';
 import * as directusRead from '../../api/directus/read';
 import { ESTADO, EVENTO, LOG_TYPE } from '../../domain/registro';
 import { useHorarios } from '../../hooks/useHorarios';
+import type { NovedadTienda } from '../../interfaces/novedades';
 import { createMockEmpleadoAsistencia } from '../utils/mocks/employees.mock';
 import { createMockTimeRecord } from '../utils/mocks/records.mock';
 import { renderHookWithQuery } from '../utils/test-utils';
@@ -225,6 +226,7 @@ describe('useHorarios', () => {
 				createMockEmpleadoAsistencia({ id: '102', nombre: 'Ana Gómez' }),
 			]);
 
+			// Filas sin expandir (relaciones como id): cubren el mapeo defensivo de useHorarios.
 			mockedGetNovedades.mockResolvedValue([
 				{
 					id: 1,
@@ -232,7 +234,7 @@ describe('useHorarios', () => {
 					report_date: '2026-10-14',
 					newness_id: { name: 'Incapacidad' },
 				},
-			]);
+			] as unknown as NovedadTienda[]);
 
 			const { result } = renderHookWithQuery(() => useHorarios(5));
 
@@ -248,6 +250,7 @@ describe('useHorarios', () => {
 				createMockEmpleadoAsistencia({ id: '101', nombre: 'Juan Pérez' }),
 			]);
 
+			// Filas sin expandir (relaciones como id): cubren el mapeo defensivo de useHorarios.
 			mockedGetNovedades.mockResolvedValue([
 				{
 					id: 'nov-1',
@@ -270,7 +273,7 @@ describe('useHorarios', () => {
 					date_created: '2026-10-13T10:00:00Z',
 					observations: 'Antigua',
 				},
-			]);
+			] as unknown as NovedadTienda[]);
 
 			const { result } = renderHookWithQuery(() => useHorarios(5));
 

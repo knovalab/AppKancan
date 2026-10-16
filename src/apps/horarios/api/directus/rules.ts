@@ -2,6 +2,7 @@ import directus from "@/services/directus/directus";
 import { withAutoRefresh } from "@/auth/services/directusInterceptor";
 import { readItems, createItem } from "@directus/sdk";
 import type { Normas } from "../../interfaces/normas";
+import { errorDeApi } from "../../utils/errores";
 
 
 // Normas vigentes (la fila activa de com_rules con la mayor versión).
@@ -80,8 +81,11 @@ export async function registrarAceptacionNormasEmpleado(employeeId: number, vers
         })
       )
     );
-  } catch (error: any) {
-    console.error("❌ Error registrando aceptación de normas del empleado:", error);
-    throw new Error(error?.errors?.[0]?.message || 'Error al guardar aceptación de normas');
+  } catch (error) {
+    throw errorDeApi(
+      error,
+      'Error registrando aceptación de normas del empleado',
+      'Error al guardar aceptación de normas',
+    );
   }
 }

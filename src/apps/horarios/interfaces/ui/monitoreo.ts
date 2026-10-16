@@ -19,7 +19,23 @@ export interface FilaEmpleadoDetalle {
 	tieneNovedad: boolean;
 	novedadTipo?: string;
 	novedadObservacion?: string;
-	novedadId?: string;
+	/** Id de la novedad (Directus lo devuelve numérico). */
+	novedadId?: string | number;
 	horasDia: string;
 	horasSemana: string;
+}
+
+/** Marcación editada a mano, con su motivo (auditoría de Monitoreo). */
+export interface RegistroEditado {
+	id: number;
+	fecha: string;
+	empleadoId: number;
+	empleadoNombre: string;
+	tiendaId: number | undefined;
+	tiendaNombre: string;
+	tipoRegistro: string;
+	horaOriginal: string | null;
+	horaModificada: string;
+	motivo: string;
+	observaciones: string;
 }

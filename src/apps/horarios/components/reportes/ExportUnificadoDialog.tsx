@@ -35,6 +35,7 @@ import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
 import { useAuth } from '@/auth/hooks/useAuth';
 import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
 import type { Tienda } from '../../interfaces/tiendas';
+import { mensajeDeError } from '../../utils/errores';
 
 export interface ExportUnificadoDialogProps {
   open: boolean;
@@ -206,9 +207,9 @@ export default function ExportUnificadoDialog({
 
       showSnackbar('Reporte semanal exportado exitosamente', 'success');
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error al exportar reporte semanal:', err);
-      showSnackbar(err?.message || 'Error al generar la exportación en Excel', 'error');
+      showSnackbar(mensajeDeError(err, 'Error al generar la exportación en Excel'), 'error');
     } finally {
       setExportando(false);
     }
@@ -255,7 +256,7 @@ export default function ExportUnificadoDialog({
       });
       showSnackbar('Historial de registros exportado exitosamente', 'success');
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error al exportar registros:', err);
       showSnackbar('Error al exportar los registros', 'error');
     } finally {
@@ -294,7 +295,7 @@ export default function ExportUnificadoDialog({
       });
       showSnackbar('Novedades exportadas exitosamente', 'success');
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error al exportar novedades:', err);
       showSnackbar('Error al exportar las novedades', 'error');
     } finally {
@@ -333,7 +334,7 @@ export default function ExportUnificadoDialog({
       });
       showSnackbar('Pausas activas exportadas exitosamente', 'success');
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error al exportar pausas activas:', err);
       showSnackbar('Error al exportar las pausas activas', 'error');
     } finally {

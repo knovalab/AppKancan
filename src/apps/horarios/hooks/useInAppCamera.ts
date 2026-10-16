@@ -159,23 +159,25 @@ export function useInAppCamera(
 			setIsActive(true);
 			setLoading(false);
 			return true;
-		} catch (err: any) {
+		} catch (err) {
 			console.error('❌ Error accediendo a la cámara:', err);
+			// getUserMedia rechaza con DOMException; su `name` indica la causa.
+			const nombre = err instanceof Error ? err.name : '';
 			let msg = 'No se pudo acceder a la cámara.';
 			if (
-				err.name === 'NotAllowedError' ||
-				err.name === 'PermissionDeniedError'
+				nombre === 'NotAllowedError' ||
+				nombre === 'PermissionDeniedError'
 			) {
 				msg =
 					'Permiso de cámara denegado. Permite el acceso a la cámara en la configuración del navegador.';
 			} else if (
-				err.name === 'NotFoundError' ||
-				err.name === 'DevicesNotFoundError'
+				nombre === 'NotFoundError' ||
+				nombre === 'DevicesNotFoundError'
 			) {
 				msg = 'No se encontró ninguna cámara disponible en tu dispositivo.';
 			} else if (
-				err.name === 'NotReadableError' ||
-				err.name === 'TrackStartError'
+				nombre === 'NotReadableError' ||
+				nombre === 'TrackStartError'
 			) {
 				msg = 'La cámara está siendo utilizada por otra aplicación.';
 			}
@@ -273,7 +275,7 @@ export function useInAppCamera(
 					'image/jpeg',
 					quality,
 				);
-			} catch (captureErr: any) {
+			} catch (captureErr) {
 				console.error('❌ Error capturando frame de video:', captureErr);
 				setError('Error capturando la fotografía.');
 				resolve(null);

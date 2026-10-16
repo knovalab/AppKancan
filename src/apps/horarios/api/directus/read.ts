@@ -2,13 +2,29 @@ import { readItems, readMe } from '@directus/sdk';
 import dayjs from 'dayjs';
 import { withAutoRefresh } from '@/auth/services/directusInterceptor';
 import directus from '@/services/directus/directus';
-import { getEmpleadosBulk, getStoreClosedDays } from './readBulk';
-import type { TimeRecordDto } from '../../interfaces/api/timeRecords';
 import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
+import type {
+	FiltroDirectus,
+	OperadoresDirectus,
+} from '../../interfaces/api/directus';
+import type {
+	EmployeeDto,
+	PositionDto,
+	UsuarioActualDto,
+} from '../../interfaces/api/employees';
+import type {
+	NewnessReportFullDto,
+	NewnessTypeDto,
+} from '../../interfaces/api/newness';
+import type { ReasonDto, RecordReasonDto } from '../../interfaces/api/reasons';
+import type { TimeRecordDto } from '../../interfaces/api/timeRecords';
 import type { Cargo, EmpleadoAdmin } from '../../interfaces/empleados';
-import type { TipoNovedad } from '../../interfaces/novedades';
+import type { NovedadTienda, TipoNovedad } from '../../interfaces/novedades';
 import type { Motivo } from '../../interfaces/registro';
 import type { Tienda } from '../../interfaces/tiendas';
+import type { RegistroEditado } from '../../interfaces/ui/monitoreo';
+import { getEmpleadosBulk, getStoreClosedDays } from './readBulk';
+import { idRelacion } from './relacion';
 
 export { getStoreClosedDays };
 
@@ -17,11 +33,11 @@ export const STORE_PRUEBAS = 90;
 
 export async function getStoreIdUsuarioActual(): Promise<number | null> {
 	try {
-		const me: any = await withAutoRefresh(() =>
-			directus.request(readMe({ fields: ['store_id', 'store.id'] as any })),
-		);
+		const me = (await withAutoRefresh(() =>
+			directus.request(readMe({ fields: ['store_id', 'store.id'] })),
+		)) as UsuarioActualDto | null;
 		const raw = me?.store_id ?? me?.store?.id ?? null;
-		const num = Number(raw);
+		const num = Number(idRelacion(raw));
 		return Number.isFinite(num) && num > 0 ? num : null;
 	} catch (error) {
 		console.error('❌ Error obteniendo store_id del usuario (readMe):', error);
@@ -40,17 +56,17 @@ export async function getEmpleados(
 
 export async function getTiposNovedad(): Promise<TipoNovedad[]> {
 	try {
-		const items = await withAutoRefresh(() =>
+		const items = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('com_newness', {
 					fields: ['id', 'name'],
 				}),
 			),
-		);
-		return (items || []).map((t: any) => ({
+		)) as NewnessTypeDto[];
+		return (items || []).map((t) => ({
 			id: t.id,
-			nombre: t.name,
-			name: t.name,
+			nombre: t.name ?? '',
+			name: t.name ?? '',
 		}));
 	} catch (error) {
 		console.error('❌ Error cargando com_newness:', error);
@@ -60,7 +76,7 @@ export async function getTiposNovedad(): Promise<TipoNovedad[]> {
 
 export async function getReasons(): Promise<Motivo[]> {
 	try {
-		const items = await withAutoRefresh(() =>
+		const items = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('com_reasons', {
 					fields: ['id', 'name'],
@@ -69,8 +85,8 @@ export async function getReasons(): Promise<Motivo[]> {
 					limit: -1,
 				}),
 			),
-		);
-		const motivos = (items || []).map((r: any) => ({
+		)) as ReasonDto[];
+		const motivos = (items || []).map((r) => ({
 			id: Number(r.id),
 			name: r.name || '',
 		}));
@@ -92,7 +108,7 @@ export async function getReasonNamesForRecords(
 	const mapa = new Map<number, string>();
 	if (!recordIds || recordIds.length === 0) return mapa;
 	try {
-		const items = await withAutoRefresh(() =>
+		const items = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('com_records_reasons', {
 					fields: ['records_id', 'reasons_id.name'],
@@ -100,12 +116,14 @@ export async function getReasonNamesForRecords(
 					limit: -1,
 				}),
 			),
-		);
-		(items || []).forEach((it: any) => {
-			const rid = Number(
-				typeof it.records_id === 'object' ? it.records_id?.id : it.records_id,
-			);
-			const nombre = it.reasons_id?.name ?? null;
+		)) as RecordReasonDto[];
+		(items || []).forEach((it) => {
+			const rid = idRelacion(it.records_id) ?? Number.NaN;
+			const motivo = it.reasons_id;
+			const nombre =
+				motivo != null && typeof motivo === 'object'
+					? (motivo.name ?? null)
+					: null;
 			if (Number.isFinite(rid) && nombre) mapa.set(rid, nombre);
 		});
 		return mapa;
@@ -119,7 +137,7 @@ export async function getRecordReasonId(
 	recordId: number,
 ): Promise<number | null> {
 	try {
-		const items = await withAutoRefresh(() =>
+		const items = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('com_records_reasons', {
 					fields: ['reasons_id'],
@@ -127,27 +145,68 @@ export async function getRecordReasonId(
 					limit: 1,
 				}),
 			),
-		);
+		)) as RecordReasonDto[];
 		const raw = (items || [])[0]?.reasons_id;
 		if (raw == null) return null;
-		const id = Number(typeof raw === 'object' ? raw.id : raw);
-		return Number.isFinite(id) ? id : null;
+		return idRelacion(raw);
 	} catch (error) {
 		console.error('❌ Error obteniendo motivo del registro:', error);
 		return null;
 	}
 }
 
+/** Fecha de una novedad: `report_date` o, si falta, la de creación. */
+const fechaNovedad = (nov: NewnessReportFullDto): string =>
+	nov.report_date ||
+	(nov.date_created ? dayjs(nov.date_created).format('YYYY-MM-DD') : '');
+
+/** `com_newness_reports` expandido → `NovedadTienda` (lo comparten las dos consultas). */
+function mapearNovedadTienda(
+	nov: NewnessReportFullDto,
+	conDocumento: boolean,
+): NovedadTienda {
+	const emp: Partial<EmployeeDto> = nov.employee_id || {};
+	const fullName = [
+		emp.first_name,
+		emp.middle_name,
+		emp.last_name,
+		emp.second_last_name,
+	]
+		.filter(Boolean)
+		.join(' ');
+	const fecha = fechaNovedad(nov);
+	return {
+		...nov,
+		id: nov.id,
+		fecha,
+		report_date: fecha,
+		employee_id: emp,
+		empleadoId: emp.id,
+		empleadoNombre: fullName || `Empleado #${emp.id || ''}`,
+		...(conDocumento
+			? {
+					empleadoDocumento: emp.document_number
+						? String(emp.document_number)
+						: undefined,
+				}
+			: {}),
+		tipo: nov.newness_id?.name || 'Novedad',
+		observaciones: nov.observations || '',
+		empleadoActivo: emp.status === 'Activo',
+		tiendaNombre: nov.store_id?.name || '',
+	};
+}
+
 /**
  * Reutiliza getStoreNovedades para evitar duplicar código de la tabla com_newness_reports.
  */
-export async function getNovedades(storeId: number): Promise<any[]> {
+export async function getNovedades(storeId: number): Promise<NovedadTienda[]> {
 	try {
-		const filter: any = {};
+		const filter: FiltroDirectus = {};
 		if (storeId != null && Number(storeId) > 0) {
 			filter.store_id = { _eq: storeId };
 		}
-		const items = await withAutoRefresh(() =>
+		const items = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('com_newness_reports', {
 					fields: ['*', 'newness_id.*', 'employee_id.*', 'store_id.*'],
@@ -156,38 +215,8 @@ export async function getNovedades(storeId: number): Promise<any[]> {
 					limit: -1,
 				}),
 			),
-		);
-		return (items || []).map((nov: any) => {
-			const emp = nov.employee_id || {};
-			const parts = [
-				emp.first_name,
-				emp.middle_name,
-				emp.last_name,
-				emp.second_last_name,
-			].filter(Boolean);
-			const fullName = parts.join(' ');
-			return {
-				...nov,
-				id: nov.id,
-				fecha:
-					nov.report_date ||
-					(nov.date_created
-						? dayjs(nov.date_created).format('YYYY-MM-DD')
-						: ''),
-				report_date:
-					nov.report_date ||
-					(nov.date_created
-						? dayjs(nov.date_created).format('YYYY-MM-DD')
-						: ''),
-				employee_id: emp,
-				empleadoId: emp.id,
-				empleadoNombre: fullName || `Empleado #${emp.id || ''}`,
-				tipo: nov.newness_id?.name || 'Novedad',
-				observaciones: nov.observations || '',
-				empleadoActivo: emp.status === 'Activo',
-				tiendaNombre: nov.store_id?.name || '',
-			};
-		});
+		)) as NewnessReportFullDto[];
+		return (items || []).map((nov) => mapearNovedadTienda(nov, false));
 	} catch (error) {
 		console.error('❌ Error al obtener novedades:', error);
 		return [];
@@ -196,9 +225,9 @@ export async function getNovedades(storeId: number): Promise<any[]> {
 
 export async function getStoreNovedades(
 	storeId: number | number[] | null,
-): Promise<any[]> {
+): Promise<NovedadTienda[]> {
 	try {
-		const filter: any = {};
+		const filter: FiltroDirectus = {};
 		if (
 			storeId != null &&
 			(Array.isArray(storeId) ? storeId.length > 0 : Number(storeId) > 0)
@@ -209,7 +238,7 @@ export async function getStoreNovedades(
 				filter.store_id = { _eq: storeId };
 			}
 		}
-		const items = await withAutoRefresh(() =>
+		const items = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('com_newness_reports', {
 					fields: ['*', 'newness_id.*', 'employee_id.*', 'store_id.*'],
@@ -218,48 +247,13 @@ export async function getStoreNovedades(
 					limit: -1,
 				}),
 			),
-		);
-		return (items || []).map((nov: any) => {
-			const emp = nov.employee_id || {};
-			const parts = [
-				emp.first_name,
-				emp.middle_name,
-				emp.last_name,
-				emp.second_last_name,
-			].filter(Boolean);
-			const fullName = parts.join(' ');
-			return {
-				...nov,
-				id: nov.id,
-				fecha:
-					nov.report_date ||
-					(nov.date_created
-						? dayjs(nov.date_created).format('YYYY-MM-DD')
-						: ''),
-				report_date:
-					nov.report_date ||
-					(nov.date_created
-						? dayjs(nov.date_created).format('YYYY-MM-DD')
-						: ''),
-				employee_id: emp,
-				empleadoId: emp.id,
-				empleadoNombre: fullName || `Empleado #${emp.id || ''}`,
-				empleadoDocumento: emp.document_number
-					? String(emp.document_number)
-					: undefined,
-				tipo: nov.newness_id?.name || 'Novedad',
-				observaciones: nov.observations || '',
-				empleadoActivo: emp.status === 'Activo',
-				tiendaNombre: nov.store_id?.name || '',
-			};
-		});
+		)) as NewnessReportFullDto[];
+		return (items || []).map((nov) => mapearNovedadTienda(nov, true));
 	} catch (error) {
 		console.error('❌ Error cargando novedades por tienda:', error);
 		return [];
 	}
 }
-
-
 
 export const fetchTimeRecords = async (
 	fechaInicio?: string,
@@ -267,7 +261,7 @@ export const fetchTimeRecords = async (
 	storeId?: number | number[],
 	employeeId?: number | string,
 ): Promise<TimeRecordDto[]> => {
-	const filter: any = {};
+	const filter: FiltroDirectus = {};
 
 	if (
 		storeId != null &&
@@ -282,12 +276,10 @@ export const fetchTimeRecords = async (
 	if (employeeId != null) {
 		filter.employee_id = { _eq: Number(employeeId) };
 	}
-	if (fechaInicio) {
-		filter.record_date = { ...filter.record_date, _gte: fechaInicio };
-	}
-	if (fechaFin) {
-		filter.record_date = { ...filter.record_date, _lte: fechaFin };
-	}
+	const rangoFechas: OperadoresDirectus = {};
+	if (fechaInicio) rangoFechas._gte = fechaInicio;
+	if (fechaFin) rangoFechas._lte = fechaFin;
+	if (fechaInicio || fechaFin) filter.record_date = rangoFechas;
 
 	return (await withAutoRefresh(() =>
 		directus.request(
@@ -377,7 +369,7 @@ export async function getStores(): Promise<Tienda[]> {
 
 export async function getCargos(): Promise<Cargo[]> {
 	try {
-		const data = await withAutoRefresh(() =>
+		const data = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('core_positions', {
 					fields: ['id', 'name'],
@@ -385,8 +377,8 @@ export async function getCargos(): Promise<Cargo[]> {
 					limit: -1,
 				}),
 			),
-		);
-		return (data || []).map((c: any) => ({
+		)) as PositionDto[];
+		return (data || []).map((c) => ({
 			id: c.id,
 			name: c.name || 'Sin nombre',
 		})) as Cargo[];
@@ -396,15 +388,9 @@ export async function getCargos(): Promise<Cargo[]> {
 	}
 }
 
-/** Id de una relación M2O de Directus, venga como objeto `{ id }` o como valor plano. */
-export const idRelacion = (val: unknown): number | null => {
-	const raw =
-		val != null && typeof val === 'object' ? (val as { id?: unknown }).id : val;
-	const num = Number(raw);
-	return Number.isFinite(num) ? num : null;
-};
+export { idRelacion } from './relacion';
 
-const mapEmpleadoAdmin = (emp: any): EmpleadoAdmin => ({
+const mapEmpleadoAdmin = (emp: EmployeeDto): EmpleadoAdmin => ({
 	id: emp.id,
 	document_type: emp.document_type ?? null,
 	document_number:
@@ -416,8 +402,9 @@ const mapEmpleadoAdmin = (emp: any): EmpleadoAdmin => ({
 	store_id: idRelacion(emp.store_id),
 	position_id: idRelacion(emp.position_id),
 	position_name:
-		(typeof emp.position_id === 'object' ? emp.position_id?.name : null) ??
-		null,
+		(emp.position_id != null && typeof emp.position_id === 'object'
+			? emp.position_id.name
+			: null) ?? null,
 	status: emp.status ?? null,
 });
 
@@ -425,7 +412,7 @@ export async function listarEmpleadosTienda(
 	storeId: number,
 ): Promise<EmpleadoAdmin[]> {
 	try {
-		const items = await withAutoRefresh(() =>
+		const items = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('adm_employees', {
 					fields: [
@@ -446,7 +433,7 @@ export async function listarEmpleadosTienda(
 					limit: -1,
 				}),
 			),
-		);
+		)) as EmployeeDto[];
 		return (items || []).map(mapEmpleadoAdmin);
 	} catch (error) {
 		console.error('❌ Error listando empleados por tienda:', error);
@@ -456,7 +443,7 @@ export async function listarEmpleadosTienda(
 
 export async function listarTodosEmpleados(): Promise<EmpleadoAdmin[]> {
 	try {
-		const items = await withAutoRefresh(() =>
+		const items = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('adm_employees', {
 					fields: [
@@ -476,7 +463,7 @@ export async function listarTodosEmpleados(): Promise<EmpleadoAdmin[]> {
 					limit: -1,
 				}),
 			),
-		);
+		)) as EmployeeDto[];
 		return (items || []).map(mapEmpleadoAdmin);
 	} catch (error) {
 		console.error('❌ Error listando todos los empleados:', error);
@@ -490,7 +477,7 @@ export async function buscarEmpleados(query: string): Promise<EmpleadoAdmin[]> {
 	try {
 		const esNumero = /^\d+$/.test(q);
 		const tokens = q.split(/\s+/).filter(Boolean);
-		const filter: any = esNumero
+		const filter: FiltroDirectus = esNumero
 			? { document_number: { _eq: Number(q) } }
 			: {
 					_and: tokens.map((tok) => ({
@@ -503,7 +490,7 @@ export async function buscarEmpleados(query: string): Promise<EmpleadoAdmin[]> {
 					})),
 				};
 
-		const items = await withAutoRefresh(() =>
+		const items = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('adm_employees', {
 					fields: [
@@ -524,7 +511,7 @@ export async function buscarEmpleados(query: string): Promise<EmpleadoAdmin[]> {
 					limit: 50,
 				}),
 			),
-		);
+		)) as EmployeeDto[];
 		return (items || []).map(mapEmpleadoAdmin);
 	} catch (error) {
 		console.error('❌ Error buscando empleados:', error);
@@ -558,9 +545,9 @@ export async function getEditedTimeRecords(
 	storeIds: number[],
 	startDate: string,
 	endDate: string,
-): Promise<any[]> {
+): Promise<RegistroEditado[]> {
 	try {
-		const filter: any = {
+		const filter: FiltroDirectus = {
 			original_record_time: { _nnull: true },
 			record_date: { _gte: startDate, _lte: endDate },
 		};
@@ -568,7 +555,7 @@ export async function getEditedTimeRecords(
 			filter.store_id = { _in: storeIds };
 		}
 
-		const records = await withAutoRefresh(() =>
+		const records = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('com_time_records', {
 					fields: [
@@ -591,16 +578,18 @@ export async function getEditedTimeRecords(
 					sort: ['-record_date'],
 				}),
 			),
-		);
+		)) as TimeRecordDto[];
 
 		if (!records || records.length === 0) return [];
 
-		const recordIds = records.map((r: any) => r.id);
+		const recordIds = records.map((r) => r.id);
 		const reasonsMap = await getReasonNamesForRecords(recordIds);
 
-		return records.map((r: any) => {
-			const emp = r.employee_id || {};
-			const store = r.store_id || {};
+		return records.map((r): RegistroEditado => {
+			const emp: Partial<NonNullable<TimeRecordDto['employee_id']>> =
+				r.employee_id || {};
+			const store: { id?: number; name?: string } =
+				r.store_id != null && typeof r.store_id === 'object' ? r.store_id : {};
 			const fullName = [
 				emp.first_name,
 				emp.middle_name,
@@ -613,7 +602,7 @@ export async function getEditedTimeRecords(
 			return {
 				id: r.id,
 				fecha: r.record_date,
-				empleadoId: emp.id,
+				empleadoId: Number(emp.id),
 				empleadoNombre: fullName || 'Empleado Desconocido',
 				tiendaId: store.id,
 				tiendaNombre: store.name || 'Sin Tienda',
@@ -635,7 +624,7 @@ export async function getPrimerPeriodoRegistro(): Promise<{
 	month: number;
 }> {
 	try {
-		const items = await withAutoRefresh(() =>
+		const items = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('com_time_records', {
 					fields: ['record_date'],
@@ -643,7 +632,7 @@ export async function getPrimerPeriodoRegistro(): Promise<{
 					limit: 1,
 				}),
 			),
-		);
+		)) as Pick<TimeRecordDto, 'record_date'>[];
 		if (items && items.length > 0 && items[0].record_date) {
 			const date = dayjs(items[0].record_date);
 			const year = date.year();

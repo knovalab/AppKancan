@@ -1,8 +1,16 @@
 import { readItems } from '@directus/sdk';
 import { withAutoRefresh } from '@/auth/services/directusInterceptor';
 import directus from '@/services/directus/directus';
+import { idRelacion } from './relacion';
 import { crearRegistrosVacios, ESTADO } from '../../domain/registro';
-import type { StoreClosedDayDto } from '../../interfaces/api/stores';
+import type { FiltroDirectus } from '../../interfaces/api/directus';
+import type { EmployeeDto } from '../../interfaces/api/employees';
+import type { NewnessBulkDto } from '../../interfaces/api/newness';
+import type {
+	StoreClosedDayDto,
+	StoreClosedDayRawDto,
+} from '../../interfaces/api/stores';
+import type { TimeRecordBulkDto } from '../../interfaces/api/timeRecords';
 import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
 
 
@@ -13,11 +21,11 @@ export const getEmpleadosBulk = async (
 	storeIds?: number[],
 ): Promise<EmpleadoAsistencia[]> => {
 	try {
-		const filter: any = { status: { _eq: 'Activo' } };
+		const filter: FiltroDirectus = { status: { _eq: 'Activo' } };
 		if (storeIds && storeIds.length > 0) {
 			filter.store_id = { _in: storeIds };
 		}
-		const res = await withAutoRefresh(() =>
+		const res = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('adm_employees', {
 					fields: [
@@ -34,8 +42,8 @@ export const getEmpleadosBulk = async (
 					limit: -1,
 				}),
 			),
-		);
-		return (res || []).map((e: any) => {
+		)) as EmployeeDto[];
+		return (res || []).map((e) => {
 			const parts = [
 				e.first_name,
 				e.middle_name,
@@ -47,11 +55,11 @@ export const getEmpleadosBulk = async (
 				documento: e.document_number ? String(e.document_number) : String(e.id),
 				nombre: parts.join(' ').trim() || 'Empleado Sin Nombre',
 				cargo:
-					typeof e.position_id === 'object' ? e.position_id?.name : 'Sin cargo',
+					e.position_id != null && typeof e.position_id === 'object'
+						? (e.position_id.name ?? undefined)
+						: 'Sin cargo',
 				estadoActual: ESTADO.entradaPendiente,
-				storeId: e.store_id
-					? Number(typeof e.store_id === 'object' ? e.store_id.id : e.store_id)
-					: null,
+				storeId: e.store_id ? idRelacion(e.store_id) : null,
 				registros: crearRegistrosVacios(),
 			};
 		});
@@ -68,10 +76,10 @@ export const getTimeRecordsBulkRange = async (
 	storeIds: number[],
 	startDate: string,
 	endDate: string,
-): Promise<any[]> => {
+): Promise<TimeRecordBulkDto[]> => {
 	if (!storeIds || storeIds.length === 0) return [];
 	try {
-		const res = await withAutoRefresh(() =>
+		const res = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('com_time_records', {
 					fields: [
@@ -99,7 +107,7 @@ export const getTimeRecordsBulkRange = async (
 					limit: -1,
 				}),
 			),
-		);
+		)) as TimeRecordBulkDto[];
 		return res || [];
 	} catch (err) {
 		console.error('❌ Error al obtener time_records bulk range:', err);
@@ -113,7 +121,7 @@ export const getTimeRecordsBulkRange = async (
 export const getTimeRecordsBulk = async (
 	storeIds: number[],
 	date: string,
-): Promise<any[]> => {
+): Promise<TimeRecordBulkDto[]> => {
 	return getTimeRecordsBulkRange(storeIds, date, date);
 };
 
@@ -124,10 +132,10 @@ export const getNovedadesBulkRange = async (
 	storeIds: number[],
 	startDate: string,
 	endDate: string,
-): Promise<any[]> => {
+): Promise<NewnessBulkDto[]> => {
 	if (!storeIds || storeIds.length === 0) return [];
 	try {
-		const res = await withAutoRefresh(() =>
+		const res = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('com_newness_reports', {
 					fields: [
@@ -145,7 +153,7 @@ export const getNovedadesBulkRange = async (
 					limit: -1,
 				}),
 			),
-		);
+		)) as NewnessBulkDto[];
 		return res || [];
 	} catch (err) {
 		console.error('❌ Error al obtener novedades bulk range:', err);
@@ -162,7 +170,7 @@ export const getStoreClosedDays = async (
 	endDate?: string,
 ): Promise<StoreClosedDayDto[]> => {
 	try {
-		const filter: any = {};
+		const filter: FiltroDirectus = {};
 		if (storeIds != null) {
 			if (Array.isArray(storeIds)) {
 				if (!storeIds.length) return [];
@@ -179,7 +187,7 @@ export const getStoreClosedDays = async (
 			filter.date = { _lte: endDate };
 		}
 
-		const res = await withAutoRefresh(() =>
+		const res = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('com_store_closed_days', {
 					fields: [
@@ -194,12 +202,14 @@ export const getStoreClosedDays = async (
 					limit: -1,
 				}),
 			),
-		);
+		)) as StoreClosedDayRawDto[];
 
-		return (res || []).map((item: any) => ({
+		return (res || []).map((item) => ({
 			id: item.id,
 			store_id: Number(
-				typeof item.store_id === 'object' ? item.store_id.id : item.store_id,
+				item.store_id != null && typeof item.store_id === 'object'
+					? item.store_id.id
+					: item.store_id,
 			),
 			date: item.date,
 			status: item.status !== false,

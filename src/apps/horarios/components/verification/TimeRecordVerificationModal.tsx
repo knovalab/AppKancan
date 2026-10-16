@@ -17,6 +17,7 @@ import type { VerificationData } from '../../interfaces/verificacion';
 import { VerificationActions } from './VerificationActions';
 import { VerificationGpsBanner } from './VerificationGpsBanner';
 import { VerificationViewfinder } from './VerificationViewfinder';
+import { mensajeDeError } from '../../utils/errores';
 
 // El tipo vive en interfaces/ para que los hooks no dependan de este componente.
 export type { VerificationData } from '../../interfaces/verificacion';
@@ -138,10 +139,10 @@ export const TimeRecordVerificationModal: React.FC<
 			});
 
 			onClose();
-		} catch (err: any) {
+		} catch (err) {
 			console.error('❌ Error guardando verificación:', err);
 			setSubmitError(
-				err?.message || 'Error al procesar la marcación con foto y GPS.',
+				mensajeDeError(err, 'Error al procesar la marcación con foto y GPS.'),
 			);
 		} finally {
 			setIsSubmitting(false);

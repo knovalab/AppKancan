@@ -17,6 +17,7 @@ import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/Snackba
 import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
 import { useAuth } from '@/auth/hooks/useAuth';
 import type { Tienda } from '../../interfaces/tiendas';
+import { mensajeDeError } from '../../utils/errores';
 
 const AZUL = '#004680';
 
@@ -129,8 +130,8 @@ export default function ExportHistorialDialog({ open, onClose, fechaInicio, fech
       } else {
         showSnackbar(res.mensaje || 'No hay datos para exportar', 'error');
       }
-    } catch (err: any) {
-      showSnackbar(err?.message || 'Error al exportar el historial', 'error');
+    } catch (err) {
+      showSnackbar(mensajeDeError(err, 'Error al exportar el historial'), 'error');
     } finally {
       setExportando(false);
     }

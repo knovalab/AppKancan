@@ -6,6 +6,7 @@ import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/Snackba
 import { horariosKeys } from './registro/keys';
 import type { Cargo, EmpleadoAdmin } from '../interfaces/empleados';
 import type { Tienda } from '../interfaces/tiendas';
+import { mensajeDeError } from '../utils/errores';
 
 export const TIPOS_DOCUMENTO: string[] = ['Cédula de Ciudadanía'];
 
@@ -46,8 +47,8 @@ export const useAdminEmpleados = (tiendaSel: number | null, setTiendaSel: (id: n
     try {
       const result = await buscarEmpleados(q);
       setResultados(result);
-    } catch (err: any) {
-      showSnackbar(err?.message || 'Error al buscar', 'error');
+    } catch (err) {
+      showSnackbar(mensajeDeError(err, 'Error al buscar'), 'error');
       setResultados([]);
     } finally {
       setBuscando(false);
@@ -84,8 +85,8 @@ export const useAdminEmpleados = (tiendaSel: number | null, setTiendaSel: (id: n
       setResultados((prev) => prev.map((e) => (e.id === variables.id ? { ...e, ...variables.data } as EmpleadoAdmin : e)));
       showSnackbar('Empleado actualizado correctamente', 'success');
     },
-    onError: (err: any) => {
-      showSnackbar(err?.message || 'Error al actualizar el empleado', 'error');
+    onError: (err: unknown) => {
+      showSnackbar(mensajeDeError(err, 'Error al actualizar el empleado'), 'error');
     },
   });
 

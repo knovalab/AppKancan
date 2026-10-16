@@ -36,6 +36,7 @@ import { ESTADO, LOG_TYPE } from '../domain/registro';
 import { horariosKeys } from '../hooks/registro/keys';
 import type { StoreClosedDayDto } from '../interfaces/api/stores';
 import type { FilaEmpleadoDetalle } from '../interfaces/ui/monitoreo';
+import { mensajeDeError } from '../utils/errores';
 
 // ============================================================
 //  COMPONENTE PRINCIPAL
@@ -132,9 +133,9 @@ export default function ModalDetalleTienda({
             setConfirmMasivoOpen(false);
             setModoSeleccion(false);
             setDiasSeleccionadosSet(new Set());
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error al guardar masivo:', err);
-            showSnackbar(err?.message || 'Error al guardar los días', 'error');
+            showSnackbar(mensajeDeError(err, 'Error al guardar los días'), 'error');
         } finally {
             setGuardandoMasivo(false);
         }
@@ -223,9 +224,9 @@ export default function ModalDetalleTienda({
             }
             queryClient.invalidateQueries({ queryKey: ['diasCerradosTienda', tiendaId] });
             queryClient.invalidateQueries({ queryKey: ['calendarioAsistencia', tiendaId] });
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error al guardar día cerrado:', err);
-            showSnackbar(err?.message || 'Error al actualizar el estado del día', 'error');
+            showSnackbar(mensajeDeError(err, 'Error al actualizar el estado del día'), 'error');
         } finally {
             setGuardandoDiaCerrado(false);
             setConfirmClosedModalOpen(false);
@@ -465,7 +466,7 @@ export default function ModalDetalleTienda({
             queryClient.invalidateQueries({ queryKey: ['recordsDiaModal', tiendaId, fechaSeleccionada] });
             queryClient.invalidateQueries({ queryKey: horariosKeys.timeRecords.todos });
             handleCloseCreateHour();
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error detallado al crear hora:', error);
             throw error;
         }

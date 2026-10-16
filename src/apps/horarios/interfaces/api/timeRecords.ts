@@ -1,4 +1,5 @@
 import type { PuntoGeo } from '../../domain/ubicacion';
+import type { Relacion } from './relacion';
 
 /** Fila de `com_time_records` con los `fields` que pide `fetchTimeRecords`. */
 export interface TimeRecordDto {
@@ -47,3 +48,14 @@ export interface UpdateTimeRecordDto {
 	record_time?: string;
 	original_record_time?: string;
 }
+
+/** `com_time_records` de las consultas en lote: `store_id` llega sin expandir. */
+export type TimeRecordBulkDto = Omit<TimeRecordDto, 'store_id'> & {
+	store_id: Relacion<{ id: number | string; name?: string }>;
+};
+
+/** Marcaciones de un empleado (perfil de Admin). */
+export type EmployeeTimeRecordDto = Pick<
+	TimeRecordDto,
+	'id' | 'record_date' | 'record_time' | 'original_record_time' | 'log_type'
+>;

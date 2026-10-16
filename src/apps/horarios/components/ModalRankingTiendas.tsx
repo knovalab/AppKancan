@@ -24,21 +24,11 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import { COLUMNAS_EDICIONES, rowsPerPage, getColorForMotivo } from '../pages/monitoreo/MonitoreoUtils';
 import { Paginador } from '../pages/monitoreo/MonitoreoComponents';
+import type { RegistroEditado } from '../interfaces/ui/monitoreo';
 
 
-interface EditedRecord {
-  id: number;
-  fecha: string;
-  empleadoId: number;
-  empleadoNombre: string;
-  tiendaId: number;
-  tiendaNombre: string;
-  tipoRegistro: string;
-  horaOriginal: string | null;
-  horaModificada: string | null;
-  motivo: string;
-  observaciones: string;
-}
+// Misma forma que devuelve getEditedTimeRecords (antes, una copia local `EditedRecord`).
+type EditedRecord = RegistroEditado;
 
 
 interface ModalRankingTiendasProps {

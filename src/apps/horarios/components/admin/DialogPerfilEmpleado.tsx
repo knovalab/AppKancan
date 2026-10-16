@@ -26,6 +26,7 @@ import { formatDocumentNumber } from '../../utils/format';
 import { LOG_TYPE } from '../../domain/registro';
 import { horariosKeys } from '../../hooks/registro/keys';
 import type { EmpleadoAdmin } from '../../interfaces/empleados';
+import { mensajeDeError } from '../../utils/errores';
 
 const AZUL = '#004680';
 const AVATAR_COLORS = ['#0284c7', '#7c3aed', '#16a34a', '#ea580c', '#db2777', '#0891b2', '#4f46e5', '#ca8a04', '#dc2626', '#059669', '#2563eb', '#9333ea'];
@@ -123,8 +124,8 @@ export default function DialogPerfilEmpleado({ open, empleado, tiendaNombre, onC
       queryClient.invalidateQueries({ queryKey: horariosKeys.empleados.todos });
       showSnackbar('Novedad eliminada con éxito', 'success');
     },
-    onError: (err: any) => {
-      showSnackbar(err?.message || 'Error al eliminar la novedad', 'error');
+    onError: (err: unknown) => {
+      showSnackbar(mensajeDeError(err, 'Error al eliminar la novedad'), 'error');
     },
   });
 

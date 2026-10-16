@@ -9,6 +9,7 @@ import 'dayjs/locale/es';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { mensajeDeError } from '../../utils/errores';
 
 export interface CreateHourModalProps {
   open: boolean;
@@ -35,9 +36,9 @@ export default function CreateHourModal({ open, onClose, employeeName, eventName
       const horaFormateada = horaSeleccionada.format('hh:mm A');
       await onConfirm(horaFormateada, observacion);
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error en handleGuardar:', err);
-      setError(err?.message || 'Error al crear la hora. Revisa la consola.');
+      setError(mensajeDeError(err, 'Error al crear la hora. Revisa la consola.'));
     } finally {
       setGuardando(false);
     }

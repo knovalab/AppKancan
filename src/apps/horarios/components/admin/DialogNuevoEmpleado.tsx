@@ -144,7 +144,7 @@ export default function DialogNuevoEmpleado({
     const nuevosErrores: Record<string, string> = {};
     try {
       await schema.validate(form, { abortEarly: false });
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof yup.ValidationError) {
         err.inner.forEach((i) => { if (i.path) nuevosErrores[i.path] = i.message; });
       }

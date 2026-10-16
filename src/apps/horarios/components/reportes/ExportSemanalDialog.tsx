@@ -16,6 +16,7 @@ import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/Snackba
 import DateRangeFilter from './DateRangeFilter';
 import { DIAS_DE_LA_SEMANA } from '../../pages/reporte/ReporteUtils';
 import type { Tienda } from '../../interfaces/tiendas';
+import { mensajeDeError } from '../../utils/errores';
 
 interface ExportSemanalDialogProps {
   open: boolean;
@@ -130,9 +131,9 @@ export default function ExportSemanalDialog({
 
       showSnackbar('Reporte semanal exportado exitosamente', 'success');
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error al exportar reporte semanal:', err);
-      showSnackbar(err?.message || 'Error al generar la exportación en Excel', 'error');
+      showSnackbar(mensajeDeError(err, 'Error al generar la exportación en Excel'), 'error');
     } finally {
       setExportando(false);
     }

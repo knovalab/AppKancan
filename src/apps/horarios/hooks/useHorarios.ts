@@ -20,7 +20,11 @@ import {
 	type LogType,
 	mapearRegistros,
 } from '../domain/registro';
+import { mensajeDeError } from '../utils/errores';
 import { getRealColombiaTime } from '../utils/timeSync';
+import type { EmployeeDto } from '../interfaces/api/employees';
+import type { CreateNewnessReportDto } from '../interfaces/api/newness';
+import type { NovedadTienda } from '../interfaces/novedades';
 import { horariosKeys } from './registro/keys';
 import { useAccionesRegistro } from './registro/useAccionesRegistro';
 import { useCatalogosHorarios } from './registro/useCatalogosHorarios';
@@ -29,6 +33,25 @@ import type { EventReportHoyDto } from '../interfaces/api/eventReports';
 import type { TimeRecordDto } from '../interfaces/api/timeRecords';
 import type { EmpleadoAsistencia } from '../domain/registro/modelo';
 import type { NovedadMapeada } from '../interfaces/novedades';
+
+/**
+ * Novedad tal como la consume el mapeo: la de `getNovedades` (relaciones expandidas)
+ * o una fila sin expandir, donde las relaciones llegan como id (caso que cubren los tests).
+ */
+type NovedadEntrada = Omit<
+	Partial<NovedadTienda>,
+	'id' | 'employee_id' | 'newness_id' | 'store_id'
+> & {
+	id: number | string;
+	employee_id?: Partial<EmployeeDto> | number | string | null;
+	newness_id?: { name?: string | null; nombre?: string } | number | null;
+	store_id?: { name?: string | null } | number | null;
+};
+
+/** La relación expandida (objeto) o null si llegó como id o vacía. */
+const relacion = <T extends object>(
+	valor: T | number | string | null | undefined,
+): T | null => (valor != null && typeof valor === 'object' ? valor : null);
 
 export const useHorarios = (storeOverride?: number | null) => {
 	const queryClient = useQueryClient();
@@ -53,7 +76,7 @@ export const useHorarios = (storeOverride?: number | null) => {
 		refetchOnWindowFocus: false,
 	});
 
-	const { data: novedadesDB = [], error: errorN } = useQuery<any[]>({
+	const { data: novedadesDB = [], error: errorN } = useQuery<NovedadEntrada[]>({
 		queryKey: horariosKeys.novedades.tienda(STORE_ID),
 		queryFn: () => getNovedades(STORE_ID as number),
 		enabled: tieneTienda,
@@ -78,7 +101,7 @@ export const useHorarios = (storeOverride?: number | null) => {
 	const idsConNovedadHoy = useMemo(() => {
 		const ids = new Set<string>();
 		for (const nov of novedadesDB) {
-			const empId = nov.employee_id?.id || nov.employee_id;
+			const empId = relacion(nov.employee_id)?.id || nov.employee_id;
 			const fechaReporte = nov.report_date
 				? dayjs(nov.report_date).format('YYYY-MM-DD')
 				: nov.date_created
@@ -126,9 +149,10 @@ export const useHorarios = (storeOverride?: number | null) => {
 			queryClient.invalidateQueries({ queryKey: horariosKeys.empleados.todos });
 			showSnackbar('Novedad registrada con éxito', 'success');
 		},
-		onError: (err: any) => {
-			setError(err?.message || 'Error al guardar la novedad');
-			showSnackbar(err?.message || 'Error al guardar la novedad', 'error');
+		onError: (err: unknown) => {
+			const mensaje = mensajeDeError(err, 'Error al guardar la novedad');
+			setError(mensaje);
+			showSnackbar(mensaje, 'error');
 		},
 	});
 
@@ -233,7 +257,7 @@ export const useHorarios = (storeOverride?: number | null) => {
 				return false;
 			}
 
-			const reportes: any[] = [];
+			const reportes: CreateNewnessReportDto[] = [];
 			let current = inicio;
 			while (current.isBefore(fin) || current.isSame(fin, 'day')) {
 				reportes.push({
@@ -248,8 +272,8 @@ export const useHorarios = (storeOverride?: number | null) => {
 
 			await noveltyMutation.mutateAsync(reportes);
 			return true;
-		} catch (err: any) {
-			setError(err?.message || 'Error al guardar');
+		} catch (err) {
+			setError(mensajeDeError(err, 'Error al guardar'));
 			return false;
 		}
 	};
@@ -268,7 +292,10 @@ export const useHorarios = (storeOverride?: number | null) => {
 	};
 
 	const novedadesMapped: NovedadMapeada[] = (novedadesDB || []).map(
-		(nov: any) => {
+		(nov) => {
+			const empleadoRel = relacion(nov.employee_id);
+			const tipoRel = relacion(nov.newness_id);
+			const tiendaRel = relacion(nov.store_id);
 			if (
 				nov.empleadoNombre &&
 				nov.empleadoNombre !== 'Empleado #' &&
@@ -284,23 +311,23 @@ export const useHorarios = (storeOverride?: number | null) => {
 							: new Date().toISOString()),
 					empleadoNombre: nov.empleadoNombre,
 					empleadoDocumento: nov.empleadoDocumento,
-					tipo: nov.tipo || nov.newness_id?.name || 'Novedad',
+					tipo: nov.tipo || tipoRel?.name || 'Novedad',
 					observaciones: nov.observaciones || nov.observations || '',
 					empleadoActivo: nov.empleadoActivo ?? true,
-					tiendaNombre: nov.tiendaNombre || nov.store_id?.name || 'Sin tienda',
+					tiendaNombre: nov.tiendaNombre || tiendaRel?.name || 'Sin tienda',
 				};
 			}
 
-			const empId = nov.employee_id?.id || nov.employee_id;
+			const empId = empleadoRel?.id || nov.employee_id;
 			const empLocal = empleadosDB.find((e) => String(e.id) === String(empId));
 
 			let nombreEmpleado = `Empleado #${empId || ''}`;
-			if (nov.employee_id?.first_name) {
+			if (empleadoRel?.first_name) {
 				const parts = [
-					nov.employee_id.first_name,
-					nov.employee_id.middle_name,
-					nov.employee_id.last_name,
-					nov.employee_id.second_last_name,
+					empleadoRel.first_name,
+					empleadoRel.middle_name,
+					empleadoRel.last_name,
+					empleadoRel.second_last_name,
 				].filter((part) => part && part.trim() !== '');
 				nombreEmpleado = parts.join(' ').trim() || `Empleado #${empId || ''}`;
 			} else if (empLocal) {
@@ -308,10 +335,10 @@ export const useHorarios = (storeOverride?: number | null) => {
 			}
 
 			let tipoNovedadName = 'Novedad';
-			if (nov.newness_id?.name) {
-				tipoNovedadName = nov.newness_id.name;
-			} else if (nov.newness_id?.nombre) {
-				tipoNovedadName = nov.newness_id.nombre;
+			if (tipoRel?.name) {
+				tipoNovedadName = tipoRel.name;
+			} else if (tipoRel?.nombre) {
+				tipoNovedadName = tipoRel.nombre;
 			} else {
 				const tipoLocal = tiposNovedad.find(
 					(t) => String(t.id) === String(nov.newness_id),
@@ -327,15 +354,15 @@ export const useHorarios = (storeOverride?: number | null) => {
 						? dayjs(nov.date_created).format('YYYY-MM-DD')
 						: new Date().toISOString()),
 				empleadoNombre: nombreEmpleado,
-				empleadoDocumento: nov.employee_id?.document_number
-					? String(nov.employee_id.document_number)
+				empleadoDocumento: empleadoRel?.document_number
+					? String(empleadoRel.document_number)
 					: empLocal?.documento
 						? String(empLocal.documento)
 						: undefined,
 				tipo: tipoNovedadName,
 				observaciones: nov.observations || '',
 				empleadoActivo: !!empLocal,
-				tiendaNombre: nov.store_id?.name || 'Sin tienda',
+				tiendaNombre: tiendaRel?.name || 'Sin tienda',
 			};
 		},
 	);

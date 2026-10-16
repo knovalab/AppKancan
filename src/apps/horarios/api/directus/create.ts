@@ -8,13 +8,18 @@ import {
 import { withAutoRefresh } from '@/auth/services/directusInterceptor';
 import directus from '@/services/directus/directus';
 import { aPunto } from '../../domain/ubicacion';
-import type { CreateEmployeeDto, UpdateEmployeeDto } from '../../interfaces/api/employees';
+import type { ItemGuardado } from '../../interfaces/api/directus';
+import type {
+	CreateEmployeeDto,
+	UpdateEmployeeDto,
+} from '../../interfaces/api/employees';
 import type { CreateEventReportDto } from '../../interfaces/api/eventReports';
 import type { CreateNewnessReportDto } from '../../interfaces/api/newness';
 import type {
 	CreateTimeRecordDto,
 	UpdateTimeRecordDto,
 } from '../../interfaces/api/timeRecords';
+import { errorDeApi } from '../../utils/errores';
 
 export async function createNovedad(data: CreateNewnessReportDto) {
 	try {
@@ -28,17 +33,16 @@ export async function createNovedad(data: CreateNewnessReportDto) {
 		return await withAutoRefresh(() =>
 			directus.request(createItem('com_newness_reports', payload)),
 		);
-	} catch (error: any) {
-		console.error('❌ Error crítico guardando en BD:', error);
-		throw new Error(
-			error?.errors?.[0]?.message || 'Error inesperado al guardar en Directus',
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error crítico guardando en BD',
+			'Error inesperado al guardar en Directus',
 		);
 	}
 }
 
-export async function createNovedades(
-	items: CreateNewnessReportDto[],
-) {
+export async function createNovedades(items: CreateNewnessReportDto[]) {
 	try {
 		const payloads = items.map((data) => ({
 			employee_id: Number(data.employee_id),
@@ -50,11 +54,11 @@ export async function createNovedades(
 		return await withAutoRefresh(() =>
 			directus.request(createItems('com_newness_reports', payloads)),
 		);
-	} catch (error: any) {
-		console.error('❌ Error crítico guardando novedades en lote en BD:', error);
-		throw new Error(
-			error?.errors?.[0]?.message ||
-				'Error inesperado al guardar novedades en Directus',
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error crítico guardando novedades en lote en BD',
+			'Error inesperado al guardar novedades en Directus',
 		);
 	}
 }
@@ -72,17 +76,18 @@ export async function createEventReport(data: CreateEventReportDto) {
 		return await withAutoRefresh(() =>
 			directus.request(createItem('com_event_reports', payload)),
 		);
-	} catch (error: any) {
-		console.error('❌ Error guardando reporte de evento:', error);
-		throw new Error(
-			error?.errors?.[0]?.message || 'Error al crear el reporte de evento',
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error guardando reporte de evento',
+			'Error al crear el reporte de evento',
 		);
 	}
 }
 
 export async function createTimeRecord(data: CreateTimeRecordDto) {
 	try {
-		const payload: Record<string, any> = {
+		const payload: Record<string, unknown> = {
 			employee_id: Number(data.employee_id),
 			store_id: Number(data.store_id || 90),
 			log_type: data.log_type,
@@ -112,20 +117,18 @@ export async function createTimeRecord(data: CreateTimeRecordDto) {
 		return await withAutoRefresh(() =>
 			directus.request(createItem('com_time_records', payload)),
 		);
-	} catch (error: any) {
-		console.error('❌ Error guardando registro de tiempo:', error);
-		throw new Error(
-			error?.errors?.[0]?.message || 'Error al crear registro de tiempo',
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error guardando registro de tiempo',
+			'Error al crear registro de tiempo',
 		);
 	}
 }
 
-export async function updateTimeRecord(
-	id: number,
-	data: UpdateTimeRecordDto,
-) {
+export async function updateTimeRecord(id: number, data: UpdateTimeRecordDto) {
 	try {
-		const payload: any = {};
+		const payload: Record<string, unknown> = {};
 		if (data.observations !== undefined)
 			payload.observations = data.observations;
 		if (data.record_time !== undefined) payload.record_time = data.record_time;
@@ -134,17 +137,18 @@ export async function updateTimeRecord(
 		return await withAutoRefresh(() =>
 			directus.request(updateItem('com_time_records', id, payload)),
 		);
-	} catch (error: any) {
-		console.error('❌ Error al actualizar registro de tiempo:', error);
-		throw new Error(
-			error?.errors?.[0]?.message || 'Error al actualizar registro de tiempo',
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error al actualizar registro de tiempo',
+			'Error al actualizar registro de tiempo',
 		);
 	}
 }
 
 export async function upsertRecordReason(recordId: number, reasonId: number) {
 	try {
-		const existentes: any = await withAutoRefresh(() =>
+		const existentes = (await withAutoRefresh(() =>
 			directus.request(
 				readItems('com_records_reasons', {
 					fields: ['id'],
@@ -152,7 +156,7 @@ export async function upsertRecordReason(recordId: number, reasonId: number) {
 					limit: 1,
 				}),
 			),
-		);
+		)) as { id: number }[];
 		const fila = (existentes || [])[0];
 		if (fila?.id != null) {
 			return await withAutoRefresh(() =>
@@ -171,10 +175,11 @@ export async function upsertRecordReason(recordId: number, reasonId: number) {
 				}),
 			),
 		);
-	} catch (error: any) {
-		console.error('❌ Error al guardar el motivo del registro:', error);
-		throw new Error(
-			error?.errors?.[0]?.message || 'Error al guardar el motivo del registro',
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error al guardar el motivo del registro',
+			'Error al guardar el motivo del registro',
 		);
 	}
 }
@@ -184,7 +189,7 @@ const TELEFONO_DEFECTO = '1';
 
 export async function crearEmpleado(data: CreateEmployeeDto) {
 	try {
-		const payload: any = {
+		const payload: Record<string, unknown> = {
 			document_type: data.document_type,
 			document_number: data.document_number,
 			first_name: data.first_name.trim(),
@@ -202,20 +207,18 @@ export async function crearEmpleado(data: CreateEmployeeDto) {
 		return await withAutoRefresh(() =>
 			directus.request(createItem('adm_employees', payload)),
 		);
-	} catch (error: any) {
-		console.error('❌ Error al crear empleado:', error);
-		throw new Error(
-			error?.errors?.[0]?.message || 'Error al crear el empleado',
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error al crear empleado',
+			'Error al crear el empleado',
 		);
 	}
 }
 
-export async function actualizarEmpleado(
-	id: number,
-	data: UpdateEmployeeDto,
-) {
+export async function actualizarEmpleado(id: number, data: UpdateEmployeeDto) {
 	try {
-		const payload: any = {};
+		const payload: Record<string, unknown> = {};
 		if (data.store_id !== undefined) payload.store_id = Number(data.store_id);
 		if (data.position_id !== undefined)
 			payload.position_id = Number(data.position_id);
@@ -229,10 +232,11 @@ export async function actualizarEmpleado(
 		return await withAutoRefresh(() =>
 			directus.request(updateItem('adm_employees', id, payload)),
 		);
-	} catch (error: any) {
-		console.error('❌ Error al actualizar empleado:', error);
-		throw new Error(
-			error?.errors?.[0]?.message || 'Error al actualizar el empleado',
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error al actualizar empleado',
+			'Error al actualizar el empleado',
 		);
 	}
 }
@@ -242,10 +246,11 @@ export async function eliminarNovedad(id: number) {
 		return await withAutoRefresh(() =>
 			directus.request(deleteItem('com_newness_reports', id)),
 		);
-	} catch (error: any) {
-		console.error('❌ Error al eliminar novedad:', error);
-		throw new Error(
-			error?.errors?.[0]?.message || 'Error al eliminar la novedad',
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error al eliminar novedad',
+			'Error al eliminar la novedad',
 		);
 	}
 }
@@ -255,7 +260,7 @@ export async function setStoreClosedDayStatus(
 	date: string,
 	newStatus: boolean,
 	providedId?: number,
-): Promise<any> {
+): Promise<ItemGuardado | null> {
 	try {
 		let targetId = providedId;
 
@@ -297,11 +302,11 @@ export async function setStoreClosedDayStatus(
 			);
 		}
 		return null;
-	} catch (error: any) {
-		console.error('❌ Error al actualizar estado de día cerrado:', error);
-		throw new Error(
-			error?.errors?.[0]?.message ||
-				'Error al actualizar estado de día cerrado',
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error al actualizar estado de día cerrado',
+			'Error al actualizar estado de día cerrado',
 		);
 	}
 }
@@ -309,7 +314,7 @@ export async function setStoreClosedDayStatus(
 export async function createStoreClosedDay(
 	storeId: number,
 	date: string,
-): Promise<any> {
+): Promise<ItemGuardado | null> {
 	return setStoreClosedDayStatus(storeId, date, true);
 }
 
@@ -322,13 +327,11 @@ export async function deleteStoreClosedDay(id: number): Promise<void> {
 				}),
 			),
 		);
-	} catch (error: any) {
-		console.error(
-			'❌ Error al actualizar estado de día cerrado de tienda:',
+	} catch (error) {
+		throw errorDeApi(
 			error,
-		);
-		throw new Error(
-			error?.errors?.[0]?.message || 'Error al actualizar día cerrado',
+			'Error al actualizar estado de día cerrado de tienda',
+			'Error al actualizar día cerrado',
 		);
 	}
 }

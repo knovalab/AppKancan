@@ -8,6 +8,7 @@ import { keyPorLogType, type LogType } from '../../domain/registro';
 import type { Resultado } from '../../interfaces/comunes';
 import type { NuevaNovedadInput } from '../../interfaces/novedades';
 import type { AccionesTarjeta } from '../../interfaces/registro';
+import { mensajeDeError } from '../../utils/errores';
 import { useAccionesRegistro } from './useAccionesRegistro';
 import type { Normas } from '../../interfaces/normas';
 import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
@@ -119,11 +120,7 @@ export function useAccionesTarjeta(opciones: Opciones): AccionesTarjeta {
 						err,
 					);
 					// Antes solo quedaba en consola (E2).
-					return fallo(
-						err instanceof Error && err.message
-							? err.message
-							: 'Error al guardar aceptación de normas',
-					);
+					return fallo(mensajeDeError(err, 'Error al guardar aceptación de normas'));
 				}
 			},
 

@@ -17,6 +17,7 @@ import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/Snackba
 import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
 import { horariosKeys } from '../../hooks/registro/keys';
 import type { Tienda } from '../../interfaces/tiendas';
+import { mensajeDeError } from '../../utils/errores';
 
 const AZUL = '#004680';
 
@@ -118,8 +119,8 @@ export default function ExportEventosDialog({ open, onClose, storeId, fechaInici
       } else {
         showSnackbar(res.mensaje || 'No hay datos para exportar', 'error');
       }
-    } catch (err: any) {
-      showSnackbar(err?.message || 'Error al exportar los eventos', 'error');
+    } catch (err) {
+      showSnackbar(mensajeDeError(err, 'Error al exportar los eventos'), 'error');
     } finally {
       setExportando(false);
     }
