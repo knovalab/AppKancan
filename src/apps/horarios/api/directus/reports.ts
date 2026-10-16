@@ -15,6 +15,7 @@ import type {
 	EmployeeNewnessDto,
 	NewnessReportDto,
 } from '../../interfaces/api/newness';
+import type { TimeRecordStoreDto } from '../../interfaces/api/timeRecordStore';
 import type {
 	EmployeeTimeRecordDto,
 	TimeRecordDto,
@@ -333,6 +334,57 @@ export async function getStoreEventReports(
 			'❌ Error al obtener reportes de eventos de la tienda:',
 			error,
 		);
+		return [];
+	}
+}
+
+/**
+ * Consulta la tabla `com_time_record_store` ("Registro_de_tienda") en Directus.
+ * Si la tabla aún no existe o está vacía, devuelve array vacío para permitir
+ * el cálculo de respaldo a partir de `com_time_records`.
+ */
+export async function fetchTimeRecordStore(
+	fechaInicio?: string,
+	fechaFin?: string,
+	storeIds?: number | number[],
+): Promise<TimeRecordStoreDto[]> {
+	try {
+		const filter: FiltroDirectus = {};
+		if (storeIds != null) {
+			if (Array.isArray(storeIds)) {
+				if (storeIds.length > 0) filter.store = { _in: storeIds };
+			} else {
+				filter.store = { _eq: storeIds };
+			}
+		}
+		if (fechaInicio || fechaFin) {
+			const rangoFechas: OperadoresDirectus = {};
+			if (fechaInicio) rangoFechas._gte = fechaInicio;
+			if (fechaFin) rangoFechas._lte = fechaFin;
+			filter.work_day = rangoFechas;
+		}
+
+		return (await withAutoRefresh(() =>
+			directus.request(
+				readItems('com_time_record_store' as any, {
+					fields: [
+						'*',
+						'store.id',
+						'store.name',
+						'open_user.id',
+						'open_user.first_name',
+						'open_user.last_name',
+						'close_user.id',
+						'close_user.first_name',
+						'close_user.last_name',
+					],
+					filter,
+					sort: ['-work_day'],
+					limit: -1,
+				}),
+			),
+		)) as TimeRecordStoreDto[];
+	} catch (_error) {
 		return [];
 	}
 }
