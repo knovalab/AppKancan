@@ -79,6 +79,9 @@ export const HorariosTourProvider: React.FC<TourProviderProps> = ({
 
 	const startTour = useCallback(
 		(phase: TourPhase = 'REGISTROS') => {
+			// Prefetch lazy sections the tour will navigate to
+			import('../../pages/secciones/NovedadesSeccion');
+			import('../../pages/secciones/HistorialSeccion');
 			window.scrollTo(0, 0);
 			setStepIndex(0);
 			irAFase(phase);

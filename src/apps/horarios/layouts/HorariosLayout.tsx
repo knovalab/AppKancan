@@ -1,19 +1,20 @@
 import { Box, Paper } from '@mui/material';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
-import { Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import { HeaderActionsProvider } from '../components/HeaderActions';
 import { HorariosHeader } from '../components/HorariosHeader';
 import { HorariosTabs } from '../components/HorariosTabs';
-import { HorariosTour } from '../components/tour/HorariosTour';
 import { HorariosTourProvider } from '../components/tour/HorariosTourContext';
 import {
 	HorariosLayoutContext,
 	useHorariosLayoutState,
 } from '../hooks/useHorariosLayout';
 import { syncTimeWithServer } from '../utils/timeSync';
+
+const HorariosTour = lazy(() => import('../components/tour/HorariosTour'));
 
 // Antes lo hacía RegistrosPage al importarse. Es global (afecta a dayjs en todo el portal),
 // igual que hoy; se mantiene aquí para no cambiar el formato de fechas de la app.
@@ -39,45 +40,47 @@ export default function HorariosLayout() {
 	return (
 		<HorariosLayoutContext.Provider value={value}>
 			<HorariosTourProvider>
-				<HorariosTour>
-					<HeaderActionsProvider>
-						<Box
-							sx={{
-								minHeight: 'calc(100vh - 64px)',
-								px: { xs: 0.5, sm: 2, md: 4 },
-								pt: { xs: 0.5, sm: 1 },
-								pb: 2,
-							}}
-						>
-							<Paper
-								className="tour-sticky-header"
-								elevation={0}
+				<Suspense fallback={null}>
+					<HorariosTour>
+						<HeaderActionsProvider>
+							<Box
 								sx={{
-									position: 'sticky',
-									top: 0,
-									zIndex: 10,
-									borderRadius: 4,
-									overflow: 'hidden',
-									border: '1px solid #f0e2e2ff',
-									boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-									mb: 2,
-									bgcolor: '#fff',
+									minHeight: 'calc(100vh - 64px)',
+									px: { xs: 0.5, sm: 2, md: 4 },
+									pt: { xs: 0.5, sm: 1 },
+									pb: 2,
 								}}
 							>
-								<HorariosHeader />
-								<HorariosTabs />
-							</Paper>
+								<Paper
+									className="tour-sticky-header"
+									elevation={0}
+									sx={{
+										position: 'sticky',
+										top: 0,
+										zIndex: 10,
+										borderRadius: 4,
+										overflow: 'hidden',
+										border: '1px solid #f0e2e2ff',
+										boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+										mb: 2,
+										bgcolor: '#fff',
+									}}
+								>
+									<HorariosHeader />
+									<HorariosTabs />
+								</Paper>
 
-							{value.acceso.cargando ? (
-								<LoadingSpinner message="Cargando permisos..." />
-							) : (
-								<Suspense fallback={<LoadingSpinner />}>
-									<Outlet />
-								</Suspense>
-							)}
-						</Box>
-					</HeaderActionsProvider>
-				</HorariosTour>
+								{value.acceso.cargando ? (
+									<LoadingSpinner message="Cargando permisos..." />
+								) : (
+									<Suspense fallback={<LoadingSpinner />}>
+										<Outlet />
+									</Suspense>
+								)}
+							</Box>
+						</HeaderActionsProvider>
+					</HorariosTour>
+				</Suspense>
 			</HorariosTourProvider>
 		</HorariosLayoutContext.Provider>
 	);

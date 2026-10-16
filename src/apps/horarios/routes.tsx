@@ -4,12 +4,15 @@ import HorariosLayout from './layouts/HorariosLayout';
 import { IndexRedirect, RequireRole } from './navigation/RequireRole';
 import { buscarSeccion } from './navigation/secciones';
 import RegistrosPage from './pages/RegistrosPage';
-import HistorialSeccion from './pages/secciones/HistorialSeccion';
-import NovedadesSeccion from './pages/secciones/NovedadesSeccion';
 
-// Registros, Novedades e Historial se importan directo: el tour salta entre ellas
-// y necesita que el contenido esté en el DOM al cambiar de fase.
-// El resto se carga bajo demanda (el <Suspense> está en HorariosLayout).
+// Todas las secciones excepto Registros (landing page) se cargan bajo demanda.
+// El tour (también lazy) prefetches Novedades e Historial al iniciarse.
+const NovedadesSeccion = lazy(
+	() => import('./pages/secciones/NovedadesSeccion'),
+);
+const HistorialSeccion = lazy(
+	() => import('./pages/secciones/HistorialSeccion'),
+);
 const MonitoreoSeccion = lazy(
 	() => import('./pages/secciones/MonitoreoSeccion'),
 );

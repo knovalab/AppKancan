@@ -24,17 +24,28 @@ import {
 	Typography,
 } from '@mui/material';
 import { Eye } from 'lucide-react';
-import { DailyAttendanceModal } from '../components/DailyAttendanceModal';
+import { lazy, Suspense } from 'react';
 import DateRangeFilter from '../components/reportes/DateRangeFilter';
 import ExportHistorialDialog from '../components/reportes/ExportHistorialDialog';
-import { SingleRecordDetailModal } from '../components/SingleRecordDetailModal';
 import { LOG_TYPE } from '../domain/registro';
 import useHorariosPolicies from '../hooks/useHorariosPolicies';
 import type {
 	HistorialEventoDetalle,
 	HistorialRow,
 } from '../interfaces/horarios.interface';
+
 import { formatDocumentNumber } from '../utils/format';
+
+const DailyAttendanceModal = lazy(() =>
+	import('../components/DailyAttendanceModal').then((m) => ({
+		default: m.DailyAttendanceModal,
+	})),
+);
+const SingleRecordDetailModal = lazy(() =>
+	import('../components/SingleRecordDetailModal').then((m) => ({
+		default: m.SingleRecordDetailModal,
+	})),
+);
 
 const AVATAR_COLORS = [
 	'#0284c7',
@@ -805,49 +816,57 @@ export default function HistorialPage({
 				)}
 			</Paper>
 
-			<DailyAttendanceModal
-				open={dayModalOpen}
-				onClose={() => {
-					setDayModalOpen(false);
-					setFilaSeleccionada(null);
-				}}
-				empleado={filaSeleccionada?.empleado ?? ''}
-				fecha={
-					filaSeleccionada?.fecha
-						? dayjs(filaSeleccionada.fecha).format('DD-MM-YYYY')
-						: ''
-				}
-				eventos={construirEventosFila(filaSeleccionada)}
-				observaciones={filaSeleccionada?.observaciones_evento}
-				totalHoras={
-					filaSeleccionada
-						? calcularHoras(
-								filaSeleccionada.inicio_turno,
-								filaSeleccionada.fin_turno,
-								filaSeleccionada.inicio_almuerzo,
-								filaSeleccionada.fin_almuerzo,
-							)
-						: undefined
-				}
-				tiendaNombre={filaSeleccionada?.tiendaNombre}
-				esAdmin={esUsuarioAdmin}
-				esReporte={esReporte}
-			/>
+			{dayModalOpen && (
+				<Suspense fallback={null}>
+					<DailyAttendanceModal
+						open={dayModalOpen}
+						onClose={() => {
+							setDayModalOpen(false);
+							setFilaSeleccionada(null);
+						}}
+						empleado={filaSeleccionada?.empleado ?? ''}
+						fecha={
+							filaSeleccionada?.fecha
+								? dayjs(filaSeleccionada.fecha).format('DD-MM-YYYY')
+								: ''
+						}
+						eventos={construirEventosFila(filaSeleccionada)}
+						observaciones={filaSeleccionada?.observaciones_evento}
+						totalHoras={
+							filaSeleccionada
+								? calcularHoras(
+										filaSeleccionada.inicio_turno,
+										filaSeleccionada.fin_turno,
+										filaSeleccionada.inicio_almuerzo,
+										filaSeleccionada.fin_almuerzo,
+									)
+								: undefined
+						}
+						tiendaNombre={filaSeleccionada?.tiendaNombre}
+						esAdmin={esUsuarioAdmin}
+						esReporte={esReporte}
+					/>
+				</Suspense>
+			)}
 
-			<SingleRecordDetailModal
-				open={singleRecordModalOpen}
-				onClose={() => {
-					setSingleRecordModalOpen(false);
-					setSelectedRecordData(null);
-				}}
-				empleado={selectedRecordData?.empleado ?? ''}
-				fecha={selectedRecordData?.fecha ?? ''}
-				evento={selectedRecordData?.evento ?? null}
-				documento={selectedRecordData?.documento}
-				tiendaNombre={selectedRecordData?.tiendaNombre}
-				esAdmin={esUsuarioAdmin}
-				esReporte={esReporte}
-			/>
+			{singleRecordModalOpen && (
+				<Suspense fallback={null}>
+					<SingleRecordDetailModal
+						open={singleRecordModalOpen}
+						onClose={() => {
+							setSingleRecordModalOpen(false);
+							setSelectedRecordData(null);
+						}}
+						empleado={selectedRecordData?.empleado ?? ''}
+						fecha={selectedRecordData?.fecha ?? ''}
+						evento={selectedRecordData?.evento ?? null}
+						documento={selectedRecordData?.documento}
+						tiendaNombre={selectedRecordData?.tiendaNombre}
+						esAdmin={esUsuarioAdmin}
+						esReporte={esReporte}
+					/>
+				</Suspense>
+			)}
 
 			<ExportHistorialDialog
 				open={exportOpen}

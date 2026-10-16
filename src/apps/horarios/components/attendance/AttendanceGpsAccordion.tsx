@@ -1,6 +1,9 @@
 import { ChevronDown, ChevronUp, ExternalLink, MapPin } from 'lucide-react';
-import { useState } from 'react';
-import { LeafletMap } from './LeafletMap';
+import { lazy, Suspense, useState } from 'react';
+
+const LeafletMap = lazy(() =>
+	import('./LeafletMap').then((m) => ({ default: m.LeafletMap })),
+);
 
 export interface AttendanceGpsAccordionProps {
 	lat: number;
@@ -90,14 +93,23 @@ export function AttendanceGpsAccordion({
 			{/* Contenedor expandible del mapa interactivo con Leaflet */}
 			{expanded && (
 				<div className="mt-3 pt-3 border-t border-[#d8e8fc]/80 animate-in fade-in duration-200">
-					<LeafletMap
-						lat={lat}
-						lon={lon}
-						accuracy={accuracy}
-						title={title}
-						hora={hora}
-						height={compact ? 180 : 210}
-					/>
+					<Suspense
+						fallback={
+							<div
+								style={{ height: compact ? 180 : 210, borderRadius: 12 }}
+								className="bg-slate-100 animate-pulse"
+							/>
+						}
+					>
+						<LeafletMap
+							lat={lat}
+							lon={lon}
+							accuracy={accuracy}
+							title={title}
+							hora={hora}
+							height={compact ? 180 : 210}
+						/>
+					</Suspense>
 				</div>
 			)}
 		</div>
