@@ -1,6 +1,5 @@
 import { Box } from '@mui/material';
 import {
-	ReporteTiendasHeader,
 	ReporteTiendasKpis,
 	ReporteTiendasPagination,
 	ReporteTiendasTable,
@@ -18,7 +17,6 @@ export interface ReporteTiendasTabProps {
 export default function ReporteTiendasTab({
 	registrosTienda,
 	loading = false,
-	onExportExcel,
 	searchNombre = '',
 }: ReporteTiendasTabProps) {
 	const {
@@ -37,19 +35,8 @@ export default function ReporteTiendasTab({
 
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, p: 2 }}>
-			{/* KPI Summary Cards */}
 			<ReporteTiendasKpis stats={stats} />
-
-			{/* Sub-header / Actions */}
-			<ReporteTiendasHeader
-				totalRecords={filteredRecords.length}
-				onExportExcel={onExportExcel}
-			/>
-
-			{/* Table */}
 			<ReporteTiendasTable records={paginatedData} loading={loading} />
-
-			{/* Pagination controls */}
 			<ReporteTiendasPagination
 				page={page}
 				totalPages={totalPages}

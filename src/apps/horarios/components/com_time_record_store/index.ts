@@ -1,4 +1,3 @@
-export * from './ReporteTiendasHeader';
 export * from './ReporteTiendasKpis';
 export * from './ReporteTiendasPagination';
 export * from './ReporteTiendasStatusChip';
