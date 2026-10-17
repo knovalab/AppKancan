@@ -2,6 +2,9 @@
 	"name": "AppKancan",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
+	// Levanta también el worker ETL (services/horarios-etl). Su puerto 3010 se publica desde
+	// docker-compose.yml; desde el contenedor `app` se llega con http://etl:3010.
+	"runServices": ["app", "etl"],
 	"workspaceFolder": "/workspace",
 	"features": {
 		"ghcr.io/devcontainers/features/git:1": {

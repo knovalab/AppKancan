@@ -1,0 +1,23 @@
+{
+	// Solo para el chequeo de tipos (`npm run typecheck`): Node ejecuta los .ts
+	// directamente quitando los tipos (type stripping, Node >= 22.18), sin compilar.
+	"compilerOptions": {
+		"target": "ES2023",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"lib": ["ES2023"],
+		"types": ["node"],
+		"strict": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		// Requisitos de type stripping: imports con extensión .ts y sin sintaxis
+		// que necesite transformación (enum, namespace, parameter properties).
+		"allowImportingTsExtensions": true,
+		"verbatimModuleSyntax": true,
+		"erasableSyntaxOnly": true
+	},
+	"include": ["src", "test", "vitest.config.ts"]
+}

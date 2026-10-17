@@ -335,31 +335,3 @@ export async function deleteStoreClosedDay(id: number): Promise<void> {
 		);
 	}
 }
-
-/**
- * Obtiene el ID del registro en `com_time_record_store` para una tienda y fecha dada, si existe.
- */
-export async function getTimeRecordStoreId(
-	storeId: number,
-	workDay: string,
-): Promise<number | null> {
-	try {
-		const items = (await withAutoRefresh(() =>
-			directus.request(
-				readItems('com_time_record_store' as any, {
-					fields: ['id'],
-					filter: {
-						_and: [
-							{ store_id: { _eq: storeId } },
-							{ work_day: { _eq: workDay } },
-						],
-					},
-					limit: 1,
-				}),
-			),
-		)) as { id: number }[];
-		return items[0]?.id != null ? Number(items[0].id) : null;
-	} catch (_error) {
-		return null;
-	}
-}

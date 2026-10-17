@@ -49,3 +49,6 @@ LICENSE
 # Otros
 *.log
 docs
+
+# Servicios con su propio Dockerfile (no forman parte del build del frontend)
+services
