@@ -4,7 +4,7 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import type React from 'react';
-import type { OperacionKpis } from '../hooks/useMonitoreoOperacionTiendas';
+import type { OperacionKpis } from '../../hooks/useMonitoreoOperacionTiendas';
 
 interface KpiCardProps {
 	icon: React.ReactNode;

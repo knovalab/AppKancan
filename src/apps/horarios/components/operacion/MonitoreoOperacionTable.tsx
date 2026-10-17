@@ -10,7 +10,7 @@ import {
 	TableRow,
 	Typography,
 } from '@mui/material';
-import type { RegistroTienda } from '../../../../interfaces/registroTienda';
+import type { RegistroTienda } from '../../interfaces/registroTienda';
 import { MonitoreoOperacionTableRow } from './MonitoreoOperacionTableRow';
 
 export interface MonitoreoOperacionTableProps {

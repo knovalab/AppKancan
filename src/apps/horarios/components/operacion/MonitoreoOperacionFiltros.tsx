@@ -8,8 +8,8 @@ import {
 	Select,
 } from '@mui/material';
 import type { Dayjs } from 'dayjs';
-import DateRangeFilter from '../../../../components/reportes/DateRangeFilter';
-import type { StatusFilterOption } from '../hooks/useMonitoreoOperacionTiendas';
+import type { StatusFilterOption } from '../../hooks/useMonitoreoOperacionTiendas';
+import DateRangeFilter from '../reportes/DateRangeFilter';
 
 export interface MonitoreoOperacionFiltrosProps {
 	fechaInicio: Dayjs | null;

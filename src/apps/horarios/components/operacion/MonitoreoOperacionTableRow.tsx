@@ -9,8 +9,8 @@ import {
 	Tooltip,
 	Typography,
 } from '@mui/material';
-import { ReporteTiendasStatusChip } from '../../../../components/com_time_record_store/ReporteTiendasStatusChip';
-import type { RegistroTienda } from '../../../../interfaces/registroTienda';
+import type { RegistroTienda } from '../../interfaces/registroTienda';
+import { ReporteTiendasStatusChip } from '../com_time_record_store/ReporteTiendasStatusChip';
 
 export interface MonitoreoOperacionTableRowProps {
 	reg: RegistroTienda;

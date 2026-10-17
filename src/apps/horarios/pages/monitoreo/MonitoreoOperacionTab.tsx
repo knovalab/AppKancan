@@ -1,11 +1,11 @@
 import { Box } from '@mui/material';
-import type { Tienda } from '../../../interfaces/tiendas';
-import { exportarRegistroTiendaExcel } from '../../../utils/exportarRegistroTienda';
-import { Paginador } from '../MonitoreoComponents';
-import { MonitoreoOperacionFiltros } from './components/MonitoreoOperacionFiltros';
-import { MonitoreoOperacionKpis } from './components/MonitoreoOperacionKpis';
-import { MonitoreoOperacionTable } from './components/MonitoreoOperacionTable';
-import { useMonitoreoOperacionTiendas } from './hooks/useMonitoreoOperacionTiendas';
+import { MonitoreoOperacionFiltros } from '../../components/operacion/MonitoreoOperacionFiltros';
+import { MonitoreoOperacionKpis } from '../../components/operacion/MonitoreoOperacionKpis';
+import { MonitoreoOperacionTable } from '../../components/operacion/MonitoreoOperacionTable';
+import { useMonitoreoOperacionTiendas } from '../../hooks/useMonitoreoOperacionTiendas';
+import type { Tienda } from '../../interfaces/tiendas';
+import { exportarRegistroTiendaExcel } from '../../utils/exportarRegistroTienda';
+import { Paginador } from './MonitoreoComponents';
 
 export interface MonitoreoOperacionTabProps {
 	tiendas: Tienda[];

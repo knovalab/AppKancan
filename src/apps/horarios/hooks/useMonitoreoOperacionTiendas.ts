@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
-import { fetchTimeRecordStore } from '../../../../api/directus/reports';
-import type { TimeRecordStoreDto } from '../../../../interfaces/api/timeRecordStore';
-import type { RegistroTienda } from '../../../../interfaces/registroTienda';
-import type { Tienda } from '../../../../interfaces/tiendas';
-import { mapearTimeRecordStoreDtoARegistroTienda } from '../../../../utils/registroTienda';
+import { fetchTimeRecordStore } from '../api/directus/reports';
+import type { TimeRecordStoreDto } from '../interfaces/api/timeRecordStore';
+import type { RegistroTienda } from '../interfaces/registroTienda';
+import type { Tienda } from '../interfaces/tiendas';
+import { mapearTimeRecordStoreDtoARegistroTienda } from '../utils/registroTienda';
 
 export interface UseMonitoreoOperacionTiendasProps {
 	tiendas: Tienda[];

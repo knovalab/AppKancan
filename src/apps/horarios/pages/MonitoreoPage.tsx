@@ -78,6 +78,8 @@ import {
 	TarjetaEstadistica,
 	TarjetaResumen,
 } from './monitoreo/MonitoreoComponents';
+import MonitoreoFotosTab from './monitoreo/MonitoreoFotosTab';
+import MonitoreoOperacionTab from './monitoreo/MonitoreoOperacionTab';
 import {
 	COLUMNAS_EDICIONES,
 	COLUMNAS_TIENDAS,
@@ -88,7 +90,6 @@ import {
 	type SortField,
 	TARJETAS_ESTADISTICAS,
 } from './monitoreo/MonitoreoUtils';
-import MonitoreoOperacionTab from './monitoreo/operacion/MonitoreoOperacionTab';
 import { useTiendasResumen } from './monitoreo/useTiendasResumen';
 
 // ---------- COMPONENTE PRINCIPAL ----------
@@ -574,6 +575,10 @@ export default function MonitoreoGeneralPage({ storeId }: MonitoreoPageProps) {
 							sx={{ fontWeight: 700, textTransform: 'none' }}
 						/>
 						<Tab
+							label="Fotos de Marcaciones"
+							sx={{ fontWeight: 700, textTransform: 'none' }}
+						/>
+						<Tab
 							label="Auditoría de Ediciones Manuales"
 							sx={{ fontWeight: 700, textTransform: 'none' }}
 						/>
@@ -942,7 +947,9 @@ export default function MonitoreoGeneralPage({ storeId }: MonitoreoPageProps) {
 
 				{subTab === 1 && <MonitoreoOperacionTab tiendas={tiendas} />}
 
-				{subTab === 2 && (
+				{subTab === 2 && <MonitoreoFotosTab tiendas={tiendas} />}
+
+				{subTab === 3 && (
 					<>
 						<Grid container spacing={2} sx={{ mb: 2 }}>
 							{TARJETAS_ESTADISTICAS.map((k, idx) => {
@@ -1504,7 +1511,7 @@ export default function MonitoreoGeneralPage({ storeId }: MonitoreoPageProps) {
 					</>
 				)}
 
-				{isAreaMgr && subTab === 3 && (
+				{isAreaMgr && subTab === 4 && (
 					<Paper
 						elevation={0}
 						sx={{
@@ -1524,7 +1531,7 @@ export default function MonitoreoGeneralPage({ storeId }: MonitoreoPageProps) {
 					</Paper>
 				)}
 
-				{isAreaMgr && subTab === 4 && <DetallePlanillaPage storeId={storeId} />}
+				{isAreaMgr && subTab === 5 && <DetallePlanillaPage storeId={storeId} />}
 
 				{tiendaSeleccionada && (
 					<ModalDetalleTienda
