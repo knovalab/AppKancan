@@ -1,14 +1,11 @@
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import SearchIcon from '@mui/icons-material/Search';
 import {
 	Box,
 	Button,
 	FormControl,
-	InputAdornment,
 	MenuItem,
 	Paper,
 	Select,
-	TextField,
 } from '@mui/material';
 import type { Dayjs } from 'dayjs';
 import DateRangeFilter from '../../../../components/reportes/DateRangeFilter';
@@ -18,8 +15,6 @@ export interface MonitoreoOperacionFiltrosProps {
 	fechaInicio: Dayjs | null;
 	fechaFin: Dayjs | null;
 	onFechaChange: (inicio: Dayjs | null, fin: Dayjs | null) => void;
-	searchTienda: string;
-	onSearchTiendaChange: (val: string) => void;
 	statusFilter: StatusFilterOption;
 	onStatusFilterChange: (val: StatusFilterOption) => void;
 	onExportExcel?: () => void;
@@ -29,8 +24,6 @@ export function MonitoreoOperacionFiltros({
 	fechaInicio,
 	fechaFin,
 	onFechaChange,
-	searchTienda,
-	onSearchTiendaChange,
 	statusFilter,
 	onStatusFilterChange,
 	onExportExcel,
@@ -57,7 +50,6 @@ export function MonitoreoOperacionFiltros({
 					gap: 2,
 				}}
 			>
-				{/* Left: Quick Date shortcuts + DateRangeFilter */}
 				<Box
 					sx={{
 						display: 'flex',
@@ -73,7 +65,6 @@ export function MonitoreoOperacionFiltros({
 					/>
 				</Box>
 
-				{/* Right: Search + Status + Export button */}
 				<Box
 					sx={{
 						display: 'flex',
@@ -82,32 +73,6 @@ export function MonitoreoOperacionFiltros({
 						gap: 1.5,
 					}}
 				>
-					{/* Search store */}
-					<TextField
-						size="small"
-						placeholder="Buscar por tienda o ID..."
-						value={searchTienda}
-						onChange={(e) => onSearchTiendaChange(e.target.value)}
-						slotProps={{
-							input: {
-								startAdornment: (
-									<InputAdornment position="start">
-										<SearchIcon fontSize="small" sx={{ color: '#004680' }} />
-									</InputAdornment>
-								),
-							},
-						}}
-						sx={{
-							minWidth: 220,
-							'& .MuiOutlinedInput-root': {
-								borderRadius: 2,
-								bgcolor: '#f8fafc',
-								height: 38,
-							},
-						}}
-					/>
-
-					{/* Status Filter */}
 					<FormControl size="small" sx={{ minWidth: 160 }}>
 						<Select
 							value={statusFilter}

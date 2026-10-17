@@ -19,8 +19,6 @@ export default function MonitoreoOperacionTab({
 		setFechaInicio,
 		fechaFin,
 		setFechaFin,
-		searchTienda,
-		setSearchTienda,
 		statusFilter,
 		setStatusFilter,
 		page,
@@ -51,8 +49,6 @@ export default function MonitoreoOperacionTab({
 					setFechaInicio(inicio);
 					setFechaFin(fin);
 				}}
-				searchTienda={searchTienda}
-				onSearchTiendaChange={setSearchTienda}
 				statusFilter={statusFilter}
 				onStatusFilterChange={setStatusFilter}
 				onExportExcel={handleExportExcel}

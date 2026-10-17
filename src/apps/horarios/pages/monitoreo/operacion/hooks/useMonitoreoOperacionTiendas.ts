@@ -41,7 +41,6 @@ export function useMonitoreoOperacionTiendas({
 		() => initialFechaFin ?? dayjs(),
 	);
 
-	const [searchTienda, setSearchTienda] = useState('');
 	const [statusFilter, setStatusFilter] = useState<StatusFilterOption>('todos');
 	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -90,32 +89,21 @@ export function useMonitoreoOperacionTiendas({
 		);
 	}, [rawRecords, storesMap]);
 
-	// Filter in-memory by search and status
+	// Filter in-memory by status
 	const filteredRecords = useMemo(() => {
-		const search = searchTienda.toLowerCase().trim();
 		return recordsCalculados.filter((reg: RegistroTienda) => {
-			// Status match
 			if (statusFilter !== 'todos' && reg.status !== statusFilter) {
 				return false;
 			}
-			// Search match (name or store id)
-			if (search) {
-				const matchName = reg.store_name.toLowerCase().includes(search);
-				const matchId = String(reg.store_id).includes(search);
-				const matchDay = reg.work_day.includes(search);
-				if (!matchName && !matchId && !matchDay) {
-					return false;
-				}
-			}
 			return true;
 		});
-	}, [recordsCalculados, searchTienda, statusFilter]);
+	}, [recordsCalculados, statusFilter]);
 
 	// Reset page when filters change
 	// biome-ignore lint/correctness/useExhaustiveDependencies: reset page on filters change
 	useEffect(() => {
 		setPage(0);
-	}, [searchTienda, statusFilter, fechaInicioStr, fechaFinStr]);
+	}, [statusFilter, fechaInicioStr, fechaFinStr]);
 
 	// KPI summary calculation
 	const kpis = useMemo<OperacionKpis>(() => {
@@ -155,8 +143,6 @@ export function useMonitoreoOperacionTiendas({
 		setFechaInicio,
 		fechaFin,
 		setFechaFin,
-		searchTienda,
-		setSearchTienda,
 		statusFilter,
 		setStatusFilter,
 		page,
