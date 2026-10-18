@@ -1,4 +1,5 @@
 import {
+	AccessTime as AccessTimeIcon,
 	ArrowBackIos as ArrowBackIosIcon,
 	ArrowDownward as ArrowDownwardIcon,
 	ArrowForwardIos as ArrowForwardIosIcon,
@@ -8,10 +9,12 @@ import {
 	CalendarToday as CalendarTodayIcon,
 	CheckCircle as CheckCircleIcon,
 	Close as CloseIcon,
+	EditCalendar as EditCalendarIcon,
 	EditNote as EditNoteIcon,
 	Message as MessageIcon,
 	Pending as PendingIcon,
 	Person as PersonIcon,
+	PhotoCamera as PhotoCameraIcon,
 	Search as SearchIcon,
 	Sort as SortIcon,
 	Storefront as StorefrontIcon,
@@ -563,35 +566,81 @@ export default function MonitoreoGeneralPage({ storeId }: MonitoreoPageProps) {
 					<Tabs
 						value={subTab}
 						onChange={(_, v) => setSubTab(v)}
+						variant="scrollable"
+						scrollButtons="auto"
+						allowScrollButtonsMobile
 						textColor="primary"
 						indicatorColor="primary"
+						sx={{
+							minHeight: { xs: 46, sm: 48 },
+							'& .MuiTabs-scrollButtons': {
+								color: '#004680',
+								width: { xs: 36, sm: 40 },
+								'&.Mui-disabled': {
+									opacity: 0.25,
+								},
+							},
+							'& .MuiTabs-flexContainer': {
+								gap: { xs: 0.5, sm: 1 },
+							},
+							'& .MuiTab-root': {
+								fontWeight: 700,
+								textTransform: 'none',
+								minHeight: { xs: 46, sm: 48 },
+								minWidth: 'auto',
+								px: { xs: 1.5, sm: 2 },
+								py: { xs: 0.75, sm: 1 },
+								fontSize: { xs: '0.82rem', sm: '0.875rem' },
+								whiteSpace: 'nowrap',
+								transition: 'all 0.2s ease',
+								borderRadius: '8px 8px 0 0',
+								'&:hover': {
+									bgcolor: 'rgba(0, 70, 128, 0.04)',
+								},
+								'&.Mui-selected': {
+									color: '#004680',
+								},
+								'& .MuiTab-iconWrapper': {
+									mb: '0 !important',
+									mr: { xs: 0.75, sm: 1 },
+								},
+							},
+						}}
 					>
 						<Tab
+							icon={<AssignmentIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />}
+							iconPosition="start"
 							label="Resumen de Asistencia"
-							sx={{ fontWeight: 700, textTransform: 'none' }}
 						/>
 						<Tab
+							icon={<StorefrontIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />}
+							iconPosition="start"
 							label="Apertura y Cierre de Tiendas"
-							sx={{ fontWeight: 700, textTransform: 'none' }}
 						/>
 						<Tab
+							icon={<PhotoCameraIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />}
+							iconPosition="start"
 							label="Fotos de Marcaciones"
-							sx={{ fontWeight: 700, textTransform: 'none' }}
 						/>
 						<Tab
+							icon={<EditNoteIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />}
+							iconPosition="start"
 							label="Auditoría de Ediciones Manuales"
-							sx={{ fontWeight: 700, textTransform: 'none' }}
 						/>
 						{isAreaMgr && (
 							<Tab
+								icon={<AccessTimeIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />}
+								iconPosition="start"
 								label="Control de Horas"
-								sx={{ fontWeight: 700, textTransform: 'none' }}
 							/>
 						)}
 						{isAreaMgr && (
 							<Tab
+								icon={
+									<EditCalendarIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />
+								}
+								iconPosition="start"
 								label="Editar registros"
-								sx={{ fontWeight: 700, textTransform: 'none' }}
 							/>
 						)}
 					</Tabs>
@@ -961,7 +1010,7 @@ export default function MonitoreoGeneralPage({ storeId }: MonitoreoPageProps) {
 								else if (k.label === 'TIENDA CON MÁS CAMBIOS')
 									value = statsEdiciones.topStore;
 								return (
-									<Grid size={{ xs: 12, md: 3 }} key={idx}>
+									<Grid size={{ xs: 12, md: 3 }} key={k.label}>
 										<TarjetaEstadistica
 											{...k}
 											value={value}

@@ -1,40 +1,40 @@
+import CloseIcon from '@mui/icons-material/Close';
+import DateRangeIcon from '@mui/icons-material/DateRange';
+import EventNoteIcon from '@mui/icons-material/EventNote';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import HistoryIcon from '@mui/icons-material/History';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import StorefrontIcon from '@mui/icons-material/Storefront';
 import {
 	Autocomplete,
 	Box,
 	Button,
+	IconButton,
 	InputAdornment,
 	Paper,
 	Stack,
+	Tab,
+	Tabs,
 	TextField,
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
-import Joyride from 'react-joyride';
-import {
-	fetchTimeRecordStore,
-	getEmpleadosBulk,
-	getPrimerPeriodoRegistro,
-	getStoreEventReports,
-	getStoreNovedades,
-	getStores,
-	getTimeRecordsBulkRange,
-} from '../api/directus/read';
+import Joyride, { type CallBackProps } from 'react-joyride';
+import { getStoreNovedades, getStores } from '../api/directus/read';
 import NovedadesTab from '../components/NovedadesTab';
 import DateRangeFilter from '../components/reportes/DateRangeFilter';
-import ExportEventosDialog from '../components/reportes/ExportEventosDialog';
-import ExportHistorialDialog from '../components/reportes/ExportHistorialDialog';
-import ExportNovedadesDialog from '../components/reportes/ExportNovedadesDialog';
-import ExportSemanalDialog from '../components/reportes/ExportSemanalDialog';
 import ExportUnificadoDialog from '../components/reportes/ExportUnificadoDialog';
 import FakeExportModal from '../components/tour/FakeExportModal';
 import { CustomTooltip } from '../components/tour/TourTooltip';
+import { useReportePausas } from '../hooks/useReportePausas';
+import { useReporteSemanal } from '../hooks/useReporteSemanal';
+import { useReporteTiendasData } from '../hooks/useReporteTiendasData';
+import type { NovedadTienda } from '../interfaces/novedades';
 import type { Tienda } from '../interfaces/tiendas';
 import { exportarRegistroTiendaExcel } from '../utils/exportarRegistroTienda';
-import { mapearTimeRecordStoreDtoARegistroTienda } from '../utils/registroTienda';
 import HistorialPage from './HistorialPage';
 import ReportePausasTab from './reporte/ReportePausasTab';
 import ReporteSemanalTab from './reporte/ReporteSemanalTab';
@@ -47,12 +47,11 @@ import {
 	STEP_TAB_PAUSAS,
 	STEP_TAB_REGISTROS,
 } from './reporte/ReporteTourConfig';
-import { getSemanasDelMes, NOMBRES_MESES } from './reporte/ReporteUtils';
 
-interface ReportePageProps {
+export interface ReportePageProps {
 	storeSel: number | null;
 	onStoreChange: (id: number | null) => void;
-	novedades: any[];
+	novedades?: NovedadTienda[];
 	esAdmin: boolean;
 	tiendasPermitidas?: Tienda[];
 }
@@ -73,28 +72,7 @@ export default function ReportePage({
 		'registros' | 'novedades' | 'pausas' | 'semanal' | 'tiendas'
 	>('registros');
 
-	// Estados para reporte semanal
-	const [selectedYear, setSelectedYear] = useState(dayjs().year());
-	const [selectedMonth, setSelectedMonth] = useState(dayjs().month()); // 0-indexed
-	const [diaInicioSemana, setDiaInicioSemana] = useState<number>(1); // 1 = Lunes por defecto
-	const [diaFinSemana, setDiaFinSemana] = useState<number>(0); // 0 = Domingo por defecto
-	const [pageSemanal, setPageSemanal] = useState(0);
-	const ROWS_PER_PAGE_SEMANAL = 10;
-	const [reporteSemanalModo, setReporteSemanalModo] = useState<
-		'tienda' | 'empleado'
-	>('tienda');
-	const [selectedEmpleadoId, setSelectedEmpleadoId] = useState<number | null>(
-		null,
-	);
-
-	const [exportHistorialOpen, setExportHistorialOpen] = useState(false);
-	const [exportNovedadesOpen, setExportNovedadesOpen] = useState(false);
-	const [exportEventosOpen, setExportEventosOpen] = useState(false);
-	const [exportSemanalOpen, setExportSemanalOpen] = useState(false);
 	const [exportUnificadoOpen, setExportUnificadoOpen] = useState(false);
-
-	const [pagePausas, setPagePausas] = useState(0);
-	const [rowsPerPagePausas, setRowsPerPagePausas] = useState(5);
 
 	// --- Tour guiado ---
 	const [runTour, setRunTour] = useState(false);
@@ -108,9 +86,7 @@ export default function ReportePage({
 		if (!main) return;
 
 		main.scrollTop = 0;
-
 		const block = (e: Event) => e.preventDefault();
-
 		main.addEventListener('wheel', block, { passive: false });
 		main.addEventListener('touchmove', block, { passive: false });
 
@@ -129,7 +105,7 @@ export default function ReportePage({
 		[tiendaTourTarget],
 	);
 
-	const handleJoyrideCallback = (data: any) => {
+	const handleJoyrideCallback = (data: CallBackProps) => {
 		const { status, type, action, index } = data;
 
 		if (status === 'finished' || status === 'skipped' || action === 'close') {
@@ -141,7 +117,6 @@ export default function ReportePage({
 
 		if (type === 'step:after') {
 			const nextIndex = index + (action === 'prev' ? -1 : 1);
-
 			const fakeDebeEstar =
 				nextIndex >= STEP_FAKE_START && nextIndex <= STEP_FAKE_END;
 
@@ -165,6 +140,7 @@ export default function ReportePage({
 		}
 	};
 
+	// --- Stores Data ---
 	const { data: tiendas = [] } = useQuery<Tienda[]>({
 		queryKey: ['adminTiendas'],
 		queryFn: getStores,
@@ -182,28 +158,18 @@ export default function ReportePage({
 				? tiendasAMostrar.map((t) => Number(t.id))
 				: null;
 
-	const { data: eventReports = [] } = useQuery<any[]>({
-		queryKey: [
-			'storeEventReportsHistory',
-			queryStoreId,
-			rangoInicio?.format('YYYY-MM-DD'),
-			rangoFin?.format('YYYY-MM-DD'),
-		],
-		queryFn: () =>
-			getStoreEventReports(
-				queryStoreId,
-				rangoInicio ? rangoInicio.format('YYYY-MM-DD') : undefined,
-				rangoFin ? rangoFin.format('YYYY-MM-DD') : undefined,
-			),
-		enabled: visualizarTab === 'pausas',
-		staleTime: 5 * 60 * 1000,
-	});
+	const allStoreIds = useMemo(
+		() => tiendasAMostrar.map((t) => Number(t.id)),
+		[tiendasAMostrar],
+	);
 
-	useEffect(() => {
-		setPagePausas(0);
-	}, [queryStoreId, rangoInicio, rangoFin, searchNombre]);
+	const targetStores = useMemo(() => {
+		if (storeSel !== null) return [storeSel];
+		return allStoreIds;
+	}, [storeSel, allStoreIds]);
 
-	const { data: storeNovedades = [] } = useQuery<any[]>({
+	// --- Novedades query ---
+	const { data: storeNovedades = [] } = useQuery<NovedadTienda[]>({
 		queryKey: ['storeNovedadesHistory', queryStoreId],
 		queryFn: () => getStoreNovedades(queryStoreId),
 		enabled: visualizarTab === 'novedades' || visualizarTab === 'semanal',
@@ -226,246 +192,47 @@ export default function ReportePage({
 		});
 	}, [storeNovedades, searchNombre, rangoInicio, rangoFin]);
 
-	const eventReportsFiltrados = useMemo(() => {
-		return eventReports.filter((r) => {
-			const first = r.employee_id?.first_name || '';
-			const middle = r.employee_id?.middle_name || '';
-			const last = r.employee_id?.last_name || '';
-			const second = r.employee_id?.second_last_name || '';
-			const fullName = [first, middle, last, second]
-				.filter(Boolean)
-				.join(' ')
-				.trim();
-			return fullName.toLowerCase().includes(searchNombre.toLowerCase());
-		});
-	}, [eventReports, searchNombre]);
-
-	const paginatedPausas = eventReportsFiltrados.slice(
-		pagePausas * rowsPerPagePausas,
-		pagePausas * rowsPerPagePausas + rowsPerPagePausas,
-	);
-	const totalPagesPausas = Math.max(
-		1,
-		Math.ceil(eventReportsFiltrados.length / rowsPerPagePausas),
-	);
-
-	const semanasDelMes = useMemo(() => {
-		return getSemanasDelMes(
-			selectedYear,
-			selectedMonth,
-			diaInicioSemana,
-			diaFinSemana,
-		);
-	}, [selectedYear, selectedMonth, diaInicioSemana, diaFinSemana]);
-
-	const startRange = semanasDelMes[0]?.start;
-	const endRange = semanasDelMes[semanasDelMes.length - 1]?.end;
-
-	const allStoreIds = useMemo(
-		() => tiendasAMostrar.map((t) => Number(t.id)),
-		[tiendasAMostrar],
-	);
-
-	const targetStores = useMemo(() => {
-		if (storeSel !== null) return [storeSel];
-		return allStoreIds;
-	}, [storeSel, allStoreIds]);
-
-	const { data: recordsMensuales = [], isLoading: cargandoRecords } = useQuery({
-		queryKey: ['recordsMensuales', targetStores, startRange, endRange],
-		queryFn: () => {
-			if (targetStores.length === 0 || !startRange || !endRange)
-				return Promise.resolve([]);
-			return getTimeRecordsBulkRange(targetStores, startRange, endRange);
-		},
-		enabled:
-			visualizarTab === 'semanal' &&
-			reporteSemanalModo === 'tienda' &&
-			targetStores.length > 0 &&
-			!!startRange &&
-			!!endRange,
-		staleTime: 5 * 60 * 1000,
+	// --- Tab-Specific Extracted Hooks ---
+	const pausasData = useReportePausas({
+		queryStoreId,
+		rangoInicio,
+		rangoFin,
+		searchNombre,
+		enabled: visualizarTab === 'pausas',
 	});
 
-	const { data: empleadosStore = [], isLoading: cargandoEmpleados } = useQuery({
-		queryKey: ['empleadosStore', targetStores],
-		queryFn: () => {
-			if (targetStores.length === 0) return Promise.resolve([]);
-			return getEmpleadosBulk(targetStores);
-		},
-		enabled:
-			visualizarTab === 'semanal' &&
-			reporteSemanalModo === 'tienda' &&
-			targetStores.length > 0,
-		staleTime: 5 * 60 * 1000,
+	const semanalData = useReporteSemanal({
+		storeSel,
+		tiendasAMostrar,
+		tiendasPermitidas,
+		searchNombre,
+		enabled: visualizarTab === 'semanal',
 	});
 
-	const { data: todosEmpleados = [], isLoading: cargandoTodosEmpleados } =
-		useQuery({
-			queryKey: [
-				'todosEmpleadosAutocomplete',
-				tiendasPermitidas ? allStoreIds : [],
-			],
-			queryFn: () => getEmpleadosBulk(tiendasPermitidas ? allStoreIds : []),
-			enabled: visualizarTab === 'semanal',
-			staleTime: 30 * 60 * 1000,
-		});
-
-	const {
-		data: recordsMensualesGlobal = [],
-		isLoading: cargandoRecordsGlobal,
-	} = useQuery({
-		queryKey: ['recordsMensualesGlobal', allStoreIds, startRange, endRange],
-		queryFn: () => {
-			if (allStoreIds.length === 0 || !startRange || !endRange)
-				return Promise.resolve([]);
-			return getTimeRecordsBulkRange(allStoreIds, startRange, endRange);
-		},
-		enabled:
-			visualizarTab === 'semanal' &&
-			reporteSemanalModo === 'empleado' &&
-			allStoreIds.length > 0 &&
-			!!startRange &&
-			!!endRange,
-		staleTime: 5 * 60 * 1000,
+	const tiendasData = useReporteTiendasData({
+		targetStores,
+		rangoInicio,
+		rangoFin,
+		tiendasAMostrar,
+		enabled: visualizarTab === 'tiendas',
 	});
-
-	const recordsSelectedEmp = useMemo(() => {
-		if (!selectedEmpleadoId) return [];
-		return recordsMensualesGlobal.filter(
-			(r) =>
-				Number(r.employee_id?.id || r.employee_id) ===
-				Number(selectedEmpleadoId),
-		);
-	}, [recordsMensualesGlobal, selectedEmpleadoId]);
-
-	const storesTrabajadas = useMemo(() => {
-		if (recordsSelectedEmp.length === 0) return [];
-		const storesMap = new Map<number, string>(
-			tiendasAMostrar.map((t) => [Number(t.id), t.name]),
-		);
-		const uniqueIds = Array.from(
-			new Set(recordsSelectedEmp.map((r) => Number(r.store_id))),
-		);
-		return uniqueIds.map((id) => ({
-			id,
-			name: storesMap.get(id) || `Tienda #${id}`,
-		}));
-	}, [recordsSelectedEmp, tiendasAMostrar]);
-
-	const fechaInicioStr = rangoInicio
-		? rangoInicio.format('YYYY-MM-DD')
-		: undefined;
-	const fechaFinStr = rangoFin ? rangoFin.format('YYYY-MM-DD') : undefined;
-
-	const { data: dbRecordsTienda = [], isLoading: cargandoRecordsTiendas } =
-		useQuery({
-			queryKey: [
-				'timeRecordStoreDirectus',
-				targetStores,
-				fechaInicioStr,
-				fechaFinStr,
-			],
-			queryFn: () => {
-				if (targetStores.length === 0) return Promise.resolve([]);
-				return fetchTimeRecordStore(fechaInicioStr, fechaFinStr, targetStores);
-			},
-			enabled: visualizarTab === 'tiendas' && targetStores.length > 0,
-			staleTime: 5 * 60 * 1000,
-		});
-
-	const registrosTiendaCalculados = useMemo(() => {
-		if (visualizarTab !== 'tiendas') return [];
-		const storesMap = new Map<number, string>(
-			tiendasAMostrar.map((t) => [Number(t.id), t.name]),
-		);
-		return dbRecordsTienda.map((r) =>
-			mapearTimeRecordStoreDtoARegistroTienda(r, storesMap),
-		);
-	}, [visualizarTab, dbRecordsTienda, tiendasAMostrar]);
-
-	const empleadosFiltradosSemanales = useMemo(() => {
-		return empleadosStore.filter((emp: any) => {
-			const fullName = emp.nombre || '';
-			return fullName.toLowerCase().includes(searchNombre.toLowerCase());
-		});
-	}, [empleadosStore, searchNombre]);
-
-	const paginatedEmpleadosSemanal = useMemo(() => {
-		const start = pageSemanal * ROWS_PER_PAGE_SEMANAL;
-		return empleadosFiltradosSemanales.slice(
-			start,
-			start + ROWS_PER_PAGE_SEMANAL,
-		);
-	}, [empleadosFiltradosSemanales, pageSemanal]);
-
-	const totalPagesSemanal = Math.max(
-		1,
-		Math.ceil(empleadosFiltradosSemanales.length / ROWS_PER_PAGE_SEMANAL),
-	);
-
-	const { data: primerPeriodo = { year: dayjs().year(), month: 0 } } = useQuery(
-		{
-			queryKey: ['primerPeriodoRegistro'],
-			queryFn: getPrimerPeriodoRegistro,
-			staleTime: Infinity,
-		},
-	);
-
-	const listadoAnios = useMemo(() => {
-		const currentYear = dayjs().year();
-		const years = [];
-		const startY = primerPeriodo.year;
-		for (let y = startY; y <= currentYear; y++) {
-			years.push(y);
-		}
-		if (years.length === 0) {
-			years.push(currentYear);
-		}
-		return years;
-	}, [primerPeriodo.year]);
-
-	const listadoMeses = useMemo(() => {
-		const startM =
-			selectedYear === primerPeriodo.year ? primerPeriodo.month : 0;
-		const endM = selectedYear === dayjs().year() ? dayjs().month() : 11;
-		const months = [];
-		for (let m = startM; m <= endM; m++) {
-			months.push({ value: m, label: NOMBRES_MESES[m] });
-		}
-		return months;
-	}, [selectedYear, primerPeriodo]);
-
-	useEffect(() => {
-		const minM = selectedYear === primerPeriodo.year ? primerPeriodo.month : 0;
-		const maxM = selectedYear === dayjs().year() ? dayjs().month() : 11;
-		if (selectedMonth < minM) {
-			setSelectedMonth(minM);
-		} else if (selectedMonth > maxM) {
-			setSelectedMonth(maxM);
-		}
-	}, [selectedYear, primerPeriodo, selectedMonth]);
-
-	useEffect(() => {
-		setPageSemanal(0);
-	}, [storeSel, selectedMonth, selectedYear, searchNombre]);
 
 	return (
 		<Box
 			sx={{
+				p: { xs: 1.5, sm: 3 },
 				display: 'flex',
 				flexDirection: 'column',
 				gap: 3,
-				position: 'relative',
 			}}
 		>
 			{showFakeExport && <FakeExportModal />}
 			<Paper
 				elevation={0}
 				sx={{
-					p: 3,
+					p: { xs: 2, sm: 3 },
 					borderRadius: 4,
-					border: '1px solid #f0e2e2ff',
+					border: '1px solid #e2e8f0',
 					boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
 					bgcolor: '#fff',
 				}}
@@ -474,23 +241,26 @@ export default function ReportePage({
 					sx={{
 						display: 'flex',
 						justifyContent: 'space-between',
-						alignItems: 'center',
-						flexWrap: 'wrap',
-						gap: 3,
+						alignItems: { xs: 'stretch', md: 'center' },
+						flexDirection: { xs: 'column', md: 'row' },
+						gap: 2.5,
 					}}
 				>
+					{/* Left Filters */}
 					<Box
 						sx={{
 							display: 'flex',
 							alignItems: 'center',
 							gap: 2,
 							flex: 1,
-							minWidth: 300,
 							flexWrap: 'wrap',
 						}}
 					>
 						{!tiendasPermitidas && (
-							<Box data-tour="reporte-tour-tienda">
+							<Box
+								data-tour="reporte-tour-tienda"
+								sx={{ width: { xs: '100%', sm: 220 } }}
+							>
 								<Autocomplete
 									size="small"
 									options={opcionesTienda}
@@ -525,7 +295,6 @@ export default function ReportePage({
 											}}
 										/>
 									)}
-									sx={{ width: { xs: '100%', sm: 220 } }}
 								/>
 							</Box>
 						)}
@@ -557,6 +326,19 @@ export default function ReportePage({
 											<PersonSearchIcon sx={{ color: '#004680' }} />
 										</InputAdornment>
 									),
+									endAdornment: searchNombre ? (
+										<InputAdornment position="end">
+											<IconButton
+												size="small"
+												onClick={() => setSearchNombre('')}
+												edge="end"
+												sx={{ color: '#94a3b8', p: 0.5 }}
+												title="Limpiar búsqueda"
+											>
+												<CloseIcon sx={{ fontSize: 16 }} />
+											</IconButton>
+										</InputAdornment>
+									) : null,
 								},
 							}}
 							sx={{
@@ -570,10 +352,14 @@ export default function ReportePage({
 						/>
 					</Box>
 
+					{/* Right Actions */}
 					<Stack
-						direction={{ xs: 'column', sm: 'row' }}
+						direction={{ xs: 'row', sm: 'row' }}
 						spacing={1.5}
-						sx={{ width: { xs: '100%', sm: 'auto' } }}
+						sx={{
+							width: { xs: '100%', sm: 'auto' },
+							justifyContent: { xs: 'stretch', sm: 'flex-end' },
+						}}
 					>
 						<Button
 							onClick={() => {
@@ -584,13 +370,14 @@ export default function ReportePage({
 							variant="contained"
 							startIcon={<HelpOutlineIcon sx={{ fontSize: 18 }} />}
 							sx={{
+								flex: { xs: 1, sm: 'none' },
 								backgroundColor: runTour ? '#9CA3AF' : '#004680',
 								color: '#ffffff',
-								borderRadius: 1.5,
+								borderRadius: 2,
 								textTransform: 'none',
-								fontWeight: 'bold',
+								fontWeight: 700,
 								px: 2,
-								py: 0.75,
+								height: 40,
 								boxShadow: 'none',
 								opacity: runTour ? 0.6 : 0.9,
 								transition: 'all 0.2s ease-in-out',
@@ -604,6 +391,7 @@ export default function ReportePage({
 						>
 							{runTour ? 'Tutorial...' : 'Tutorial'}
 						</Button>
+
 						<Button
 							data-tour="reporte-tour-export-unificado"
 							variant="contained"
@@ -611,11 +399,12 @@ export default function ReportePage({
 							startIcon={<FileDownloadIcon />}
 							onClick={() => setExportUnificadoOpen(true)}
 							sx={{
+								flex: { xs: 1, sm: 'none' },
 								bgcolor: '#004680',
 								color: '#fff',
 								borderRadius: 2,
 								textTransform: 'none',
-								fontWeight: 'bold',
+								fontWeight: 700,
 								height: 40,
 								px: 2.5,
 								'&:hover': { bgcolor: '#003366' },
@@ -631,118 +420,103 @@ export default function ReportePage({
 				elevation={0}
 				sx={{
 					borderRadius: 4,
-					border: '1px solid #f0e2e2ff',
+					border: '1px solid #e2e8f0',
 					boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
 					bgcolor: '#fff',
 					overflow: 'hidden',
 				}}
 			>
+				{/* Modern Scrollable Tab Bar with Icons & Touch Navigation */}
 				<Box
 					sx={{
-						display: 'flex',
 						borderBottom: '1px solid #eef2f6',
-						px: 2,
 						bgcolor: '#f8fafc',
-						gap: 2,
+						px: { xs: 1, sm: 2 },
 					}}
 				>
-					<Button
-						data-tour="reporte-tour-tab-registros"
-						onClick={() => setVisualizarTab('registros')}
+					<Tabs
+						value={visualizarTab}
+						onChange={(_, val) => setVisualizarTab(val)}
+						variant="scrollable"
+						scrollButtons="auto"
+						allowScrollButtonsMobile
+						textColor="primary"
+						indicatorColor="primary"
 						sx={{
-							color: visualizarTab === 'registros' ? '#004680' : '#64748b',
-							borderBottom:
-								visualizarTab === 'registros'
-									? '3px solid #004680'
-									: '3px solid transparent',
-							borderRadius: 0,
-							py: 1.5,
-							fontWeight: 700,
-							textTransform: 'none',
-							fontSize: '0.85rem',
-							'&:hover': { bgcolor: 'transparent', color: '#004680' },
+							minHeight: { xs: 46, sm: 50 },
+							'& .MuiTabs-scrollButtons': {
+								color: '#004680',
+								width: { xs: 36, sm: 40 },
+								'&.Mui-disabled': { opacity: 0.25 },
+							},
+							'& .MuiTabs-flexContainer': {
+								gap: { xs: 0.5, sm: 1 },
+							},
+							'& .MuiTab-root': {
+								fontWeight: 700,
+								textTransform: 'none',
+								minHeight: { xs: 46, sm: 50 },
+								minWidth: 'auto',
+								px: { xs: 1.5, sm: 2 },
+								py: { xs: 0.75, sm: 1.25 },
+								fontSize: { xs: '0.82rem', sm: '0.875rem' },
+								whiteSpace: 'nowrap',
+								transition: 'all 0.2s ease',
+								borderRadius: '8px 8px 0 0',
+								'&:hover': {
+									bgcolor: 'rgba(0, 70, 128, 0.04)',
+								},
+								'&.Mui-selected': {
+									color: '#004680',
+								},
+								'& .MuiTab-iconWrapper': {
+									mb: '0 !important',
+									mr: { xs: 0.75, sm: 1 },
+								},
+							},
 						}}
 					>
-						Visualizar Registros
-					</Button>
-					<Button
-						data-tour="reporte-tour-tab-novedades"
-						onClick={() => setVisualizarTab('novedades')}
-						sx={{
-							color: visualizarTab === 'novedades' ? '#004680' : '#64748b',
-							borderBottom:
-								visualizarTab === 'novedades'
-									? '3px solid #004680'
-									: '3px solid transparent',
-							borderRadius: 0,
-							py: 1.5,
-							fontWeight: 700,
-							textTransform: 'none',
-							fontSize: '0.85rem',
-							'&:hover': { bgcolor: 'transparent', color: '#004680' },
-						}}
-					>
-						Visualizar Novedades
-					</Button>
-					<Button
-						data-tour="reporte-tour-tab-pausas"
-						onClick={() => setVisualizarTab('pausas')}
-						sx={{
-							color: visualizarTab === 'pausas' ? '#004680' : '#64748b',
-							borderBottom:
-								visualizarTab === 'pausas'
-									? '3px solid #004680'
-									: '3px solid transparent',
-							borderRadius: 0,
-							py: 1.5,
-							fontWeight: 700,
-							textTransform: 'none',
-							fontSize: '0.85rem',
-							'&:hover': { bgcolor: 'transparent', color: '#004680' },
-						}}
-					>
-						Visualizar Pausas Activas
-					</Button>
-					<Button
-						data-tour="reporte-tour-tab-semanal"
-						onClick={() => setVisualizarTab('semanal')}
-						sx={{
-							color: visualizarTab === 'semanal' ? '#004680' : '#64748b',
-							borderBottom:
-								visualizarTab === 'semanal'
-									? '3px solid #004680'
-									: '3px solid transparent',
-							borderRadius: 0,
-							py: 1.5,
-							fontWeight: 700,
-							textTransform: 'none',
-							fontSize: '0.85rem',
-							'&:hover': { bgcolor: 'transparent', color: '#004680' },
-						}}
-					>
-						Reporte Horas Semanal
-					</Button>
-					<Button
-						data-tour="reporte-tour-tab-tiendas"
-						onClick={() => setVisualizarTab('tiendas')}
-						sx={{
-							color: visualizarTab === 'tiendas' ? '#004680' : '#64748b',
-							borderBottom:
-								visualizarTab === 'tiendas'
-									? '3px solid #004680'
-									: '3px solid transparent',
-							borderRadius: 0,
-							py: 1.5,
-							fontWeight: 700,
-							textTransform: 'none',
-							fontSize: '0.85rem',
-							'&:hover': { bgcolor: 'transparent', color: '#004680' },
-						}}
-					>
-						Registro de Tienda
-					</Button>
+						<Tab
+							value="registros"
+							data-tour="reporte-tour-tab-registros"
+							icon={<HistoryIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />}
+							iconPosition="start"
+							label="Visualizar Registros"
+						/>
+						<Tab
+							value="novedades"
+							data-tour="reporte-tour-tab-novedades"
+							icon={<EventNoteIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />}
+							iconPosition="start"
+							label="Visualizar Novedades"
+						/>
+						<Tab
+							value="pausas"
+							data-tour="reporte-tour-tab-pausas"
+							icon={
+								<PauseCircleOutlineIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />
+							}
+							iconPosition="start"
+							label="Visualizar Pausas Activas"
+						/>
+						<Tab
+							value="semanal"
+							data-tour="reporte-tour-tab-semanal"
+							icon={<DateRangeIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />}
+							iconPosition="start"
+							label="Reporte Horas Semanal"
+						/>
+						<Tab
+							value="tiendas"
+							data-tour="reporte-tour-tab-tiendas"
+							icon={<StorefrontIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />}
+							iconPosition="start"
+							label="Registro de Tienda"
+						/>
+					</Tabs>
 				</Box>
 
+				{/* Tab Panels */}
 				{visualizarTab === 'registros' ? (
 					<HistorialPage
 						storeIdAdmin={queryStoreId}
@@ -762,63 +536,24 @@ export default function ReportePage({
 						/>
 					</Box>
 				) : visualizarTab === 'semanal' ? (
-					<ReporteSemanalTab
-						reporteSemanalModo={reporteSemanalModo}
-						setReporteSemanalModo={setReporteSemanalModo}
-						storeSel={storeSel}
-						selectedMonth={selectedMonth}
-						setSelectedMonth={setSelectedMonth}
-						selectedYear={selectedYear}
-						setSelectedYear={setSelectedYear}
-						listadoMeses={listadoMeses}
-						listadoAnios={listadoAnios}
-						cargandoRecords={cargandoRecords}
-						cargandoEmpleados={cargandoEmpleados}
-						semanasDelMes={semanasDelMes}
-						paginatedEmpleadosSemanal={paginatedEmpleadosSemanal}
-						empleadosFiltradosSemanales={empleadosFiltradosSemanales}
-						recordsMensuales={recordsMensuales}
-						pageSemanal={pageSemanal}
-						setPageSemanal={setPageSemanal}
-						totalPagesSemanal={totalPagesSemanal}
-						todosEmpleados={todosEmpleados}
-						selectedEmpleadoId={selectedEmpleadoId}
-						setSelectedEmpleadoId={setSelectedEmpleadoId}
-						recordsSelectedEmp={recordsSelectedEmp}
-						cargandoTodosEmpleados={cargandoTodosEmpleados}
-						cargandoRecordsGlobal={cargandoRecordsGlobal}
-						storesTrabajadas={storesTrabajadas}
-						todasNovedades={storeNovedades}
-						diaInicioSemana={diaInicioSemana}
-						setDiaInicioSemana={setDiaInicioSemana}
-						diaFinSemana={diaFinSemana}
-						setDiaFinSemana={setDiaFinSemana}
-						tiendas={tiendasAMostrar}
-					/>
+					<ReporteSemanalTab {...semanalData} todasNovedades={storeNovedades} />
 				) : visualizarTab === 'tiendas' ? (
 					<ReporteTiendasTab
-						registrosTienda={registrosTiendaCalculados}
-						loading={cargandoRecordsTiendas}
+						registrosTienda={tiendasData.registrosTiendaCalculados}
+						loading={tiendasData.cargandoRecordsTiendas}
 						searchNombre={searchNombre}
 						onExportExcel={() =>
 							exportarRegistroTiendaExcel({
-								registros: registrosTiendaCalculados,
+								registros: tiendasData.registrosTiendaCalculados,
 							})
 						}
 					/>
 				) : (
-					<ReportePausasTab
-						paginatedPausas={paginatedPausas}
-						eventReportsFiltrados={eventReportsFiltrados}
-						pagePausas={pagePausas}
-						setPagePausas={setPagePausas}
-						totalPagesPausas={totalPagesPausas}
-						rowsPerPagePausas={rowsPerPagePausas}
-						setRowsPerPagePausas={setRowsPerPagePausas}
-					/>
+					<ReportePausasTab {...pausasData} />
 				)}
 			</Paper>
 
+			{/* Unified Export Dialog */}
 			<ExportUnificadoDialog
 				open={exportUnificadoOpen}
 				onClose={() => setExportUnificadoOpen(false)}
@@ -828,43 +563,11 @@ export default function ReportePage({
 				rangoFinDefault={rangoFin}
 				searchNombre={searchNombre}
 				tiendasPermitidas={tiendasAMostrar}
-				diaInicioSemana={diaInicioSemana}
-				diaFinSemana={diaFinSemana}
+				diaInicioSemana={semanalData.diaInicioSemana}
+				diaFinSemana={semanalData.diaFinSemana}
 			/>
 
-			<ExportHistorialDialog
-				open={exportHistorialOpen}
-				onClose={() => setExportHistorialOpen(false)}
-				tiendaDefault={storeSel}
-				fechaInicio={rangoInicio ? rangoInicio.format('YYYY-MM-DD') : undefined}
-				fechaFin={rangoFin ? rangoFin.format('YYYY-MM-DD') : undefined}
-				searchNombre={searchNombre}
-			/>
-			<ExportNovedadesDialog
-				open={exportNovedadesOpen}
-				onClose={() => setExportNovedadesOpen(false)}
-				tiendaDefault={storeSel}
-				fechaInicio={rangoInicio ? rangoInicio.format('YYYY-MM-DD') : undefined}
-				fechaFin={rangoFin ? rangoFin.format('YYYY-MM-DD') : undefined}
-				searchNombre={searchNombre}
-			/>
-			<ExportEventosDialog
-				open={exportEventosOpen}
-				onClose={() => setExportEventosOpen(false)}
-				storeId={storeSel}
-				fechaInicio={rangoInicio ? rangoInicio.format('YYYY-MM-DD') : undefined}
-				fechaFin={rangoFin ? rangoFin.format('YYYY-MM-DD') : undefined}
-			/>
-			<ExportSemanalDialog
-				open={exportSemanalOpen}
-				onClose={() => setExportSemanalOpen(false)}
-				fechaInicioDefault={rangoInicio}
-				fechaFinDefault={rangoFin}
-				tiendasPermitidas={tiendasPermitidas}
-				diaInicioSemana={diaInicioSemana}
-				diaFinSemana={diaFinSemana}
-			/>
-
+			{/* Guided Tutorial (Joyride) */}
 			<Joyride
 				steps={tourSteps}
 				run={runTour}
