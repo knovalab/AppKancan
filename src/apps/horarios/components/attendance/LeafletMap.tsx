@@ -37,11 +37,13 @@ export function LeafletMap({
 			center: [lat, lon],
 			zoom,
 			zoomControl: true,
-			attributionControl: false,
+			attributionControl: true,
 		});
 
 		L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			maxZoom: 12,
+			maxZoom: 14,
+			attribution:
+				'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
 		}).addTo(map);
 
 		// Icono personalizado SVG libre de dependencias de rutas de assets
@@ -121,6 +123,9 @@ export function LeafletMap({
 				height: typeof height === 'number' ? `${height}px` : height,
 				borderRadius: '12px',
 				overflow: 'hidden',
+				position: 'relative',
+				isolation: 'isolate',
+				zIndex: 0,
 			}}
 			className="border border-slate-200 shadow-inner"
 		/>

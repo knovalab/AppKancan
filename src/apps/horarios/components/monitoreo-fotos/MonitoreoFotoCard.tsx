@@ -81,6 +81,7 @@ export function MonitoreoFotoCard({ record }: MonitoreoFotoCardProps) {
 							src={photoUrl}
 							alt={`Foto ${record.log_type} - ${nombreCompleto}`}
 							loading="lazy"
+							decoding="async"
 							sx={{
 								width: '100%',
 								height: '100%',

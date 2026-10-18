@@ -11,6 +11,7 @@ import {
 	Close as CloseIcon,
 	EditCalendar as EditCalendarIcon,
 	EditNote as EditNoteIcon,
+	LocationOn as LocationOnIcon,
 	Message as MessageIcon,
 	Pending as PendingIcon,
 	Person as PersonIcon,
@@ -82,6 +83,7 @@ import {
 	TarjetaResumen,
 } from './monitoreo/MonitoreoComponents';
 import MonitoreoFotosTab from './monitoreo/MonitoreoFotosTab';
+import MonitoreoLocalizacionTab from './monitoreo/MonitoreoLocalizacionTab';
 import MonitoreoOperacionTab from './monitoreo/MonitoreoOperacionTab';
 import {
 	COLUMNAS_EDICIONES,
@@ -623,6 +625,11 @@ export default function MonitoreoGeneralPage({ storeId }: MonitoreoPageProps) {
 							label="Fotos de Marcaciones"
 						/>
 						<Tab
+							icon={<LocationOnIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />}
+							iconPosition="start"
+							label="Geolocalización de Marcaciones"
+						/>
+						<Tab
 							icon={<EditNoteIcon sx={{ fontSize: { xs: 17, sm: 19 } }} />}
 							iconPosition="start"
 							label="Auditoría de Ediciones Manuales"
@@ -998,7 +1005,9 @@ export default function MonitoreoGeneralPage({ storeId }: MonitoreoPageProps) {
 
 				{subTab === 2 && <MonitoreoFotosTab tiendas={tiendas} />}
 
-				{subTab === 3 && (
+				{subTab === 3 && <MonitoreoLocalizacionTab tiendas={tiendas} />}
+
+				{subTab === 4 && (
 					<>
 						<Grid container spacing={2} sx={{ mb: 2 }}>
 							{TARJETAS_ESTADISTICAS.map((k, idx) => {
@@ -1560,7 +1569,7 @@ export default function MonitoreoGeneralPage({ storeId }: MonitoreoPageProps) {
 					</>
 				)}
 
-				{isAreaMgr && subTab === 4 && (
+				{isAreaMgr && subTab === 5 && (
 					<Paper
 						elevation={0}
 						sx={{
@@ -1580,7 +1589,7 @@ export default function MonitoreoGeneralPage({ storeId }: MonitoreoPageProps) {
 					</Paper>
 				)}
 
-				{isAreaMgr && subTab === 5 && <DetallePlanillaPage storeId={storeId} />}
+				{isAreaMgr && subTab === 6 && <DetallePlanillaPage storeId={storeId} />}
 
 				{tiendaSeleccionada && (
 					<ModalDetalleTienda

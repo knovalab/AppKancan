@@ -10,6 +10,7 @@ import {
 	Divider,
 	Typography,
 } from '@mui/material';
+import { useState } from 'react';
 import type { FotoStoreGroup } from '../../hooks/useMonitoreoFotos';
 import { MonitoreoFotosSeccion } from './MonitoreoFotosSeccion';
 
@@ -22,9 +23,13 @@ export function MonitoreoFotosTiendaAccordion({
 	storeGroup,
 	defaultExpanded = false,
 }: MonitoreoFotosTiendaAccordionProps) {
+	const [expanded, setExpanded] = useState(defaultExpanded);
+
 	return (
 		<Accordion
-			defaultExpanded={defaultExpanded}
+			expanded={expanded}
+			onChange={(_event, isExpanded) => setExpanded(isExpanded)}
+			slotProps={{ transition: { unmountOnExit: true } }}
 			disableGutters
 			elevation={0}
 			sx={{
@@ -145,131 +150,132 @@ export function MonitoreoFotosTiendaAccordion({
 					gap: { xs: 2, sm: 3 },
 				}}
 			>
-				{storeGroup.dates.map((dateGroup, dateIdx) => (
-					<Box
-						key={dateGroup.date}
-						sx={{
-							display: 'flex',
-							flexDirection: 'column',
-							gap: 2,
-						}}
-					>
-						{/* Row for Date - ensures no mixing of dates */}
+				{expanded &&
+					storeGroup.dates.map((dateGroup, dateIdx) => (
 						<Box
-							sx={{
-								display: 'flex',
-								alignItems: { xs: 'flex-start', sm: 'center' },
-								justifyContent: 'space-between',
-								flexDirection: { xs: 'column', sm: 'row' },
-								gap: { xs: 1, sm: 1.5 },
-								p: { xs: 1.25, sm: 1.5 },
-								px: { xs: 1.5, sm: 2 },
-								bgcolor: '#f1f5f9',
-								borderRadius: 2.5,
-								border: '1px solid #e2e8f0',
-							}}
-						>
-							<Box
-								sx={{
-									display: 'flex',
-									alignItems: 'center',
-									gap: 1,
-									flexWrap: 'wrap',
-									minWidth: 0,
-								}}
-							>
-								<CalendarTodayIcon
-									sx={{
-										fontSize: { xs: 16, sm: 18 },
-										color: '#004680',
-										flexShrink: 0,
-									}}
-								/>
-								<Typography
-									variant="subtitle2"
-									sx={{
-										fontWeight: 700,
-										color: '#1e293b',
-										fontSize: { xs: '0.88rem', sm: '0.95rem' },
-									}}
-								>
-									{dateGroup.dateLabel}
-								</Typography>
-								<Typography
-									variant="caption"
-									sx={{
-										color: '#64748b',
-										bgcolor: '#e2e8f0',
-										px: 0.75,
-										py: 0.2,
-										borderRadius: 1.5,
-										fontWeight: 600,
-										fontSize: '0.72rem',
-									}}
-								>
-									{dateGroup.dateFormatted}
-								</Typography>
-							</Box>
-
-							<Chip
-								label={
-									<Box component="span">
-										<Box
-											component="span"
-											sx={{ display: { xs: 'none', sm: 'inline' } }}
-										>
-											{dateGroup.totalPhotos}{' '}
-											{dateGroup.totalPhotos === 1
-												? 'foto en este día'
-												: 'fotos en este día'}
-										</Box>
-										<Box
-											component="span"
-											sx={{ display: { xs: 'inline', sm: 'none' } }}
-										>
-											{dateGroup.totalPhotos}{' '}
-											{dateGroup.totalPhotos === 1 ? 'foto' : 'fotos'}
-										</Box>
-									</Box>
-								}
-								size="small"
-								variant="outlined"
-								sx={{
-									borderColor: '#cbd5e1',
-									color: '#334155',
-									fontWeight: 600,
-									bgcolor: '#ffffff',
-									fontSize: '0.75rem',
-									height: 24,
-									alignSelf: { xs: 'flex-start', sm: 'center' },
-								}}
-							/>
-						</Box>
-
-						{/* Sections for each log_type for this date (no title if empty) */}
-						<Box
+							key={dateGroup.date}
 							sx={{
 								display: 'flex',
 								flexDirection: 'column',
-								gap: 2.5,
-								pl: { xs: 0, sm: 1 },
+								gap: 2,
 							}}
 						>
-							{dateGroup.sections.map((section) => (
-								<MonitoreoFotosSeccion
-									key={`${dateGroup.date}-${section.logType}`}
-									logType={section.logType}
-									records={section.records}
-								/>
-							))}
-						</Box>
+							{/* Row for Date - ensures no mixing of dates */}
+							<Box
+								sx={{
+									display: 'flex',
+									alignItems: { xs: 'flex-start', sm: 'center' },
+									justifyContent: 'space-between',
+									flexDirection: { xs: 'column', sm: 'row' },
+									gap: { xs: 1, sm: 1.5 },
+									p: { xs: 1.25, sm: 1.5 },
+									px: { xs: 1.5, sm: 2 },
+									bgcolor: '#f1f5f9',
+									borderRadius: 2.5,
+									border: '1px solid #e2e8f0',
+								}}
+							>
+								<Box
+									sx={{
+										display: 'flex',
+										alignItems: 'center',
+										gap: 1,
+										flexWrap: 'wrap',
+										minWidth: 0,
+									}}
+								>
+									<CalendarTodayIcon
+										sx={{
+											fontSize: { xs: 16, sm: 18 },
+											color: '#004680',
+											flexShrink: 0,
+										}}
+									/>
+									<Typography
+										variant="subtitle2"
+										sx={{
+											fontWeight: 700,
+											color: '#1e293b',
+											fontSize: { xs: '0.88rem', sm: '0.95rem' },
+										}}
+									>
+										{dateGroup.dateLabel}
+									</Typography>
+									<Typography
+										variant="caption"
+										sx={{
+											color: '#64748b',
+											bgcolor: '#e2e8f0',
+											px: 0.75,
+											py: 0.2,
+											borderRadius: 1.5,
+											fontWeight: 600,
+											fontSize: '0.72rem',
+										}}
+									>
+										{dateGroup.dateFormatted}
+									</Typography>
+								</Box>
 
-						{/* Separator between dates if not last */}
-						{dateIdx < storeGroup.dates.length - 1 && (
-							<Divider sx={{ my: 1, borderColor: '#e2e8f0' }} />
-						)}
-					</Box>
-				))}
+								<Chip
+									label={
+										<Box component="span">
+											<Box
+												component="span"
+												sx={{ display: { xs: 'none', sm: 'inline' } }}
+											>
+												{dateGroup.totalPhotos}{' '}
+												{dateGroup.totalPhotos === 1
+													? 'foto en este día'
+													: 'fotos en este día'}
+											</Box>
+											<Box
+												component="span"
+												sx={{ display: { xs: 'inline', sm: 'none' } }}
+											>
+												{dateGroup.totalPhotos}{' '}
+												{dateGroup.totalPhotos === 1 ? 'foto' : 'fotos'}
+											</Box>
+										</Box>
+									}
+									size="small"
+									variant="outlined"
+									sx={{
+										borderColor: '#cbd5e1',
+										color: '#334155',
+										fontWeight: 600,
+										bgcolor: '#ffffff',
+										fontSize: '0.75rem',
+										height: 24,
+										alignSelf: { xs: 'flex-start', sm: 'center' },
+									}}
+								/>
+							</Box>
+
+							{/* Sections for each log_type for this date (no title if empty) */}
+							<Box
+								sx={{
+									display: 'flex',
+									flexDirection: 'column',
+									gap: 2.5,
+									pl: { xs: 0, sm: 1 },
+								}}
+							>
+								{dateGroup.sections.map((section) => (
+									<MonitoreoFotosSeccion
+										key={`${dateGroup.date}-${section.logType}`}
+										logType={section.logType}
+										records={section.records}
+									/>
+								))}
+							</Box>
+
+							{/* Separator between dates if not last */}
+							{dateIdx < storeGroup.dates.length - 1 && (
+								<Divider sx={{ my: 1, borderColor: '#e2e8f0' }} />
+							)}
+						</Box>
+					))}
 			</AccordionDetails>
 		</Accordion>
 	);
