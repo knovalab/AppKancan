@@ -24,7 +24,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import { useEffect, useState } from 'react';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../../hooks/useAvisos';
 import {
 	fetchNewnessReportsExport,
 	getEmpleadosBulk,
@@ -57,7 +57,7 @@ export default function ExportSemanalDialog({
 	diaInicioSemana = 1,
 	diaFinSemana = 0,
 }: ExportSemanalDialogProps) {
-	const { showSnackbar } = useGlobalSnackbar();
+	const { showSnackbar } = useAvisos();
 	const [tiendasSel, setTiendasSel] = useState<Tienda[]>([]);
 	const [todas, setTodas] = useState(true);
 	const [rangoInicio, setRangoInicio] = useState<Dayjs | null>(

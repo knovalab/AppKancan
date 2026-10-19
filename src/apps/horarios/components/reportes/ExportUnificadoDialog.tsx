@@ -33,7 +33,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/auth/hooks/useAuth';
 import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../../hooks/useAvisos';
 import {
 	fetchEventReportsExport,
 	fetchNewnessReportsExport,
@@ -99,7 +99,7 @@ export default function ExportUnificadoDialog({
 	diaInicioSemana = 1,
 	diaFinSemana = 0,
 }: ExportUnificadoDialogProps) {
-	const { showSnackbar } = useGlobalSnackbar();
+	const { showSnackbar } = useAvisos();
 	const {
 		esAdmin: originalEsAdmin,
 		esReport,

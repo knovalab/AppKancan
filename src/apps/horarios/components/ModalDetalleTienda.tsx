@@ -14,7 +14,7 @@ import { getNovedades, fetchTimeRecords, getRecordReasonId, getStoreClosedDays }
 import { createTimeRecord, updateTimeRecord, upsertRecordReason, setStoreClosedDayStatus } from '../api/directus/create';
 import { useHorarios } from '../hooks/useHorarios';
 import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../hooks/useAvisos';
 
 import {
 	calcularMinutosDia,
@@ -68,7 +68,7 @@ export default function ModalDetalleTienda({
     const [historialOpen, setHistorialOpen] = useState(false);
     const [empleadoHistorial, setEmpleadoHistorial] = useState<FilaEmpleadoDetalle | null>(null);
 
-    const { showSnackbar } = useGlobalSnackbar();
+    const { showSnackbar } = useAvisos();
     const puedeGestionarDiasCerrados = esAdmin() || esAreaManager();
 
     const [confirmClosedModalOpen, setConfirmClosedModalOpen] = useState(false);

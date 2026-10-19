@@ -9,7 +9,7 @@ import { LOG_TYPE } from '../domain/registro';
 dayjs.locale('es');
 
 import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../hooks/useAvisos';
 import {
 	createTimeRecord,
 	updateTimeRecord,
@@ -63,7 +63,7 @@ export default function DetallePlanillaPage({
 	const { esAdmin, esAreaManager } = useHorariosPolicies();
 	const isAreaMgr = esAreaManager() && !esAdmin();
 	const queryClient = useQueryClient();
-	const { showSnackbar } = useGlobalSnackbar();
+	const { showSnackbar } = useAvisos();
 
 	const [searchTerm, setSearchTerm] = useState('');
 	const [fechaSeleccionada, setFechaSeleccionada] = useState<Dayjs>(dayjs());

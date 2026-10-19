@@ -23,7 +23,7 @@ import { PickersDay, PickersDayProps } from '@mui/x-date-pickers/PickersDay';
 import { ConfirmCierreMasivoDialog } from './cierre-masivo/ConfirmCierreMasivoDialog';
 import { setStoreClosedDayStatus } from '../api/directus/create';
 import { getStoreClosedDays } from '../api/directus/read';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../hooks/useAvisos';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import type { StoreClosedDayDto } from '../interfaces/api/stores';
 import { useHolidays } from '../../reservas/hooks/useHolidays';
@@ -266,7 +266,7 @@ function CalendarioCierreMasivo({
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function ModalCierreMasivo({ open, onClose, tiendas }: ModalCierreMasivoProps) {
-    const { showSnackbar } = useGlobalSnackbar();
+    const { showSnackbar } = useAvisos();
     const queryClient = useQueryClient();
 
     const [busqueda, setBusqueda] = useState('');

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getStores, getCargos, buscarEmpleados, listarEmpleadosTienda } from '../api/directus/read';
 import { crearEmpleado, actualizarEmpleado } from '../api/directus/create';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from './useAvisos';
 import { horariosKeys } from './registro/keys';
 import type { Cargo, EmpleadoAdmin } from '../interfaces/empleados';
 import type { Tienda } from '../interfaces/tiendas';
@@ -12,7 +12,7 @@ export const TIPOS_DOCUMENTO: string[] = ['Cédula de Ciudadanía'];
 
 export const useAdminEmpleados = (tiendaSel: number | null, setTiendaSel: (id: number | null) => void) => {
   const queryClient = useQueryClient();
-  const { showSnackbar } = useGlobalSnackbar();
+  const { showSnackbar } = useAvisos();
 
   const { data: tiendas = [], isLoading: loadingTiendas } = useQuery<Tienda[]>({
     queryKey: ['adminTiendas'],

@@ -1,6 +1,6 @@
 import { act, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../../hooks/useAvisos';
 import * as directusCreate from '../../api/directus/create';
 import * as directusRead from '../../api/directus/read';
 import {
@@ -14,8 +14,8 @@ import {
 import { createMockTiendas } from '../utils/mocks/stores.mock';
 import { renderHookWithQuery } from '../utils/test-utils';
 
-vi.mock('@/shared/components/SnackbarsPosition/SnackbarContext', () => ({
-	useGlobalSnackbar: vi.fn(),
+vi.mock('../../hooks/useAvisos', () => ({
+	useAvisos: vi.fn(),
 }));
 
 vi.mock('../../api/directus/read', () => ({
@@ -31,7 +31,7 @@ vi.mock('../../api/directus/create', () => ({
 }));
 
 describe('useAdminEmpleados', () => {
-	const mockedUseGlobalSnackbar = vi.mocked(useGlobalSnackbar);
+	const mockedUseAvisos = vi.mocked(useAvisos);
 	const mockedGetStores = vi.mocked(directusRead.getStores);
 	const mockedGetCargos = vi.mocked(directusRead.getCargos);
 	const mockedBuscarEmpleados = vi.mocked(directusRead.buscarEmpleados);
@@ -47,7 +47,7 @@ describe('useAdminEmpleados', () => {
 	beforeEach(() => {
 		vi.resetAllMocks();
 
-		mockedUseGlobalSnackbar.mockReturnValue({
+		mockedUseAvisos.mockReturnValue({
 			showSnackbar: mockShowSnackbar,
 		});
 

@@ -13,7 +13,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { getStores, fetchNewnessReportsExport } from '../../api/directus/read';
 import { exportarNovedadesExcel } from '../../utils/exportarNovedades';
 import DateRangeFilter from './DateRangeFilter';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../../hooks/useAvisos';
 import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
 import { useAuth } from '@/auth/hooks/useAuth';
 import type { Tienda } from '../../interfaces/tiendas';
@@ -31,7 +31,7 @@ interface Props {
 }
 
 export default function ExportNovedadesDialog({ open, onClose, fechaInicio, fechaFin, tiendaDefault, searchNombre }: Props) {
-  const { showSnackbar } = useGlobalSnackbar();
+  const { showSnackbar } = useAvisos();
   const { esAdmin: originalEsAdmin, esReport, esAreaManager } = useHorariosPolicies();
   const esAdmin = () => originalEsAdmin() || esReport();
   const isAreaMgr = esAreaManager ? esAreaManager() : false;

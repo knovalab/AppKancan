@@ -1,7 +1,7 @@
 import { act, waitFor } from '@testing-library/react';
 import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../../hooks/useAvisos';
 import * as directusCreate from '../../api/directus/create';
 import * as directusRead from '../../api/directus/read';
 import { ESTADO, EVENTO, LOG_TYPE } from '../../domain/registro';
@@ -11,8 +11,8 @@ import { createMockEmpleadoAsistencia } from '../utils/mocks/employees.mock';
 import { createMockTimeRecord } from '../utils/mocks/records.mock';
 import { renderHookWithQuery } from '../utils/test-utils';
 
-vi.mock('@/shared/components/SnackbarsPosition/SnackbarContext', () => ({
-	useGlobalSnackbar: vi.fn(),
+vi.mock('../../hooks/useAvisos', () => ({
+	useAvisos: vi.fn(),
 }));
 
 vi.mock('../../utils/timeSync', () => ({
@@ -45,7 +45,7 @@ vi.mock('../../api/directus/create', () => ({
 }));
 
 describe('useHorarios', () => {
-	const mockedUseGlobalSnackbar = vi.mocked(useGlobalSnackbar);
+	const mockedUseAvisos = vi.mocked(useAvisos);
 	const mockedGetStoreIdUsuarioActual = vi.mocked(
 		directusRead.getStoreIdUsuarioActual,
 	);
@@ -69,7 +69,7 @@ describe('useHorarios', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 
-		mockedUseGlobalSnackbar.mockReturnValue({
+		mockedUseAvisos.mockReturnValue({
 			showSnackbar: mockShowSnackbar,
 		});
 

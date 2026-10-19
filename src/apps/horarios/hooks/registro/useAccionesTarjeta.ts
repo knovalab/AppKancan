@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../useAvisos';
 import { getRecordReasonId } from '../../api/directus/read';
 import {
 	registrarAceptacionNormasEmpleado,
@@ -38,7 +38,7 @@ const MENSAJE_SIN_REGISTRO_OBS =
  */
 export function useAccionesTarjeta(opciones: Opciones): AccionesTarjeta {
 	const registro = useAccionesRegistro(opciones.storeId);
-	const { showSnackbar } = useGlobalSnackbar();
+	const { showSnackbar } = useAvisos();
 
 	const ref = useRef({ ...opciones, registro, showSnackbar });
 	ref.current = { ...opciones, registro, showSnackbar };

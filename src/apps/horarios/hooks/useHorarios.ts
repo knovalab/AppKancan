@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useCallback, useMemo, useState } from 'react';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from './useAvisos';
 import { createNovedades } from '../api/directus/create';
 import {
 	getEmpleados,
@@ -10,7 +10,6 @@ import {
 	getTimeRecords,
 	idRelacion,
 } from '../api/directus/read';
-import type { VerificationData } from '../interfaces/verificacion';
 import {
 	agruparPorEmpleado,
 	calcularEstado,
@@ -20,19 +19,19 @@ import {
 	type LogType,
 	mapearRegistros,
 } from '../domain/registro';
+import type { EmpleadoAsistencia } from '../domain/registro/modelo';
+import type { EmployeeDto } from '../interfaces/api/employees';
+import type { EventReportHoyDto } from '../interfaces/api/eventReports';
+import type { CreateNewnessReportDto } from '../interfaces/api/newness';
+import type { TimeRecordDto } from '../interfaces/api/timeRecords';
+import type { NovedadMapeada, NovedadTienda } from '../interfaces/novedades';
+import type { VerificationData } from '../interfaces/verificacion';
 import { mensajeDeError } from '../utils/errores';
 import { getRealColombiaTime } from '../utils/timeSync';
-import type { EmployeeDto } from '../interfaces/api/employees';
-import type { CreateNewnessReportDto } from '../interfaces/api/newness';
-import type { NovedadTienda } from '../interfaces/novedades';
 import { horariosKeys } from './registro/keys';
 import { useAccionesRegistro } from './registro/useAccionesRegistro';
 import { useCatalogosHorarios } from './registro/useCatalogosHorarios';
 import { useTiendaActual } from './registro/useTiendaActual';
-import type { EventReportHoyDto } from '../interfaces/api/eventReports';
-import type { TimeRecordDto } from '../interfaces/api/timeRecords';
-import type { EmpleadoAsistencia } from '../domain/registro/modelo';
-import type { NovedadMapeada } from '../interfaces/novedades';
 
 /**
  * Novedad tal como la consume el mapeo: la de `getNovedades` (relaciones expandidas)
@@ -56,7 +55,7 @@ const relacion = <T extends object>(
 export const useHorarios = (storeOverride?: number | null) => {
 	const queryClient = useQueryClient();
 	const [error, setError] = useState<string | null>(null);
-	const { showSnackbar } = useGlobalSnackbar();
+	const { showSnackbar } = useAvisos();
 	const hoy = getRealColombiaTime().format('YYYY-MM-DD');
 
 	const STORE_ID = useTiendaActual(storeOverride);
@@ -291,81 +290,79 @@ export const useHorarios = (storeOverride?: number | null) => {
 		return resultado.ok;
 	};
 
-	const novedadesMapped: NovedadMapeada[] = (novedadesDB || []).map(
-		(nov) => {
-			const empleadoRel = relacion(nov.employee_id);
-			const tipoRel = relacion(nov.newness_id);
-			const tiendaRel = relacion(nov.store_id);
-			if (
-				nov.empleadoNombre &&
-				nov.empleadoNombre !== 'Empleado #' &&
-				nov.empleadoNombre !== 'Empleado Sin Nombre'
-			) {
-				return {
-					id: nov.id,
-					fecha:
-						nov.fecha ||
-						nov.report_date ||
-						(nov.date_created
-							? dayjs(nov.date_created).format('YYYY-MM-DD')
-							: new Date().toISOString()),
-					empleadoNombre: nov.empleadoNombre,
-					empleadoDocumento: nov.empleadoDocumento,
-					tipo: nov.tipo || tipoRel?.name || 'Novedad',
-					observaciones: nov.observaciones || nov.observations || '',
-					empleadoActivo: nov.empleadoActivo ?? true,
-					tiendaNombre: nov.tiendaNombre || tiendaRel?.name || 'Sin tienda',
-				};
-			}
-
-			const empId = empleadoRel?.id || nov.employee_id;
-			const empLocal = empleadosDB.find((e) => String(e.id) === String(empId));
-
-			let nombreEmpleado = `Empleado #${empId || ''}`;
-			if (empleadoRel?.first_name) {
-				const parts = [
-					empleadoRel.first_name,
-					empleadoRel.middle_name,
-					empleadoRel.last_name,
-					empleadoRel.second_last_name,
-				].filter((part) => part && part.trim() !== '');
-				nombreEmpleado = parts.join(' ').trim() || `Empleado #${empId || ''}`;
-			} else if (empLocal) {
-				nombreEmpleado = empLocal.nombre;
-			}
-
-			let tipoNovedadName = 'Novedad';
-			if (tipoRel?.name) {
-				tipoNovedadName = tipoRel.name;
-			} else if (tipoRel?.nombre) {
-				tipoNovedadName = tipoRel.nombre;
-			} else {
-				const tipoLocal = tiposNovedad.find(
-					(t) => String(t.id) === String(nov.newness_id),
-				);
-				if (tipoLocal) tipoNovedadName = tipoLocal.nombre || tipoLocal.name;
-			}
-
+	const novedadesMapped: NovedadMapeada[] = (novedadesDB || []).map((nov) => {
+		const empleadoRel = relacion(nov.employee_id);
+		const tipoRel = relacion(nov.newness_id);
+		const tiendaRel = relacion(nov.store_id);
+		if (
+			nov.empleadoNombre &&
+			nov.empleadoNombre !== 'Empleado #' &&
+			nov.empleadoNombre !== 'Empleado Sin Nombre'
+		) {
 			return {
 				id: nov.id,
 				fecha:
+					nov.fecha ||
 					nov.report_date ||
 					(nov.date_created
 						? dayjs(nov.date_created).format('YYYY-MM-DD')
 						: new Date().toISOString()),
-				empleadoNombre: nombreEmpleado,
-				empleadoDocumento: empleadoRel?.document_number
-					? String(empleadoRel.document_number)
-					: empLocal?.documento
-						? String(empLocal.documento)
-						: undefined,
-				tipo: tipoNovedadName,
-				observaciones: nov.observations || '',
-				empleadoActivo: !!empLocal,
-				tiendaNombre: tiendaRel?.name || 'Sin tienda',
+				empleadoNombre: nov.empleadoNombre,
+				empleadoDocumento: nov.empleadoDocumento,
+				tipo: nov.tipo || tipoRel?.name || 'Novedad',
+				observaciones: nov.observaciones || nov.observations || '',
+				empleadoActivo: nov.empleadoActivo ?? true,
+				tiendaNombre: nov.tiendaNombre || tiendaRel?.name || 'Sin tienda',
 			};
-		},
-	);
+		}
+
+		const empId = empleadoRel?.id || nov.employee_id;
+		const empLocal = empleadosDB.find((e) => String(e.id) === String(empId));
+
+		let nombreEmpleado = `Empleado #${empId || ''}`;
+		if (empleadoRel?.first_name) {
+			const parts = [
+				empleadoRel.first_name,
+				empleadoRel.middle_name,
+				empleadoRel.last_name,
+				empleadoRel.second_last_name,
+			].filter((part) => part && part.trim() !== '');
+			nombreEmpleado = parts.join(' ').trim() || `Empleado #${empId || ''}`;
+		} else if (empLocal) {
+			nombreEmpleado = empLocal.nombre;
+		}
+
+		let tipoNovedadName = 'Novedad';
+		if (tipoRel?.name) {
+			tipoNovedadName = tipoRel.name;
+		} else if (tipoRel?.nombre) {
+			tipoNovedadName = tipoRel.nombre;
+		} else {
+			const tipoLocal = tiposNovedad.find(
+				(t) => String(t.id) === String(nov.newness_id),
+			);
+			if (tipoLocal) tipoNovedadName = tipoLocal.nombre || tipoLocal.name;
+		}
+
+		return {
+			id: nov.id,
+			fecha:
+				nov.report_date ||
+				(nov.date_created
+					? dayjs(nov.date_created).format('YYYY-MM-DD')
+					: new Date().toISOString()),
+			empleadoNombre: nombreEmpleado,
+			empleadoDocumento: empleadoRel?.document_number
+				? String(empleadoRel.document_number)
+				: empLocal?.documento
+					? String(empLocal.documento)
+					: undefined,
+			tipo: tipoNovedadName,
+			observaciones: nov.observations || '',
+			empleadoActivo: !!empLocal,
+			tiendaNombre: tiendaRel?.name || 'Sin tienda',
+		};
+	});
 
 	return {
 		empleados,

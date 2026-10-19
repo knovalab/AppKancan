@@ -21,7 +21,7 @@ import {
 import { eliminarNovedad } from '../../api/directus/create';
 import { getIconForTipo, getChipColor } from '../../utils/novedadVisual';
 import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../../hooks/useAvisos';
 import { formatDocumentNumber } from '../../utils/format';
 import { LOG_TYPE } from '../../domain/registro';
 import { horariosKeys } from '../../hooks/registro/keys';
@@ -112,7 +112,7 @@ export default function DialogPerfilEmpleado({ open, empleado, tiendaNombre, onC
   const { esAdmin } = useHorariosPolicies();
   const isAdminUser = esAdmin();
   const queryClient = useQueryClient();
-  const { showSnackbar } = useGlobalSnackbar();
+  const { showSnackbar } = useAvisos();
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 

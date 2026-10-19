@@ -7,6 +7,7 @@ import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import { HeaderActionsProvider } from '../components/HeaderActions';
 import { HorariosHeader } from '../components/HorariosHeader';
 import { HorariosTabs } from '../components/HorariosTabs';
+import { AvisosProvider } from '../components/avisos/AvisosProvider';
 import { HorariosTourProvider } from '../components/tour/HorariosTourContext';
 import {
 	HorariosLayoutContext,
@@ -39,49 +40,51 @@ export default function HorariosLayout() {
 
 	return (
 		<HorariosLayoutContext.Provider value={value}>
-			<HorariosTourProvider>
-				<Suspense fallback={null}>
-					<HorariosTour>
-						<HeaderActionsProvider>
-							<Box
-								sx={{
-									minHeight: 'calc(100vh - 64px)',
-									px: { xs: 0.5, sm: 2, md: 4 },
-									pt: { xs: 0.5, sm: 1 },
-									pb: 2,
-								}}
-							>
-								<Paper
-									className="tour-sticky-header"
-									elevation={0}
+			<AvisosProvider>
+				<HorariosTourProvider>
+					<Suspense fallback={null}>
+						<HorariosTour>
+							<HeaderActionsProvider>
+								<Box
 									sx={{
-										position: 'sticky',
-										top: 0,
-										zIndex: 10,
-										borderRadius: 4,
-										overflow: 'hidden',
-										border: '1px solid #f0e2e2ff',
-										boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-										mb: 2,
-										bgcolor: '#fff',
+										minHeight: 'calc(100vh - 64px)',
+										px: { xs: 0.5, sm: 2, md: 4 },
+										pt: { xs: 0.5, sm: 1 },
+										pb: 2,
 									}}
 								>
-									<HorariosHeader />
-									<HorariosTabs />
-								</Paper>
+									<Paper
+										className="tour-sticky-header"
+										elevation={0}
+										sx={{
+											position: 'sticky',
+											top: 0,
+											zIndex: 10,
+											borderRadius: 4,
+											overflow: 'hidden',
+											border: '1px solid #f0e2e2ff',
+											boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+											mb: 2,
+											bgcolor: '#fff',
+										}}
+									>
+										<HorariosHeader />
+										<HorariosTabs />
+									</Paper>
 
-								{value.acceso.cargando ? (
-									<LoadingSpinner message="Cargando permisos..." />
-								) : (
-									<Suspense fallback={<LoadingSpinner />}>
-										<Outlet />
-									</Suspense>
-								)}
-							</Box>
-						</HeaderActionsProvider>
-					</HorariosTour>
-				</Suspense>
-			</HorariosTourProvider>
+									{value.acceso.cargando ? (
+										<LoadingSpinner message="Cargando permisos..." />
+									) : (
+										<Suspense fallback={<LoadingSpinner />}>
+											<Outlet />
+										</Suspense>
+									)}
+								</Box>
+							</HeaderActionsProvider>
+						</HorariosTour>
+					</Suspense>
+				</HorariosTourProvider>
+			</AvisosProvider>
 		</HorariosLayoutContext.Provider>
 	);
 }

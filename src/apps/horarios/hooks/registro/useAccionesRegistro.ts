@@ -1,16 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
 import {
 	createEventReport,
 	createTimeRecord,
 	updateTimeRecord,
 	upsertRecordReason,
 } from '../../api/directus/create';
-import {
-	getMarcacionExistenteId,
-	idRelacion,
-} from '../../api/directus/read';
+import { getMarcacionExistenteId, idRelacion } from '../../api/directus/read';
 import type { Resultado } from '../../interfaces/comunes';
 import type {
 	EditarHoraInput,
@@ -21,6 +17,7 @@ import type {
 import { mensajeDeError } from '../../utils/errores';
 import { hora24 } from '../../utils/format';
 import { getRealColombiaTime } from '../../utils/timeSync';
+import { useAvisos } from '../useAvisos';
 import { horariosKeys } from './keys';
 
 // Contratos en interfaces/ (se reexportan para no romper imports existentes).
@@ -31,13 +28,13 @@ export type {
 	RegistrarInput,
 	ReportarEventoInput,
 } from '../../interfaces/registro';
+
 import type { TimeRecordDto } from '../../interfaces/api/timeRecords';
 
 export const MENSAJE_MARCACION_REPETIDA =
 	'Esta marcación ya está registrada hoy. Para cambiar la hora usa "Editar hora".';
 const MENSAJE_SIN_TIENDA =
 	'No hay una tienda seleccionada: no se puede guardar el registro.';
-
 
 /**
  * Acciones de escritura del registro de horarios. Ninguna lanza: todas devuelven
@@ -49,7 +46,7 @@ const MENSAJE_SIN_TIENDA =
  */
 export function useAccionesRegistro(storeId: number | null) {
 	const queryClient = useQueryClient();
-	const { showSnackbar } = useGlobalSnackbar();
+	const { showSnackbar } = useAvisos();
 
 	const fallo = useCallback(
 		(error: string): Resultado => {
