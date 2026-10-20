@@ -2,21 +2,19 @@ import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import { useAuth } from '@/auth/hooks/useAuth';
 import { obtenerTiendasIdsUsuarioActual } from '@/services/directus/userStores';
-
 import { getStoreIdUsuarioActual, getStores } from '../api/directus/read';
+import type { HorariosAcceso } from '../interfaces/acceso';
+import type { Tienda } from '../interfaces/tiendas';
 import {
 	INICIO_POR_ROL,
 	PRIORIDAD_ROL,
 	type Rol,
 } from '../navigation/secciones';
-import useHorariosPolicies from './useHorariosPolicies';
 import { horariosKeys } from './registro/keys';
-import type { HorariosAcceso } from '../interfaces/acceso';
-import type { Tienda } from '../interfaces/tiendas';
+import useHorariosPolicies from './useHorariosPolicies';
 
-/** Tienda que se excluye del listado del Area Manager (mismo criterio que RegistrosPage). */
 const TIENDA_EXCLUIDA_AREA = 5;
-
+const SIN_TIENDAS: Tienda[] = [];
 
 const idDeTienda = (valor: unknown): number => {
 	if (valor && typeof valor === 'object') {
@@ -33,21 +31,23 @@ const idDeTienda = (valor: unknown): number => {
  */
 export function useHorariosAcceso(): HorariosAcceso {
 	const { user, loading: cargandoAuth } = useAuth();
-	const { esAdmin, esAreaManager, esReport, puedeVerDemo } =
+	const { esAdmin, esAreaManager, esReport, esComercial, puedeVerDemo } =
 		useHorariosPolicies();
 
 	const admin = esAdmin();
 	const areaManager = esAreaManager() && !admin;
 	const report = esReport();
+	const comercial = esComercial();
 
 	const roles = useMemo(() => {
 		const set = new Set<Rol>();
 		if (admin) set.add('admin');
 		if (areaManager) set.add('areaManager');
 		if (report) set.add('report');
+		if (comercial) set.add('comercial');
 		if (!admin && !areaManager && !report) set.add('tienda');
 		return set as ReadonlySet<Rol>;
-	}, [admin, areaManager, report]);
+	}, [admin, areaManager, report, comercial]);
 
 	const rolPrincipal = PRIORIDAD_ROL.find((r) => roles.has(r)) ?? 'tienda';
 
@@ -68,7 +68,7 @@ export function useHorariosAcceso(): HorariosAcceso {
 	>({
 		queryKey: ['adminTiendas'],
 		queryFn: getStores,
-		enabled: admin || report || areaManager,
+		enabled: admin || report || areaManager || comercial,
 		staleTime: 30 * 60 * 1000,
 	});
 
@@ -94,10 +94,12 @@ export function useHorariosAcceso(): HorariosAcceso {
 		return [];
 	}, [areaManager, admin, report, tiendasAcceso, todasLasTiendas]);
 
+	const tiendasComercial = comercial ? todasLasTiendas : SIN_TIENDAS;
+
 	const cargando =
 		cargandoAuth ||
 		!user ||
-		((admin || report || areaManager) && cargandoTiendas) ||
+		((admin || report || areaManager || comercial) && cargandoTiendas) ||
 		(areaManager && cargandoAcceso);
 	const verDemo = puedeVerDemo();
 
@@ -111,6 +113,7 @@ export function useHorariosAcceso(): HorariosAcceso {
 			puedeVerDemo: verDemo,
 			tiendaPropia,
 			tiendasPermitidas,
+			tiendasComercial,
 		}),
 		[
 			cargando,
@@ -120,6 +123,7 @@ export function useHorariosAcceso(): HorariosAcceso {
 			verDemo,
 			tiendaPropia,
 			tiendasPermitidas,
+			tiendasComercial,
 		],
 	);
 }

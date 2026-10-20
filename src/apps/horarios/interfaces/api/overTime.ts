@@ -30,10 +30,10 @@ export interface OverTimeDto {
 	review_note?: string | null;
 	/** Instante de la aprobación o del rechazo (Timestamp, UTC). */
 	reviewed_at?: string | null;
-	reviewed_by?: UsuarioDirectus;
 	created_at?: string | null;
 	created_by?: UsuarioDirectus;
 	updated_at?: string | null;
+	/** Lo llena Directus (*User Updated*): en una fila revisada, el comercial que decidió. */
 	updated_by?: UsuarioDirectus;
 }
 
@@ -58,6 +58,4 @@ export interface ReviewOverTimeDto {
 	decision: 'aprobada' | 'descartada_comercial';
 	/** Obligatorio al rechazar. */
 	nota?: string;
-	/** Id de `directus_users` del comercial. */
-	revisor: string;
 }

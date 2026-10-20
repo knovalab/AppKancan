@@ -14,4 +14,6 @@ export interface HorariosAcceso {
 	tiendaPropia: number | null;
 	/** admin/report: todas · areaManager: sus tiendas asignadas · tienda: ninguna. */
 	tiendasPermitidas: Tienda[];
+	/** comercial: todas las tiendas (solo se usan en sus sub‑secciones) · resto: ninguna. */
+	tiendasComercial: Tienda[];
 }

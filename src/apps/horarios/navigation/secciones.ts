@@ -10,7 +10,7 @@ import MoreTimeIcon from '@mui/icons-material/MoreTime';
 
 export const BASE = '/horarios';
 
-export type Rol = 'tienda' | 'admin' | 'areaManager' | 'report';
+export type Rol = 'tienda' | 'admin' | 'areaManager' | 'report' | 'comercial';
 
 export type ModoTienda =
 	| 'ninguno' // no se muestra
@@ -21,6 +21,7 @@ export interface SubSeccion {
 	path: string;
 	label: string;
 	roles?: readonly Rol[];
+	ocultarA?: readonly Rol[];
 }
 
 export interface Seccion {
@@ -123,12 +124,21 @@ export const SECCIONES: readonly Seccion[] = [
 		path: 'horas-extras',
 		label: 'HORAS EXTRAS',
 		titulo: 'Horas Extras',
-		subtitulo: 'Registra y consulta las horas extras de tus tiendas',
+		subtitulo: 'Registra, consulta y aprueba horas extras',
 		icon: MoreTimeIcon,
-		roles: ['areaManager'],
+		roles: ['areaManager', 'comercial'],
 		tienda: 'una-o-todas',
 		mostrarNormas: false,
-		subsecciones: [{ path: 'registradas', label: 'Registradas' }],
+		subsecciones: [
+			{
+				path: 'registradas',
+				label: 'Registradas',
+				roles: ['areaManager'],
+				ocultarA: ['comercial'],
+			},
+			{ path: 'historial', label: 'Historial', roles: ['comercial'] },
+			{ path: 'aprobacion', label: 'Aprobación', roles: ['comercial'] },
+		],
 	},
 	{
 		path: 'admin',
@@ -148,6 +158,7 @@ export const INICIO_POR_ROL: Record<Rol, string> = {
 	areaManager: 'monitoreo',
 	tienda: 'registros',
 	report: 'reportes',
+	comercial: 'horas-extras',
 };
 
 /** Orden de prioridad para decidir el rol principal cuando hay varios. */
@@ -156,7 +167,16 @@ export const PRIORIDAD_ROL: readonly Rol[] = [
 	'areaManager',
 	'tienda',
 	'report',
+	'comercial', // último: no cambia la página de entrada que ya tenía el usuario
 ];
 
 export const buscarSeccion = (path: string | undefined): Seccion | null =>
 	SECCIONES.find((s) => s.path === path) ?? null;
+
+export const puedeVerSubseccion = (
+	acceso: { roles: ReadonlySet<Rol>; puede: (r: readonly Rol[]) => boolean },
+	seccion: Seccion,
+	sub: SubSeccion,
+): boolean =>
+	acceso.puede(sub.roles ?? seccion.roles) &&
+	!(sub.ocultarA ?? []).some((r) => acceso.roles.has(r));

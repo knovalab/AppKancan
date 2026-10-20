@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import LoadingSpinner from '@/shared/components/LoadingSpinner';
 import { useHorariosLayout } from '../hooks/useHorariosLayout';
-import { buscarSeccion } from '../navigation/secciones';
+import { buscarSeccion, puedeVerSubseccion } from '../navigation/secciones';
 
 /**
  * Layout genérico para secciones con sub‑pestañas (Monitoreo, Reportes).
@@ -16,8 +16,8 @@ export default function SubSeccionLayout({
 }) {
 	const { acceso, subseccion, irA } = useHorariosLayout();
 	const seccion = buscarSeccion(path);
-	const visibles = (seccion?.subsecciones ?? []).filter((s) =>
-		acceso.puede(s.roles ?? seccion?.roles ?? []),
+	const visibles = (seccion?.subsecciones ?? []).filter(
+		(s) => seccion != null && puedeVerSubseccion(acceso, seccion, s),
 	);
 	const activa = visibles.some((s) => s.path === subseccion?.path)
 		? subseccion?.path

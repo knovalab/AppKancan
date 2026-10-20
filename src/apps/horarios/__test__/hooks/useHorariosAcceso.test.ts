@@ -246,6 +246,48 @@ describe('useHorariosAcceso', () => {
 		expect(result.current.puede(['admin'])).toBe(false);
 	});
 
+	it('comercial se suma: un usuario de tienda conserva su rol, su inicio y sus tiendas', async () => {
+		mockedUseHorariosPolicies.mockReturnValue({
+			hasPolicy: () => true,
+			esAdmin: () => false,
+			esAreaManager: () => false,
+			esReport: () => false, esComercial: () => true,
+			tieneTemporal: () => false,
+			puedeVerDemo: () => false,
+		});
+		const allStores = createMockTiendas();
+		mockedGetStores.mockResolvedValue(allStores);
+
+		const { result } = renderHookWithQuery(() => useHorariosAcceso());
+		await waitFor(() => expect(result.current.cargando).toBe(false));
+
+		expect([...result.current.roles].sort()).toEqual(['comercial', 'tienda']);
+		expect(result.current.rolPrincipal).toBe('tienda');
+		expect(result.current.inicio).toBe('registros');
+		expect(result.current.tiendasPermitidas).toEqual([]);
+		expect(result.current.tiendasComercial).toEqual(allStores);
+	});
+
+	it('comercial + areaManager: mantiene sus tiendas asignadas y suma el rol comercial', async () => {
+		mockedUseHorariosPolicies.mockReturnValue({
+			hasPolicy: () => true,
+			esAdmin: () => false,
+			esAreaManager: () => true,
+			esReport: () => true, esComercial: () => true,
+			tieneTemporal: () => false,
+			puedeVerDemo: () => false,
+		});
+
+		const { result } = renderHookWithQuery(() => useHorariosAcceso());
+		await waitFor(() => expect(result.current.cargando).toBe(false));
+
+		expect(result.current.roles.has('areaManager')).toBe(true);
+		expect(result.current.roles.has('report')).toBe(true);
+		expect(result.current.roles.has('comercial')).toBe(true);
+		expect(result.current.inicio).toBe('monitoreo');
+		expect(result.current.tiendasPermitidas.map((t) => Number(t.id)).sort()).toEqual([1, 2]);
+	});
+
 	it('should prioritize areaManager over report when user has both roles', async () => {
 		mockedUseHorariosPolicies.mockReturnValue({
 			hasPolicy: () => true,

@@ -58,7 +58,7 @@
 | 6 | `observations` | **Crear** | Text (área de texto), nulo |
 | 7 | `review_note` | **Crear** | Text, nulo (motivo del rechazo) |
 | 8 | `reviewed_at` | **Crear** (sustituye a `approval_at`) | **Timestamp**, nulo |
-| 9 | `reviewed_by` | **Crear** | M2O → `directus_users`, nulo |
+| 9 | `reviewed_by` | **No se crea** | Quién revisó queda en `updated_by` (*User Updated*), porque los estados finales ya no cambian |
 | 10 | `approval_at` | **Borrar** | Lo sustituye `reviewed_at` (P5) |
 | 11 | `created_at` | Volver a crear | Timestamp, especial *Date Created* |
 | 12 | `created_by` | Comprobar | M2O → `directus_users`, especial *User Created* |
@@ -74,13 +74,13 @@ Fuera de alcance (nómina). No hace falta ningún cambio para este flujo.
 | Política | Asignar a | `com_over_time` | Otras |
 |---|---|---|---|
 | `time_log_overtime_leader` | Rol de los Area Manager | **Leer:** filtro *tienda trabajada **o** tienda del empleado* en sus tiendas (§2.4). **Crear:** campos `employee_id`, `store_id`, `work_date`, `minutes`, `observations`, `status`; validación `status = pendiente` y el mismo filtro de tienda sobre `employee_id.store_id`. **Actualizar:** filtro `status = pendiente` + tienda; campos `store_id`, `minutes`, `observations` | Leer `directus_users` (solo `id`, `first_name`, `last_name`). Leer `adm_employees` y `core_stores` (ya los tiene) |
-| `time_log_comercial` | Rol del jefe comercial | **Leer:** todo. **Actualizar:** filtro `status = pendiente`; campos `status`, `reviewed_at`, `reviewed_by`, `review_note`; validación `status _in [aprobada, descartada_comercial]` | Leer `adm_employees`, `core_stores`, `com_time_records`, `com_time_record_store` y `directus_users` (`id`, `first_name`, `last_name`) |
+| `time_log_comercial` | Rol del jefe comercial | **Leer:** todo. **Actualizar:** filtro `status = pendiente`; campos `status`, `reviewed_at`, `review_note`; validación `status _in [aprobada, descartada_comercial]` | Leer `adm_employees`, `core_stores`, `com_time_records`, `com_time_record_store` y `directus_users` (`id`, `first_name`, `last_name`) |
 | Política de reporte que ya existe | Report y Admin | **Leer** | Leer `directus_users` (nombres) |
 
 - **Nadie tiene permiso para borrar.**
 - **El nombre de la política tiene que cumplir la detección del frontend:** debe contener "comercial" **y** "time_log", "timelog" u "horario". Por ejemplo, `time_log_comercial`. Una política llamada solo "comercial" **no** activa el rol.
 - **Lectura de `directus_users`:** la lista pide los nombres de quién creó, editó y revisó cada fila. Sin ese permiso, la consulta puede fallar entera.
-- **Recomendado:** en el *Actualizar* del comercial, poner los *presets* `reviewed_by = $CURRENT_USER` y `reviewed_at = $NOW`. Así Directus usa los valores del servidor aunque el frontend envíe los suyos (§3.3).
+- **Recomendado:** en el *Actualizar* del comercial, poner el *preset* `reviewed_at = $NOW`. Así Directus usa los valores del servidor aunque el frontend envíe los suyos (§3.3).
 
 ### 2.4 Filtro por las tiendas del líder
 
@@ -122,7 +122,7 @@ Hay que comprobar que `core_stores` tenga el alias O2M hacia `core_user_stores`.
 - **Revisar** (`revisarHorasExtras(ids, decisión)`):
   - Aprobar exige `periodId`, el del periodo vigente.
   - Rechazar exige un motivo, que se guarda sin espacios sobrantes en `review_note`.
-  - Las dos decisiones guardan `reviewed_at` y `reviewed_by`.
+  - Las dos decisiones guardan `reviewed_at`. Quién revisó lo registra Directus en `updated_by`.
   - Si falta un dato, falla **antes** de llamar a Directus.
 - **Errores:** todas las funciones usan `errorDeApi`, igual que el resto de `api/directus`. Los mensajes quedan listos para `useAvisos` en F2.
 

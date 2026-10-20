@@ -26,7 +26,7 @@ export interface FiltrosHorasExtras {
 	incluirPruebas?: boolean;
 }
 
-// created_by / reviewed_by / updated_by necesitan lectura de directus_users (first_name, last_name).
+// created_by / updated_by necesitan lectura de directus_users (first_name, last_name).
 const CAMPOS = [
 	'*',
 	'employee_id.id',
@@ -39,9 +39,6 @@ const CAMPOS = [
 	'created_by.id',
 	'created_by.first_name',
 	'created_by.last_name',
-	'reviewed_by.id',
-	'reviewed_by.first_name',
-	'reviewed_by.last_name',
 	'updated_by.id',
 	'updated_by.first_name',
 	'updated_by.last_name',
@@ -149,7 +146,6 @@ export async function revisarHorasExtras(ids: number[], r: ReviewOverTimeDto) {
 					status: r.decision,
 					// shortcut: hora del dispositivo (UTC); si se exige la del servidor, preset $NOW en la política del comercial.
 					reviewed_at: new Date().toISOString(),
-					reviewed_by: r.revisor,
 					review_note: aprobar ? null : r.nota!.trim(),
 				}),
 			),

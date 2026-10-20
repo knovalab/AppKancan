@@ -1,14 +1,15 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { ModoTienda } from '../navigation/secciones';
 import type { HorariosAcceso } from '../interfaces/acceso';
-import type { TiendaSeleccion, TiendaSeleccionada } from '../interfaces/tiendas';
-import type { Tienda } from '../interfaces/tiendas';
+import type {
+	Tienda,
+	TiendaSeleccion,
+	TiendaSeleccionada,
+} from '../interfaces/tiendas';
+import type { ModoTienda } from '../navigation/secciones';
 
-/** Query param donde viaja la tienda: `?tienda=12` · `?tienda=todas` · (ausente = por defecto). */
 export const PARAM_TIENDA = 'tienda';
 const VALOR_TODAS = 'todas';
-
 
 const leerParam = (valor: string | null): TiendaSeleccion | null => {
 	if (valor === VALOR_TODAS) return { tipo: 'todas' };
@@ -22,10 +23,6 @@ const escribirParam = (s: TiendaSeleccion): string | null => {
 	return null;
 };
 
-/**
- * Tienda seleccionada, persistida en la URL. Resuelve la ambigüedad del antiguo
- * `storeOverride = null` (ver docs/ANALISIS_RUTAS_HORARIOS.md §2.2).
- */
 export function useTiendaSeleccionada(
 	acceso: HorariosAcceso,
 	modo: ModoTienda,
@@ -40,7 +37,6 @@ export function useTiendaSeleccionada(
 	);
 
 	const seleccion = useMemo<TiendaSeleccion>(() => {
-		// Usuario de tienda: siempre su propia tienda, ignore lo que diga la URL.
 		if (roles.has('tienda') || tiendasPermitidas.length === 0) {
 			return { tipo: 'propia' };
 		}
@@ -49,8 +45,11 @@ export function useTiendaSeleccionada(
 		if (pedida?.tipo === 'una' && permitida(pedida.id)) return pedida;
 		if (pedida?.tipo === 'todas' && modo === 'una-o-todas') return pedida;
 
-		// Rol "solo reporte": por defecto ve todas (comportamiento previo de RegistrosPage).
-		if (rolPrincipal === 'report' && modo === 'una-o-todas') {
+		// Roles "solo reporte" y comercial: por defecto ven todas.
+		if (
+			(rolPrincipal === 'report' || rolPrincipal === 'comercial') &&
+			modo === 'una-o-todas'
+		) {
 			return { tipo: 'todas' };
 		}
 		// Por defecto: la propia si está permitida; si no (Area Manager), todas o la primera.

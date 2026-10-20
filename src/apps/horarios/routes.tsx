@@ -1,8 +1,12 @@
 import { lazy, type ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
 import type { RouteObject } from 'react-router-dom';
 import HorariosLayout from './layouts/HorariosLayout';
-import { IndexRedirect, RequireRole } from './navigation/RequireRole';
+import {
+	IndexRedirect,
+	IndexSubseccion,
+	RequireRole,
+	RequireSubseccion,
+} from './navigation/RequireRole';
 import { buscarSeccion } from './navigation/secciones';
 import RegistrosPage from './pages/RegistrosPage';
 
@@ -25,6 +29,12 @@ const HorasExtrasSeccion = lazy(
 const HorasExtrasRegistradas = lazy(
 	() => import('./pages/horas-extras/RegistradasPage'),
 );
+const HorasExtrasHistorial = lazy(
+	() => import('./pages/horas-extras/HistorialPage'),
+);
+const HorasExtrasAprobacion = lazy(
+	() => import('./pages/horas-extras/AprobacionPage'),
+);
 
 // Los roles de cada ruta salen de SECCIONES (única fuente de verdad).
 // routeValidator exige path|index en cada ruta: el guard envuelve el element
@@ -43,21 +53,19 @@ const seccion = (
 	),
 });
 
-// Sub‑ruta con sus propios roles (si no los declara, hereda los de la sección).
+// Sub‑ruta: la protege la misma regla que decide si se ve su pestaña.
 const subseccion = (
 	padre: string,
 	path: string,
 	element: ReactNode,
-): RouteObject => {
-	const sec = buscarSeccion(padre);
-	const sub = sec?.subsecciones?.find((s) => s.path === path);
-	return {
-		path,
-		element: (
-			<RequireRole roles={sub?.roles ?? sec?.roles ?? []}>{element}</RequireRole>
-		),
-	};
-};
+): RouteObject => ({
+	path,
+	element: (
+		<RequireSubseccion seccion={padre} path={path}>
+			{element}
+		</RequireSubseccion>
+	),
+});
 
 const rutasHorarios: RouteObject[] = [
 	{
@@ -72,8 +80,10 @@ const rutasHorarios: RouteObject[] = [
 			seccion('reportes', <ReportesSeccion />),
 			seccion('admin', <AdminSeccion />),
 			seccion('horas-extras', <HorasExtrasSeccion />, [
-				{ index: true, element: <Navigate to="registradas" replace /> },
+				{ index: true, element: <IndexSubseccion seccion="horas-extras" /> },
 				subseccion('horas-extras', 'registradas', <HorasExtrasRegistradas />),
+				subseccion('horas-extras', 'historial', <HorasExtrasHistorial />),
+				subseccion('horas-extras', 'aprobacion', <HorasExtrasAprobacion />),
 			]),
 			{ path: '*', element: <IndexRedirect /> },
 		],
