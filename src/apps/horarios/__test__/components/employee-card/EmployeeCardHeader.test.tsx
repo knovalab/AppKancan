@@ -138,4 +138,68 @@ describe('EmployeeCardHeader', () => {
 		fireEvent.click(novedadBtn);
 		expect(mockOnAccion).toHaveBeenCalledWith('novedad');
 	});
+
+	it('should render toggle button and trigger onToggleExpandir on click', () => {
+		const mockToggle = vi.fn();
+		const regs = crearRegistrosVacios();
+		const vm = calcularVistaTarjeta(
+			{
+				estadoActual: ESTADO.entradaPendiente,
+				registros: regs,
+				pausasActivasCount: 0,
+			},
+			{
+				pausaEnCurso: false,
+				almuerzoOmitido: false,
+				normasPorAceptar: false,
+			},
+		);
+
+		render(
+			<EmployeeCardHeader
+				nombre="Carlos Gómez"
+				vm={vm}
+				expandida={true}
+				onToggleExpandir={mockToggle}
+				onAccion={mockOnAccion}
+				onAceptarNormas={mockOnAceptarNormas}
+			/>,
+		);
+
+		const toggleBtn = screen.getByRole('button', { name: /contraer tarjeta/i });
+		expect(toggleBtn).toBeInTheDocument();
+
+		fireEvent.click(toggleBtn);
+		expect(mockToggle).toHaveBeenCalledTimes(1);
+	});
+
+	it('should show last record summary when collapsed and has records', () => {
+		const regs = crearRegistrosVacios();
+		regs.inicioJornada = '08:30';
+		const vm = calcularVistaTarjeta(
+			{
+				estadoActual: ESTADO.jornadaIniciada,
+				registros: regs,
+				pausasActivasCount: 0,
+			},
+			{
+				pausaEnCurso: false,
+				almuerzoOmitido: false,
+				normasPorAceptar: false,
+			},
+		);
+
+		render(
+			<EmployeeCardHeader
+				nombre="Carlos Gómez"
+				vm={vm}
+				expandida={false}
+				onToggleExpandir={vi.fn()}
+				onAccion={mockOnAccion}
+				onAceptarNormas={mockOnAceptarNormas}
+			/>,
+		);
+
+		expect(screen.getByText(/Comenzar Jornada: 08:30/i)).toBeInTheDocument();
+	});
 });

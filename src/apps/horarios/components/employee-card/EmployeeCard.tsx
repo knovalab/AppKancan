@@ -1,4 +1,4 @@
-import { Card, CircularProgress, Typography } from '@mui/material';
+import { Card, CircularProgress, Collapse, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -8,8 +8,11 @@ import {
 	LOG_TYPE,
 	type LogType,
 } from '../../domain/registro';
+import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
 import type { Resultado } from '../../interfaces/comunes';
-import type { AccionesTarjeta } from '../../interfaces/registro';
+import type { Normas } from '../../interfaces/normas';
+import type { TipoNovedad } from '../../interfaces/novedades';
+import type { AccionesTarjeta, Motivo } from '../../interfaces/registro';
 import NormasModal from '../NormasModal';
 import { TimeRecordVerificationModal } from '../verification/TimeRecordVerificationModal';
 import type { ModalCabecera } from './header/accionesCabecera';
@@ -23,10 +26,6 @@ import { ObservacionModal } from './modales/ObservacionModal';
 import { OmitirAlmuerzoModal } from './modales/OmitirAlmuerzoModal';
 import { TimeSlots } from './slots/TimeSlots';
 import type { NovedadFormValues } from './utils/novedadSchema';
-import type { Normas } from '../../interfaces/normas';
-import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
-import type { TipoNovedad } from '../../interfaces/novedades';
-import type { Motivo } from '../../interfaces/registro';
 
 interface EmployeeCardProps {
 	empleado: EmpleadoAsistencia;
@@ -41,6 +40,9 @@ interface EmployeeCardProps {
 	acciones: AccionesTarjeta;
 	/** Tarjeta del tour: sin normas, sin cámara y temporizador en memoria. */
 	demo?: boolean;
+	/** Estado de colapso/expansión controlado desde fuera. */
+	expandida?: boolean;
+	onToggleExpandir?: () => void;
 }
 
 /** Modal abierto de la tarjeta (uno a la vez). Los pasos del flujo (normas, foto) van aparte. */
@@ -81,8 +83,14 @@ function EmployeeCardContent({
 	normas,
 	acciones,
 	demo = false,
+	expandida,
+	onToggleExpandir,
 }: EmployeeCardProps) {
 	const { id, nombre, registros } = empleado;
+
+	const [localExpandida, setLocalExpandida] = useState(true);
+	const isExpanded = expandida !== undefined ? expandida : localExpandida;
+	const handleToggle = onToggleExpandir ?? (() => setLocalExpandida((v) => !v));
 
 	const [modal, setModal] = useState<ModalAbierto | null>(null);
 	const [almuerzoOmitido, setAlmuerzoOmitido] = useState(false);
@@ -181,30 +189,37 @@ function EmployeeCardContent({
 				className="tour-employee-card"
 				sx={{
 					width: '100%',
+					alignSelf: 'start',
+					height: 'fit-content',
 					borderRadius: 3,
 					overflow: 'hidden',
 					boxShadow: vm.finalizado ? 'none' : '0 4px 12px rgba(0,0,0,0.04)',
 					border: '1px solid #e2e8f0',
 					bgcolor: '#ffffff',
+					transition: 'box-shadow 0.2s ease',
 				}}
 			>
 				<EmployeeCardHeader
 					nombre={nombre}
 					cargo={empleado.cargo}
 					vm={vm}
+					expandida={isExpanded}
+					onToggleExpandir={handleToggle}
 					onAccion={abrirCabecera}
 					onAceptarNormas={flujo.abrirNormas}
 				/>
-				<TimeSlots
-					vm={vm}
-					guardando={flujo.guardando}
-					pausaExpiraEn={pausa.expiraEn}
-					onTerminarDemoPausa={demo ? pausa.terminarAhora : undefined}
-					onRegistrar={flujo.iniciar}
-					onEditarHora={abrirHora}
-					onObservar={abrirObservacion}
-					onSinAlmuerzo={abrirSinAlmuerzo}
-				/>
+				<Collapse in={isExpanded} timeout="auto" unmountOnExit={false}>
+					<TimeSlots
+						vm={vm}
+						guardando={flujo.guardando}
+						pausaExpiraEn={pausa.expiraEn}
+						onTerminarDemoPausa={demo ? pausa.terminarAhora : undefined}
+						onRegistrar={flujo.iniciar}
+						onEditarHora={abrirHora}
+						onObservar={abrirObservacion}
+						onSinAlmuerzo={abrirSinAlmuerzo}
+					/>
+				</Collapse>
 			</Card>
 
 			{/* Modales de la tarjeta: uno a la vez; `key` los remonta limpios en cada apertura. */}

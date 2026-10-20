@@ -1,3 +1,4 @@
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
 	Box,
 	Button,
@@ -6,7 +7,7 @@ import {
 	Tooltip,
 	Typography,
 } from '@mui/material';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { ETIQUETA_ESTADO, type VistaTarjeta } from '../../../domain/registro';
 import { NombreEmpleado } from '../utils/NombreEmpleado';
 import { ACCIONES_CABECERA, type ModalCabecera } from './accionesCabecera';
@@ -15,6 +16,8 @@ interface EmployeeCardHeaderProps {
 	nombre: string;
 	cargo?: string;
 	vm: VistaTarjeta;
+	expandida?: boolean;
+	onToggleExpandir?: () => void;
 	onAccion: (modal: ModalCabecera) => void;
 	onAceptarNormas: () => void;
 }
@@ -24,12 +27,23 @@ export const EmployeeCardHeader = memo(function EmployeeCardHeader({
 	nombre,
 	cargo,
 	vm,
+	expandida = true,
+	onToggleExpandir,
 	onAccion,
 	onAceptarNormas,
 }: EmployeeCardHeaderProps) {
 	const { pausas } = vm;
+
+	const ultimaMarcacion = useMemo(() => {
+		return vm.marcaciones
+			.slice()
+			.reverse()
+			.find((m) => m.hecha && m.hora);
+	}, [vm.marcaciones]);
+
 	return (
 		<Box
+			onClick={onToggleExpandir}
 			sx={{
 				bgcolor: '#004680',
 				color: 'white',
@@ -37,6 +51,10 @@ export const EmployeeCardHeader = memo(function EmployeeCardHeader({
 				display: 'flex',
 				justifyContent: 'space-between',
 				alignItems: 'center',
+				cursor: onToggleExpandir ? 'pointer' : 'default',
+				userSelect: 'none',
+				transition: 'background-color 0.2s ease',
+				'&:hover': onToggleExpandir ? { bgcolor: '#003a6b' } : undefined,
 			}}
 		>
 			<Box
@@ -63,7 +81,20 @@ export const EmployeeCardHeader = memo(function EmployeeCardHeader({
 						{cargo}
 					</Typography>
 				)}
-				{pausas.visibles && (
+				{!expandida && ultimaMarcacion && (
+					<Typography
+						sx={{
+							fontSize: '0.68rem',
+							fontWeight: 600,
+							color: '#bae6fd',
+							mt: 0.3,
+							letterSpacing: '0.3px',
+						}}
+					>
+						{ultimaMarcacion.marcacion.etiqueta}: {ultimaMarcacion.hora}
+					</Typography>
+				)}
+				{expandida && pausas.visibles && (
 					<Typography
 						sx={{
 							fontSize: '0.65rem',
@@ -86,7 +117,10 @@ export const EmployeeCardHeader = memo(function EmployeeCardHeader({
 					<Button
 						size="small"
 						variant="contained"
-						onClick={onAceptarNormas}
+						onClick={(e) => {
+							e.stopPropagation();
+							onAceptarNormas();
+						}}
 						sx={{
 							mt: 0.75,
 							alignSelf: 'flex-start',
@@ -116,7 +150,10 @@ export const EmployeeCardHeader = memo(function EmployeeCardHeader({
 								<IconButton
 									size="medium"
 									disabled={!disponible}
-									onClick={() => onAccion(accion.modal)}
+									onClick={(e) => {
+										e.stopPropagation();
+										onAccion(accion.modal);
+									}}
 									sx={{
 										color: disponible ? accion.color : 'rgba(255,255,255,0.3)',
 										'&:hover': {
@@ -144,6 +181,30 @@ export const EmployeeCardHeader = memo(function EmployeeCardHeader({
 						height: 24,
 					}}
 				/>
+				{onToggleExpandir && (
+					<Tooltip title={expandida ? 'Contraer tarjeta' : 'Expandir tarjeta'}>
+						<IconButton
+							size="small"
+							onClick={(e) => {
+								e.stopPropagation();
+								onToggleExpandir();
+							}}
+							aria-label={expandida ? 'Contraer tarjeta' : 'Expandir tarjeta'}
+							sx={{
+								color: '#ffffff',
+								p: 0.5,
+								bgcolor: 'rgba(255, 255, 255, 0.15)',
+								transition: 'transform 0.25s ease, background-color 0.2s ease',
+								transform: expandida ? 'rotate(180deg)' : 'rotate(0deg)',
+								'&:hover': {
+									bgcolor: 'rgba(255, 255, 255, 0.3)',
+								},
+							}}
+						>
+							<KeyboardArrowDownIcon sx={{ fontSize: 20 }} />
+						</IconButton>
+					</Tooltip>
+				)}
 			</Box>
 		</Box>
 	);
