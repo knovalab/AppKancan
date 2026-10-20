@@ -78,6 +78,11 @@ export const SlotRow = memo(function SlotRow({
 			</Tooltip>
 
 			<Button
+				className={
+					marcacion.key === 'inicioJornada'
+						? 'tour-btn-comenzar-jornada'
+						: undefined
+				}
 				fullWidth
 				variant={activa ? 'contained' : hecha ? 'outlined' : 'text'}
 				disabled={estado.deshabilitada || ocupado}
