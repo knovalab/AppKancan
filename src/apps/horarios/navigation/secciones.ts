@@ -6,53 +6,34 @@ import EventNoteIcon from '@mui/icons-material/EventNote';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import GridViewIcon from '@mui/icons-material/GridView';
 import HistoryIcon from '@mui/icons-material/History';
+import MoreTimeIcon from '@mui/icons-material/MoreTime';
 
-/** Ruta base de la app (la registra `routes.tsx` como `path: 'horarios'`). */
 export const BASE = '/horarios';
 
-/**
- * Roles de la app, resueltos una sola vez en `useHorariosAcceso`.
- * - tienda: usuario de tienda sin rol especial.
- * - admin: política admin de time_log/horario.
- * - areaManager: política de área de time_log y NO admin.
- * - report: política de reporte (también la tiene el Area Manager).
- */
 export type Rol = 'tienda' | 'admin' | 'areaManager' | 'report';
 
-/** Cómo usa la sección el selector de tienda del header. */
 export type ModoTienda =
 	| 'ninguno' // no se muestra
 	| 'una' // exige una tienda concreta
 	| 'una-o-todas'; // permite "Todas las tiendas"
 
 export interface SubSeccion {
-	/** Relativo a la sección: 'resumen' → /horarios/monitoreo/resumen */
 	path: string;
 	label: string;
-	/** Si no se indica, hereda los roles de la sección. */
 	roles?: readonly Rol[];
 }
 
 export interface Seccion {
-	/** Relativo a BASE: 'monitoreo' → /horarios/monitoreo */
 	path: string;
-	/** Texto de la pestaña. */
 	label: string;
 	titulo: string;
 	subtitulo: string;
 	icon: SvgIconComponent;
 	roles: readonly Rol[];
 	tienda: ModoTienda;
-	/** false = la sección no tiene pestaña (feature flag). */
 	habilitada?: boolean;
-	/** false = no se muestra el botón de Normas en esta sección. */
 	mostrarNormas?: boolean;
-	/**
-	 * false = la página tiene su propio selector de tienda y el header no pinta otro.
-	 * La selección sigue viviendo en `?tienda=` y la página la lee/escribe con useHorariosLayout().
-	 */
 	selectorEnHeader?: boolean;
-	/** true = muestra el botón de tutorial (las fases del tour recorren estas secciones). */
 	mostrarTutorial?: boolean;
 	subsecciones?: readonly SubSeccion[];
 }
@@ -137,6 +118,17 @@ export const SECCIONES: readonly Seccion[] = [
 			{ path: 'pausas', label: 'Pausas activas' },
 			{ path: 'semanal', label: 'Semanal' },
 		],
+	},
+	{
+		path: 'horas-extras',
+		label: 'HORAS EXTRAS',
+		titulo: 'Horas Extras',
+		subtitulo: 'Registra y consulta las horas extras de tus tiendas',
+		icon: MoreTimeIcon,
+		roles: ['areaManager'],
+		tienda: 'una-o-todas',
+		mostrarNormas: false,
+		subsecciones: [{ path: 'registradas', label: 'Registradas' }],
 	},
 	{
 		path: 'admin',

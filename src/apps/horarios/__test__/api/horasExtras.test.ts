@@ -33,13 +33,12 @@ describe('filtroHorasExtras', () => {
 		});
 	});
 
-	it('combina empleado, rango, estados y periodo', () => {
+	it('combina empleado, rango y estados', () => {
 		const f = filtroHorasExtras({
 			empleadoId: 7,
 			desde: '2026-10-01',
 			hasta: '2026-10-15',
 			estados: ['pendiente'],
-			periodoId: 3,
 			incluirPruebas: true,
 		});
 		expect(f._and).toEqual([
@@ -47,7 +46,6 @@ describe('filtroHorasExtras', () => {
 			{ work_date: { _gte: '2026-10-01' } },
 			{ work_date: { _lte: '2026-10-15' } },
 			{ status: { _in: ['pendiente'] } },
-			{ period_id: { _eq: 3 } },
 		]);
 	});
 });
@@ -64,24 +62,23 @@ describe('crearHoraExtra', () => {
 });
 
 describe('revisarHorasExtras', () => {
-	it('aprobar asigna el periodo y la revisión, sin nota', async () => {
-		await revisarHorasExtras([1, 2], { decision: 'aprobada', periodId: 4, revisor: 'u-1' });
+	it('aprobar guarda la revisión, sin nota', async () => {
+		await revisarHorasExtras([1, 2], { decision: 'aprobada', revisor: 'u-1' });
 		const { op, ids, d } = request.mock.calls[0][0];
 		expect(op).toBe('updateMany');
 		expect(ids).toEqual([1, 2]);
-		expect(d).toMatchObject({ status: 'aprobada', period_id: 4, reviewed_by: 'u-1', review_note: null });
+		expect(d).toMatchObject({ status: 'aprobada', reviewed_by: 'u-1', review_note: null });
+		expect(d).not.toHaveProperty('period_id');
 		expect(Number.isNaN(Date.parse(d.reviewed_at))).toBe(false);
 	});
 
-	it('rechazar guarda el motivo y no toca el periodo', async () => {
+	it('rechazar guarda el motivo', async () => {
 		await revisarHorasExtras([3], { decision: 'descartada_comercial', nota: ' sin soporte ', revisor: 'u-1' });
 		const { d } = request.mock.calls[0][0];
 		expect(d).toMatchObject({ status: 'descartada_comercial', review_note: 'sin soporte' });
-		expect(d).not.toHaveProperty('period_id');
 	});
 
-	it('no llama a Directus sin periodo al aprobar ni sin motivo al rechazar', async () => {
-		await expect(revisarHorasExtras([1], { decision: 'aprobada', revisor: 'u' })).rejects.toThrow(/periodo/);
+	it('no llama a Directus sin motivo al rechazar ni con lote vacío', async () => {
 		await expect(revisarHorasExtras([1], { decision: 'descartada_comercial', nota: '  ', revisor: 'u' })).rejects.toThrow(/motivo/);
 		expect(await revisarHorasExtras([], { decision: 'aprobada', revisor: 'u' })).toEqual([]);
 		expect(request).not.toHaveBeenCalled();

@@ -31,20 +31,11 @@ export interface OverTimeDto {
 	/** Instante de la aprobación o del rechazo (Timestamp, UTC). */
 	reviewed_at?: string | null;
 	reviewed_by?: UsuarioDirectus;
-	/** Se asigna al aprobar: periodo vigente en ese momento. */
-	period_id?: Relacion<PeriodoExpandido>;
 	created_at?: string | null;
 	created_by?: UsuarioDirectus;
 	updated_at?: string | null;
 	updated_by?: UsuarioDirectus;
 }
-
-type PeriodoExpandido = {
-	id: number;
-	name?: string | null;
-	start_date?: string;
-	end_date?: string;
-};
 
 /** Entrada de `crearHoraExtra`: siempre entra en `pendiente`. */
 export interface CreateOverTimeDto {
@@ -67,8 +58,6 @@ export interface ReviewOverTimeDto {
 	decision: 'aprobada' | 'descartada_comercial';
 	/** Obligatorio al rechazar. */
 	nota?: string;
-	/** Periodo vigente (obligatorio al aprobar). */
-	periodId?: number;
 	/** Id de `directus_users` del comercial. */
 	revisor: string;
 }

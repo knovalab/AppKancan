@@ -16,6 +16,7 @@ export const horariosKeys = {
 	empleados: {
 		todos: ['empleados'] as const,
 		tienda: (store: Store) => ['empleados', store] as const,
+		tiendas: (stores: number[]) => ['empleados', 'tiendas', stores] as const,
 	},
 	novedades: {
 		todos: ['novedades'] as const,
@@ -31,7 +32,6 @@ export const horariosKeys = {
 		todos: ['horasExtras'] as const,
 		lista: (filtros: object) => ['horasExtras', filtros] as const,
 	},
-	periodos: ['periodos'] as const,
 	eventosHoy: {
 		todos: ['eventReportsToday'] as const,
 		tienda: (store: Store) => ['eventReportsToday', store] as const,

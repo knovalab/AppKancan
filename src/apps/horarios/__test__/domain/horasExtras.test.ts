@@ -4,9 +4,7 @@ import {
 	ESTADO_HORA_EXTRA as E,
 	esEstadoFinal,
 	esEstadoHoraExtra,
-	esRezagada,
 	formatoMinutos,
-	periodoVigente,
 	puedeTransicionar,
 	validarHoraExtra,
 } from '@/apps/horarios/domain/horasExtras';
@@ -75,29 +73,6 @@ describe('transiciones', () => {
 	it('reconoce solo los valores del catálogo', () => {
 		expect(esEstadoHoraExtra('pendiente')).toBe(true);
 		expect(esEstadoHoraExtra('Req')).toBe(false);
-	});
-});
-
-describe('periodos y rezagadas', () => {
-	const periodos = [
-		{ id: 2, start_date: '2026-10-16', end_date: '2026-10-31' },
-		{ id: 1, start_date: '2026-10-01', end_date: '2026-10-15' },
-	];
-	const vigente = periodoVigente(periodos, '2026-10-20');
-
-	it('el vigente contiene hoy, incluidos los extremos', () => {
-		expect(vigente?.id).toBe(2);
-		expect(periodoVigente(periodos, '2026-10-15')?.id).toBe(1);
-		expect(periodoVigente(periodos, '2026-10-16')?.id).toBe(2);
-		expect(periodoVigente(periodos, '2026-11-01')).toBeUndefined();
-	});
-
-	it('rezagada = pendiente de un día anterior al vigente y sin periodo', () => {
-		expect(esRezagada({ work_date: '2026-10-10', status: E.pendiente }, vigente)).toBe(true);
-		expect(esRezagada({ work_date: '2026-10-16', status: E.pendiente }, vigente)).toBe(false);
-		expect(esRezagada({ work_date: '2026-10-10', status: E.aprobada, period_id: 2 }, vigente)).toBe(false);
-		expect(esRezagada({ work_date: '2026-10-10', status: E.descartadaComercial }, vigente)).toBe(false);
-		expect(esRezagada({ work_date: '2026-10-10', status: E.pendiente }, undefined)).toBe(false);
 	});
 });
 

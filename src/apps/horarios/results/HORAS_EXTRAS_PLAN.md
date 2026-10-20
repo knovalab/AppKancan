@@ -2,6 +2,7 @@
 
 > **Fecha:** 2026-10-20, sobre `setup` @ `d9f2b2c`. Solo análisis: **no se cambió código, datos ni esquema**.
 > **Alcance:** flujo manual de horas extras. El líder de zona las crea y el comercial las aprueba o rechaza. Incluye un histórico con su seguimiento. Las sugerencias del sistema quedan preparadas, pero no se implementan.
+> **Alcance actualizado (2026-10-20):** la **nómina (periodos y rezagadas) queda fuera**, y el líder ve las horas extras registradas y registra nuevas buscando al empleado. Ver [`HORAS_EXTRAS_F2A_LIDER.md`](HORAS_EXTRAS_F2A_LIDER.md) §1. Lo que este plan dice sobre periodos, rezagadas y la lista del líder ya no aplica.
 > **Decisiones P1–P8 (2026-10-20):** en [`HORAS_EXTRAS_F0_F1.md`](HORAS_EXTRAS_F0_F1.md) §1, que prevalece sobre este plan. Cambian el §3.2 (siempre al periodo vigente), el nombre `approval_at` (ahora `reviewed_at`) y el retiro de pendientes (no existe).
 > **Relacionado:** `ETL_HORAS_EXTRAS.md` (diseño original del ETL), `ETL_DIRECTUS_ESQUEMA_ANALISIS.md` (esquema real de `com_over_time` y `com_period`), `ETL_DIA_TIENDA_APLICADO.md` (periodos y día de tienda). Estos documentos se borraron del árbol de trabajo (§8.1); se leyeron desde git.
 

@@ -1,7 +1,10 @@
 import { createItem, readItems, updateItem, updateItems } from '@directus/sdk';
 import { withAutoRefresh } from '@/auth/services/directusInterceptor';
 import directus from '@/services/directus/directus';
-import { ESTADO_HORA_EXTRA, type EstadoHoraExtra } from '../../domain/horasExtras';
+import {
+	ESTADO_HORA_EXTRA,
+	type EstadoHoraExtra,
+} from '../../domain/horasExtras';
 import type { FiltroDirectus } from '../../interfaces/api/directus';
 import type {
 	CreateOverTimeDto,
@@ -9,7 +12,6 @@ import type {
 	ReviewOverTimeDto,
 	UpdateOverTimeDto,
 } from '../../interfaces/api/overTime';
-import type { PeriodDto } from '../../interfaces/api/period';
 import { errorDeApi } from '../../utils/errores';
 import { STORE_PRUEBAS } from './read';
 
@@ -21,7 +23,6 @@ export interface FiltrosHorasExtras {
 	desde?: string;
 	hasta?: string;
 	estados?: EstadoHoraExtra[];
-	periodoId?: number;
 	incluirPruebas?: boolean;
 }
 
@@ -35,10 +36,6 @@ const CAMPOS = [
 	'employee_id.store_id',
 	'store_id.id',
 	'store_id.name',
-	'period_id.id',
-	'period_id.name',
-	'period_id.start_date',
-	'period_id.end_date',
 	'created_by.id',
 	'created_by.first_name',
 	'created_by.last_name',
@@ -69,9 +66,7 @@ export function filtroHorasExtras(f: FiltrosHorasExtras): FiltroDirectus {
 	if (f.empleadoId != null) y.push({ employee_id: { _eq: f.empleadoId } });
 	if (f.desde) y.push({ work_date: { _gte: f.desde } });
 	if (f.hasta) y.push({ work_date: { _lte: f.hasta } });
-	if (f.estados && f.estados.length > 0)
-		y.push({ status: { _in: f.estados } });
-	if (f.periodoId != null) y.push({ period_id: { _eq: f.periodoId } });
+	if (f.estados && f.estados.length > 0) y.push({ status: { _in: f.estados } });
 	return y.length > 0 ? { _and: y } : {};
 }
 
@@ -98,26 +93,6 @@ export async function listarHorasExtras(
 	}
 }
 
-export async function listarPeriodos(): Promise<PeriodDto[]> {
-	try {
-		return (await withAutoRefresh(() =>
-			directus.request(
-				readItems('com_period', {
-					fields: ['id', 'name', 'start_date', 'end_date', 'liquidacion_date'],
-					sort: ['-start_date'],
-					limit: -1,
-				}),
-			),
-		)) as PeriodDto[];
-	} catch (error) {
-		throw errorDeApi(
-			error,
-			'Error consultando periodos',
-			'Error al cargar los periodos',
-		);
-	}
-}
-
 /** Crea una hora extra del líder: entra siempre en `pendiente`. */
 export async function crearHoraExtra(data: CreateOverTimeDto) {
 	try {
@@ -129,7 +104,6 @@ export async function crearHoraExtra(data: CreateOverTimeDto) {
 					work_date: data.work_date,
 					minutes: data.minutes,
 					observations: data.observations ?? '',
-					status: ESTADO_HORA_EXTRA.pendiente,
 				}),
 			),
 		);
@@ -163,14 +137,9 @@ export async function actualizarHoraExtra(id: number, data: UpdateOverTimeDto) {
 }
 
 /** Aprueba o rechaza una o varias pendientes en una sola petición. */
-export async function revisarHorasExtras(
-	ids: number[],
-	r: ReviewOverTimeDto,
-) {
+export async function revisarHorasExtras(ids: number[], r: ReviewOverTimeDto) {
 	if (ids.length === 0) return [];
 	const aprobar = r.decision === ESTADO_HORA_EXTRA.aprobada;
-	if (aprobar && r.periodId == null)
-		throw new Error('No existe el periodo vigente: no se puede aprobar.');
 	if (!aprobar && !r.nota?.trim())
 		throw new Error('El motivo del rechazo es obligatorio.');
 	try {
@@ -182,7 +151,6 @@ export async function revisarHorasExtras(
 					reviewed_at: new Date().toISOString(),
 					reviewed_by: r.revisor,
 					review_note: aprobar ? null : r.nota!.trim(),
-					...(aprobar ? { period_id: r.periodId } : {}),
 				}),
 			),
 		);

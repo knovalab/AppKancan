@@ -2,6 +2,7 @@
 
 > **Fecha:** 2026-10-20, sobre `setup` @ `d9f2b2c`. Cambios **sin commitear**.
 > **Plan:** [`HORAS_EXTRAS_PLAN.md`](HORAS_EXTRAS_PLAN.md). Este documento recoge las decisiones del 2026-10-20 y **prevalece** sobre el plan donde se contradigan.
+> **Actualización (2026-10-20, posterior):** **la nómina queda fuera de alcance.** Se quitaron del código los periodos (`com_period`, `period_id`) y las rezagadas, y el líder de zona ve las horas extras registradas, pero no los periodos. Ver [`HORAS_EXTRAS_F2A_LIDER.md`](HORAS_EXTRAS_F2A_LIDER.md). Las menciones a periodos que siguen en las secciones 1 y 3 de este documento son históricas; la sección 2 ya está corregida.
 > **Fuera de alcance:** el ETL (`services/horarios-etl`), que no interviene en esta implementación y no se tocó.
 
 ---
@@ -62,23 +63,19 @@
 | 11 | `created_at` | Volver a crear | Timestamp, especial *Date Created* |
 | 12 | `created_by` | Comprobar | M2O → `directus_users`, especial *User Created* |
 | 13 | `updated_at` / `updated_by` | **Crear** | *Date Updated* (Timestamp) y *User Updated* (M2O → `directus_users`) |
-| 14 | `period_id` | Sin cambio | M2O → `com_period`, nulo |
+| 14 | `period_id` | Sin cambio | Nómina: fuera de alcance. La app no lo lee ni lo escribe |
 
 ### 2.2 `com_period`
 
-| # | Campo | Acción |
-|---|---|---|
-| 1 | `name` | **Crear**: String, nulo. Ejemplo: "2026-10 · 2.ª quincena" |
-| 2 | `liquidacion_date` | **Crear**: Date, nulo. Por ahora no se usa (P3) |
-| 3 | Filas | **Crear el periodo vigente** (16–31 oct 2026) y los siguientes. **Sin periodo vigente no se puede aprobar.** Como el ETL no interviene, los crea a mano un administrador |
+Fuera de alcance (nómina). No hace falta ningún cambio para este flujo.
 
 ### 2.3 Políticas
 
 | Política | Asignar a | `com_over_time` | Otras |
 |---|---|---|---|
-| `time_log_overtime_leader` | Rol de los Area Manager | **Leer:** filtro *tienda trabajada **o** tienda del empleado* en sus tiendas (§2.4). **Crear:** campos `employee_id`, `store_id`, `work_date`, `minutes`, `observations`, `status`; validación `status = pendiente` y el mismo filtro de tienda sobre `employee_id.store_id`. **Actualizar:** filtro `status = pendiente` + tienda; campos `store_id`, `minutes`, `observations` | Leer `com_period` (todo) y `directus_users` (solo `id`, `first_name`, `last_name`) |
-| `time_log_comercial` | Rol del jefe comercial | **Leer:** todo. **Actualizar:** filtro `status = pendiente`; campos `status`, `reviewed_at`, `reviewed_by`, `review_note`, `period_id`; validación `status _in [aprobada, descartada_comercial]` | Leer `com_period`, `adm_employees`, `core_stores`, `com_time_records`, `com_time_record_store` y `directus_users` (`id`, `first_name`, `last_name`) |
-| Política de reporte que ya existe | Report y Admin | **Leer** | Leer `com_period` y `directus_users` (nombres) |
+| `time_log_overtime_leader` | Rol de los Area Manager | **Leer:** filtro *tienda trabajada **o** tienda del empleado* en sus tiendas (§2.4). **Crear:** campos `employee_id`, `store_id`, `work_date`, `minutes`, `observations`, `status`; validación `status = pendiente` y el mismo filtro de tienda sobre `employee_id.store_id`. **Actualizar:** filtro `status = pendiente` + tienda; campos `store_id`, `minutes`, `observations` | Leer `directus_users` (solo `id`, `first_name`, `last_name`). Leer `adm_employees` y `core_stores` (ya los tiene) |
+| `time_log_comercial` | Rol del jefe comercial | **Leer:** todo. **Actualizar:** filtro `status = pendiente`; campos `status`, `reviewed_at`, `reviewed_by`, `review_note`; validación `status _in [aprobada, descartada_comercial]` | Leer `adm_employees`, `core_stores`, `com_time_records`, `com_time_record_store` y `directus_users` (`id`, `first_name`, `last_name`) |
+| Política de reporte que ya existe | Report y Admin | **Leer** | Leer `directus_users` (nombres) |
 
 - **Nadie tiene permiso para borrar.**
 - **El nombre de la política tiene que cumplir la detección del frontend:** debe contener "comercial" **y** "time_log", "timelog" u "horario". Por ejemplo, `time_log_comercial`. Una política llamada solo "comercial" **no** activa el rol.
