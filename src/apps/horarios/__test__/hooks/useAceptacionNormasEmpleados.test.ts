@@ -30,7 +30,7 @@ describe('useAceptacionNormasEmpleados', () => {
 			hasPolicy: () => false,
 			esAdmin: () => false,
 			esAreaManager: () => false,
-			esReport: () => false,
+			esReport: () => false, esComercial: () => false,
 			puedeVerDemo: () => false,
 		});
 	});
@@ -84,7 +84,7 @@ describe('useAceptacionNormasEmpleados', () => {
 			hasPolicy: () => false,
 			esAdmin: () => false,
 			esAreaManager: () => false,
-			esReport: () => false,
+			esReport: () => false, esComercial: () => false,
 			puedeVerDemo: () => false,
 		});
 

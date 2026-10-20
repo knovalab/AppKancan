@@ -142,6 +142,20 @@ describe('useHorariosPolicies', () => {
 		});
 	});
 
+	describe('esComercial', () => {
+		it('exige "comercial" y el módulo (time_log/horario)', () => {
+			mockUserWithPolicies(['time_log_comercial']);
+			const { result } = renderHook(() => useHorariosPolicies());
+			expect(result.current.esComercial()).toBe(true);
+		});
+
+		it('ignora políticas "comercial" de otros módulos', () => {
+			mockUserWithPolicies(['comercial_comisiones']);
+			const { result } = renderHook(() => useHorariosPolicies());
+			expect(result.current.esComercial()).toBe(false);
+		});
+	});
+
 	describe('tieneTemporal', () => {
 		it('should return true when policy is strictly temporal', () => {
 			mockUserWithPolicies(['temporal']);

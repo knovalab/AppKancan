@@ -69,7 +69,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => false,
 			esAdmin: () => false,
 			esAreaManager: () => false,
-			esReport: () => false,
+			esReport: () => false, esComercial: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -107,7 +107,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => true,
 			esAreaManager: () => false,
-			esReport: () => false,
+			esReport: () => false, esComercial: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -138,7 +138,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => true,
 			esAreaManager: () => true, // User has both policies
-			esReport: () => false,
+			esReport: () => false, esComercial: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -160,7 +160,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => true,
-			esReport: () => false,
+			esReport: () => false, esComercial: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => true,
 		});
@@ -196,7 +196,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => true,
-			esReport: () => false,
+			esReport: () => false, esComercial: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -224,7 +224,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => false,
-			esReport: () => true,
+			esReport: () => true, esComercial: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -251,7 +251,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => true,
-			esReport: () => true,
+			esReport: () => true, esComercial: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
