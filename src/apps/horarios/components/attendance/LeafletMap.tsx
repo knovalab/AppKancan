@@ -38,10 +38,11 @@ export function LeafletMap({
 			zoom,
 			zoomControl: true,
 			attributionControl: true,
+			preferCanvas: true,
 		});
 
 		L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			maxZoom: 14,
+			maxZoom: 19,
 			attribution:
 				'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
 		}).addTo(map);
@@ -88,14 +89,18 @@ export function LeafletMap({
 			marker.bindPopup(popupContent).openPopup();
 		}
 
-		// Circulo de precisión si existe
+		// Círculo de precisión si existe (con límite visual máximo de 250m para proteger el rendimiento)
+		// Si el margen de error es alto (> 100m), se muestra en color ámbar punteado indicando aproximación
 		if (accuracy != null && accuracy > 0) {
+			const isHighError = accuracy > 100;
+			const visualRadius = Math.min(accuracy, 250);
 			L.circle([lat, lon], {
-				radius: accuracy,
-				color: '#004680',
+				radius: visualRadius,
+				color: isHighError ? '#f59e0b' : '#004680',
 				weight: 1.5,
-				fillColor: '#0284c7',
-				fillOpacity: 0.15,
+				dashArray: isHighError ? '4, 4' : undefined,
+				fillColor: isHighError ? '#f59e0b' : '#0284c7',
+				fillOpacity: isHighError ? 0.1 : 0.12,
 			}).addTo(map);
 		}
 

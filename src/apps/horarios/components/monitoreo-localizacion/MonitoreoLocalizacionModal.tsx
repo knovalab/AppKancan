@@ -133,12 +133,17 @@ export function MonitoreoLocalizacionModal({
 						/>
 						{accuracy != null && accuracy > 0 && (
 							<Chip
-								label={`Precisión: ±${Math.round(accuracy)}m`}
+								label={
+									accuracy > 100
+										? `Precisión: ±${Math.round(accuracy)}m (Margen alto)`
+										: `Precisión: ±${Math.round(accuracy)}m`
+								}
 								size="small"
 								variant="outlined"
 								sx={{
-									borderColor: '#cbd5e1',
-									color: '#475569',
+									borderColor: accuracy > 100 ? '#f59e0b' : '#cbd5e1',
+									color: accuracy > 100 ? '#b45309' : '#475569',
+									bgcolor: accuracy > 100 ? '#fffbeb' : 'transparent',
 									fontWeight: 600,
 									fontSize: '0.78rem',
 								}}

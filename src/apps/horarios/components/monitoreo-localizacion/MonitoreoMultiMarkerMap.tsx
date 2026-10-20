@@ -154,6 +154,7 @@ export function MonitoreoMultiMarkerMap({
 			zoom: 15,
 			zoomControl: true,
 			attributionControl: true,
+			preferCanvas: true,
 		});
 
 		L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -204,8 +205,8 @@ export function MonitoreoMultiMarkerMap({
 						</span>
 						${
 							item.accuracy != null && item.accuracy > 0
-								? `<span style="background: #e0f2fe; color: #004680; font-size: 10px; font-weight: 600; padding: 2px 5px; border-radius: 4px;">
-									±${Math.round(item.accuracy)}m
+								? `<span style="background: ${item.accuracy > 100 ? '#fef3c7' : '#e0f2fe'}; color: ${item.accuracy > 100 ? '#92400e' : '#004680'}; font-size: 10px; font-weight: 600; padding: 2px 5px; border-radius: 4px;">
+									±${Math.round(item.accuracy)}m${item.accuracy > 100 ? ' (Margen alto)' : ''}
 								</span>`
 								: ''
 						}
@@ -234,15 +235,18 @@ export function MonitoreoMultiMarkerMap({
 				}
 			});
 
-			// Add subtle accuracy circle if available
+			// Add accuracy circle with visual cap at 250m
+			// If error is high (> 100m), display in dashed amber to indicate approximate radius
 			if (item.accuracy != null && item.accuracy > 0) {
+				const isHighError = item.accuracy > 100;
+				const visualRadius = Math.min(item.accuracy, 250);
 				L.circle([item.lat, item.lon], {
-					radius: item.accuracy,
-					color: pinColor,
-					weight: 1,
-					dashArray: '3, 4',
-					fillColor: pinColor,
-					fillOpacity: 0.08,
+					radius: visualRadius,
+					color: isHighError ? '#f59e0b' : pinColor,
+					weight: 1.2,
+					dashArray: isHighError ? '4, 4' : undefined,
+					fillColor: isHighError ? '#f59e0b' : pinColor,
+					fillOpacity: isHighError ? 0.07 : 0.08,
 				}).addTo(map);
 			}
 

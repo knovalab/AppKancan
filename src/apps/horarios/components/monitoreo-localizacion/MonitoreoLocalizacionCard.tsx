@@ -211,15 +211,25 @@ export function MonitoreoLocalizacionCard({
 
 					{accuracy != null && accuracy > 0 && (
 						<Chip
-							label={`±${Math.round(accuracy)}m`}
+							label={
+								accuracy > 100
+									? `±${Math.round(accuracy)}m (Margen alto)`
+									: `±${Math.round(accuracy)}m`
+							}
 							size="small"
 							sx={{
-								bgcolor: isSelected ? '#ffffff' : '#f1f5f9',
-								color: '#475569',
+								bgcolor:
+									accuracy > 100
+										? '#fffbeb'
+										: isSelected
+											? '#ffffff'
+											: '#f1f5f9',
+								color: accuracy > 100 ? '#b45309' : '#475569',
 								fontWeight: 600,
 								fontSize: '0.72rem',
 								height: 22,
-								border: '1px solid #e2e8f0',
+								border: '1px solid',
+								borderColor: accuracy > 100 ? '#fde68a' : '#e2e8f0',
 							}}
 						/>
 					)}
