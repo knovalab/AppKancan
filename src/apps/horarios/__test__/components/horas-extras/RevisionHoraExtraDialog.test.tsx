@@ -18,6 +18,9 @@ const fila = (id: number, minutos: number): HoraExtraFila => ({
 	creadaEl: '',
 	empleadoId: id,
 	periodo: null,
+	revisadaPor: '',
+	revisadaEl: '',
+	motivoRechazo: '',
 });
 
 describe('RevisionHoraExtraDialog', () => {

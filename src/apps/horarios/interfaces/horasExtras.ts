@@ -18,6 +18,12 @@ export interface HoraExtraFila {
 	creadaPor: string;
 	/** ISO, o '' si no viene. */
 	creadaEl: string;
+	/** Quién aprobó o rechazó (`updated_by` en una fila revisada); '' si aún no. */
+	revisadaPor: string;
+	/** ISO (`reviewed_at`), o ''. */
+	revisadaEl: string;
+	/** Motivo del rechazo (`review_note`), o ''. */
+	motivoRechazo: string;
 	/** Periodo de nómina vinculado; `null` = sin vincular. Fechas YYYY-MM-DD ('' si no se expandieron). */
 	periodo: { id: number; inicio: string; fin: string } | null;
 }

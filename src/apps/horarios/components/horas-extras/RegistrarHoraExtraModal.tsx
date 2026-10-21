@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useAuth } from '@/auth/hooks/useAuth';
 import { crearHoraExtra } from '../../api/directus/horasExtras';
 import {
 	buscarDuplicado,
@@ -58,6 +59,7 @@ export function RegistrarHoraExtraModal({
 }: RegistrarHoraExtraModalProps) {
 	const queryClient = useQueryClient();
 	const { showSnackbar } = useAvisos();
+	const { user } = useAuth();
 	const hoy = getRealColombiaTime().format('YYYY-MM-DD');
 	const [empleado, setEmpleado] = useState<EmpleadoAsistencia | null>(null);
 	const tiendaEmpleado = empleado?.storeId ?? null;
@@ -127,6 +129,7 @@ export function RegistrarHoraExtraModal({
 			work_date: fecha,
 			minutes: minutos,
 			observations: observacion.trim(),
+			created_by: user?.id ?? '',
 		});
 	};
 

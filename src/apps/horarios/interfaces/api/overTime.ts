@@ -46,6 +46,8 @@ export interface CreateOverTimeDto {
 	work_date: string;
 	minutes: number;
 	observations?: string;
+	/** UUID (`directus_users.id`) de quien registra: trazabilidad "Creada por". */
+	created_by: string;
 }
 
 /** Edición del líder mientras está `pendiente`. */

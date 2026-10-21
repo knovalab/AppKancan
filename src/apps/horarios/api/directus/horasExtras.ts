@@ -101,6 +101,9 @@ export async function listarHorasExtras(
 
 /** Crea una hora extra del líder: entra siempre en `pendiente`. */
 export async function crearHoraExtra(data: CreateOverTimeDto) {
+	// Sin autor no hay trazabilidad: no se envía nada.
+	if (!data.created_by?.trim())
+		throw new Error('No se pudo identificar al usuario que registra la hora extra.');
 	try {
 		return await withAutoRefresh(() =>
 			directus.request(
@@ -110,6 +113,7 @@ export async function crearHoraExtra(data: CreateOverTimeDto) {
 					work_date: data.work_date,
 					minutes: data.minutes,
 					observations: data.observations ?? '',
+					created_by: data.created_by,
 				}),
 			),
 		);

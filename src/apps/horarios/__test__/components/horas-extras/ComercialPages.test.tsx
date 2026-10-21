@@ -27,7 +27,18 @@ const dto = (id: number, nombre: string) => ({
 	status: 'pendiente',
 });
 
-const historial = [{ ...dto(9, 'Carla'), status: 'aprobada' }];
+const historial = [
+	{
+		...dto(9, 'Carla'),
+		status: 'descartada_comercial',
+		observations: 'Cierre de inventario',
+		created_by: { id: 'u1', first_name: 'luis', last_name: 'gómez' },
+		created_at: '2026-10-19T22:00:00',
+		updated_by: { id: 'u2', first_name: 'marta', last_name: 'ríos' },
+		reviewed_at: '2026-10-20T09:30:00',
+		review_note: 'Sin soporte',
+	},
+];
 
 beforeEach(() => {
 	vi.clearAllMocks();
@@ -53,6 +64,27 @@ describe('HistorialPage', () => {
 		expect(pedido).toMatchObject({ tiendas: [26, 30], desde: dayjs().startOf('month').format('YYYY-MM-DD'), hasta: dayjs().format('YYYY-MM-DD') });
 		expect(pedido.estados).toEqual(['sugerida', 'descartada_lider', 'descartada_comercial', 'aprobada']);
 		expect(screen.getByText('Historial de horas extras')).toBeInTheDocument();
+	});
+
+	it('la tabla no muestra observación ni creador; el detalle sí, con quién revisó y el motivo', async () => {
+		montarHistorial();
+		await screen.findByText('Carla X');
+		expect(screen.queryByRole('columnheader', { name: 'Observación' })).not.toBeInTheDocument();
+		expect(screen.queryByRole('columnheader', { name: 'Creada por' })).not.toBeInTheDocument();
+		expect(screen.queryByText('Cierre de inventario')).not.toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: 'Ver detalle de Carla X' }));
+		const detalle = await screen.findByRole('dialog', { name: /Detalle de hora extra/ });
+		expect(within(detalle).getByText('Cierre de inventario')).toBeInTheDocument();
+		expect(within(detalle).getByText('Luis Gómez')).toBeInTheDocument();
+		expect(within(detalle).getByText('19/10/2026 22:00')).toBeInTheDocument();
+		expect(within(detalle).getByText('Rechazada por')).toBeInTheDocument();
+		expect(within(detalle).getByText('Marta Ríos')).toBeInTheDocument();
+		expect(within(detalle).getByText('20/10/2026 09:30')).toBeInTheDocument();
+		expect(within(detalle).getByText('Sin soporte')).toBeInTheDocument();
+
+		fireEvent.click(within(detalle).getByRole('button', { name: 'Cerrar' }));
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 	});
 
 	it('filtra por un estado', async () => {

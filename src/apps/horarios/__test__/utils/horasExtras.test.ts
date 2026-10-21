@@ -43,6 +43,19 @@ describe('aFilaHoraExtra', () => {
 		expect(aFilaHoraExtra({ ...base, period_id: 4 }).periodo).toEqual({ id: 4, inicio: '', fin: '' });
 	});
 
+	it('revisión: solo con reviewed_at se toma updated_by como revisor', () => {
+		const revisada = aFilaHoraExtra({
+			...base,
+			status: 'descartada_comercial',
+			updated_by: { id: 'u2', first_name: 'marta', last_name: 'ríos' },
+			reviewed_at: '2026-10-12T10:00:00Z',
+			review_note: 'Sin soporte',
+		});
+		expect(revisada).toMatchObject({ revisadaPor: 'Marta Ríos', revisadaEl: '2026-10-12T10:00:00Z', motivoRechazo: 'Sin soporte' });
+		// Pendiente editada: updated_by no es un revisor.
+		expect(aFilaHoraExtra({ ...base, updated_by: { id: 'u1', first_name: 'luis' } }).revisadaPor).toBe('');
+	});
+
 	it('tolera relaciones sin expandir', () => {
 		const f = aFilaHoraExtra({ ...base, employee_id: 7, store_id: 26, created_by: 'u1', observations: null });
 		expect(f).toMatchObject({ empleado: 'Empleado 7', tienda: '', rotacion: false, creadaPor: '', observacion: '' });

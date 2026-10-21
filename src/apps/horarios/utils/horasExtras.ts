@@ -45,6 +45,9 @@ export function aFilaHoraExtra(
 		estado: dto.status,
 		creadaPor: nombre(dto.created_by),
 		creadaEl: dto.created_at ?? '',
+		revisadaPor: dto.reviewed_at ? nombre(dto.updated_by) : '',
+		revisadaEl: dto.reviewed_at ?? '',
+		motivoRechazo: dto.review_note ?? '',
 		periodo: periodoDe(dto.period_id),
 	};
 }

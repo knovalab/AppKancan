@@ -28,6 +28,8 @@ const COLUMNAS = [
 	'Estado',
 ];
 
+const COLUMNAS_DETALLE = ['Observación', 'Creada por'];
+
 const rangoPeriodo = (p: NonNullable<HoraExtraFila['periodo']>) =>
 	p.inicio && p.fin
 		? `${dayjs(p.inicio).format('DD/MM/YYYY')} – ${dayjs(p.fin).format('DD/MM/YYYY')}`
@@ -46,6 +48,8 @@ export interface HorasExtrasTablaProps {
 	acciones?: (fila: HoraExtraFila) => ReactNode;
 	/** Columna "Periodo" (nómina). */
 	conPeriodo?: boolean;
+	/** Sin "Observación" ni "Creada por" (van en el detalle, p. ej. Historial). */
+	compacta?: boolean;
 }
 
 export function HorasExtrasTabla({
@@ -55,8 +59,12 @@ export function HorasExtrasTabla({
 	seleccion,
 	acciones,
 	conPeriodo = false,
+	compacta = false,
 }: HorasExtrasTablaProps) {
-	const titulos = conPeriodo ? [...COLUMNAS, 'Periodo'] : COLUMNAS;
+	const titulos = [
+		...COLUMNAS.filter((c) => !compacta || !COLUMNAS_DETALLE.includes(c)),
+		...(conPeriodo ? ['Periodo'] : []),
+	];
 	const columnas = titulos.length + (seleccion ? 1 : 0) + (acciones ? 1 : 0);
 	const marcadas = seleccion
 		? filas.filter((f) => seleccion.ids.has(f.id)).length
@@ -158,19 +166,25 @@ export function HorasExtrasTabla({
 								<TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>
 									{formatoMinutos(f.minutos)}
 								</TableCell>
-								<TableCell sx={{ maxWidth: 260 }}>
-									<Typography variant="body2" noWrap title={f.observacion}>
-										{f.observacion || '--'}
-									</Typography>
-								</TableCell>
-								<TableCell>
-									<Typography variant="body2">{f.creadaPor || '--'}</Typography>
-									{f.creadaEl && (
-										<Typography variant="caption" sx={{ color: '#64748b' }}>
-											{dayjs(f.creadaEl).format('DD/MM/YYYY HH:mm')}
+								{!compacta && (
+									<TableCell sx={{ maxWidth: 260 }}>
+										<Typography variant="body2" noWrap title={f.observacion}>
+											{f.observacion || '--'}
 										</Typography>
-									)}
-								</TableCell>
+									</TableCell>
+								)}
+								{!compacta && (
+									<TableCell>
+										<Typography variant="body2">
+											{f.creadaPor || '--'}
+										</Typography>
+										{f.creadaEl && (
+											<Typography variant="caption" sx={{ color: '#64748b' }}>
+												{dayjs(f.creadaEl).format('DD/MM/YYYY HH:mm')}
+											</Typography>
+										)}
+									</TableCell>
+								)}
 								<TableCell>
 									<HoraExtraEstadoChip estado={f.estado} />
 								</TableCell>

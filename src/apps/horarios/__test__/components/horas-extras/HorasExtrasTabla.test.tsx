@@ -18,6 +18,9 @@ const fila: HoraExtraFila = {
 	creadaEl: '2026-10-11T14:00:00',
 	empleadoId: 7,
 	periodo: null,
+	revisadaPor: '',
+	revisadaEl: '',
+	motivoRechazo: '',
 };
 
 describe('HorasExtrasTabla', () => {

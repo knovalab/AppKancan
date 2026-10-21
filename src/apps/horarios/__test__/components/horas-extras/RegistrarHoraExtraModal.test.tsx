@@ -10,6 +10,7 @@ vi.mock('@/apps/horarios/api/directus/horasExtras', () => ({
 	crearHoraExtra: (d: unknown) => crearHoraExtra(d),
 	listarHorasExtras: (f: unknown) => listarHorasExtras(f),
 }));
+vi.mock('@/auth/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'uuid-lider' } }) }));
 vi.mock('@/apps/horarios/hooks/useAvisos', () => ({ useAvisos: () => ({ showSnackbar }) }));
 vi.mock('@/apps/horarios/utils/timeSync', () => ({ getRealColombiaTime: () => dayjs('2026-10-20T10:00:00') }));
 
@@ -81,6 +82,7 @@ describe('RegistrarHoraExtraModal', () => {
 			work_date: '2026-10-20',
 			minutes: 90,
 			observations: 'Inventario',
+			created_by: 'uuid-lider',
 		});
 		expect(showSnackbar).toHaveBeenCalledWith(expect.stringMatching(/pendiente/), 'success');
 	});

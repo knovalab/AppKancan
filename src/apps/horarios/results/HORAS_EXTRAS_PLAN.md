@@ -107,7 +107,7 @@ La tienda **90** (pruebas) se excluye de las consultas salvo que se pida. La **5
 | `observations` | Text, ≤ 300 | Justificación del líder |
 | `review_note` | Text | **Motivo del rechazo** (obligatorio al rechazar) |
 | `reviewed_at` | **Timestamp** | Fecha de la decisión, apruebe o rechace. Sustituye a `approval_at` |
-| `created_at` / `created_by` | *Date Created* / *User Created* | Quién y cuándo se registró |
+| `created_at` / `created_by` | *Date Created* / M2O → `directus_users` (uuid) | Quién y cuándo se registró. **El frontend envía `created_by` = uuid del usuario** (§10) |
 | `updated_at` / `updated_by` | *Date Updated* / *User Updated* | En una fila revisada, el comercial que decidió |
 | `period_id` | M2O → `com_period` | **Existe, pero la app no lo lee ni lo escribe** (nómina, fuera de alcance) |
 
@@ -154,7 +154,7 @@ Los valores viven en un único catálogo (`domain/horasExtras/estados.ts`). **No
 | Cambio | Qué |
 |---|---|
 | `com_over_time` | Crear `work_date`, `observations`, `review_note`, `reviewed_at` (Timestamp) y `updated_at`/`updated_by`. Borrar `approval_at`. Volver a crear `created_at` como Timestamp. Hacer requeridos `employee_id`, `store_id`, `work_date`, `minutes` y `status`. Opciones y validación de `status`. `minutes > 0` |
-| Política del **líder** | **Leer y crear** solo en sus tiendas: la tienda trabajada **o** la del empleado está en `core_user_stores` del usuario. Crear solo con `status = pendiente` |
+| Política del **líder** | **Leer y crear** solo en sus tiendas: la tienda trabajada **o** la del empleado está en `core_user_stores` del usuario. Crear solo con `status = pendiente`. **Permitir el campo `created_by` con validación `created_by = $CURRENT_USER`** (el frontend lo envía; ver §10) |
 | Política del **comercial** (nombre con "comercial" + time_log/horario) | **Leer** todo. **Actualizar** solo filas `pendiente`, solo los campos `status`, `reviewed_at` y `review_note`, con `status _in [aprobada, descartada_comercial]` |
 | Lectura auxiliar | `directus_users` (nombres), `adm_employees` y `core_stores` para las dos políticas |
 | Recomendado | *Preset* `reviewed_at = $NOW` en la política del comercial, para no depender del reloj del dispositivo |
@@ -221,3 +221,35 @@ Los valores viven en un único catálogo (`domain/horasExtras/estados.ts`). **No
 | Q3 | ¿El Historial muestra el **motivo del rechazo** y **quién revisó**? | Los datos ya llegan en la consulta (`review_note`, `updated_by`); solo faltan las columnas |
 | Q4 | ¿Qué sub-pestaña abre el comercial al entrar: Historial (como ahora) o Aprobación? | Es el orden en `secciones.ts` |
 | Q5 | ¿Exportación a Excel del historial (F4)? ¿Y en la exportación unificada de Reporte? | Coherencia con las demás pestañas |
+
+---
+
+## 10. Trazabilidad de quién registra (2026-10-21)
+
+**Cambio:** `crearHoraExtra` envía **`created_by` = uuid del usuario** (`useAuth().user.id`, que viene de `readMe().id` de Directus). No depende de que el campo esté configurado como *User Created*.
+
+| Pieza | Qué hace |
+|---|---|
+| `CreateOverTimeDto.created_by` | **Obligatorio** (uuid de `directus_users`) |
+| `crearHoraExtra` | Si falta el uuid, **no llama a Directus** y lanza "No se pudo identificar al usuario…" (el modal lo muestra como error) |
+| `RegistrarHoraExtraModal` | Pasa `user.id` de la sesión |
+| Lectura | La consulta expande `created_by.id`, `first_name`, `last_name`; `aFilaHoraExtra` lo convierte en **"Creada por"** (nombre propio) |
+
+**Quién ve "Creada por"** (columna de `HorasExtrasTabla`, con nombre y fecha/hora de creación):
+
+| Vista | Rol | ¿Muestra quién creó? |
+|---|---|:-:|
+| Registradas | Líder | ✅ |
+| Historial | Comercial y nómina | ✅ |
+| Aprobación | Comercial | ✅ |
+| Periodos → detalle (Del periodo / Rezagadas) | Nómina | ✅ |
+| Confirmación de aprobar/rechazar y de liquidar | Comercial / nómina | — (resúmenes, sin filas) |
+
+**Requisitos en Directus para que la trazabilidad se mantenga:**
+1. `created_by` debe ser un M2O a `directus_users`. Si es *User Created*, Directus lo rellena con el usuario del token y coincide con lo enviado.
+2. Política del **líder**: incluir `created_by` en los campos de *Crear* con validación **`created_by = $CURRENT_USER`**, para que nadie registre a nombre de otro.
+3. Políticas de **líder, comercial y nómina** (y report/admin si leen `com_over_time`): **leer `directus_users`** (`id`, `first_name`, `last_name`). Sin ese permiso el nombre llega vacío (se ve "--") o la consulta falla.
+4. Nadie tiene *Actualizar* sobre `created_by`: el autor no cambia después de crear.
+
+**Fuera de este cambio:** quién **revisó** (`updated_by`, Q3 de §9) aún no tiene columna en el Historial.
+

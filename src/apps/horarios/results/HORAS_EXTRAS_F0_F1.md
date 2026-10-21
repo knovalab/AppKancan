@@ -73,7 +73,7 @@ Fuera de alcance (nómina). No hace falta ningún cambio para este flujo.
 
 | Política | Asignar a | `com_over_time` | Otras |
 |---|---|---|---|
-| `time_log_overtime_leader` | Rol de los Area Manager | **Leer:** filtro *tienda trabajada **o** tienda del empleado* en sus tiendas (§2.4). **Crear:** campos `employee_id`, `store_id`, `work_date`, `minutes`, `observations`, `status`; validación `status = pendiente` y el mismo filtro de tienda sobre `employee_id.store_id`. **Actualizar:** filtro `status = pendiente` + tienda; campos `store_id`, `minutes`, `observations` | Leer `directus_users` (solo `id`, `first_name`, `last_name`). Leer `adm_employees` y `core_stores` (ya los tiene) |
+| `time_log_overtime_leader` | Rol de los Area Manager | **Leer:** filtro *tienda trabajada **o** tienda del empleado* en sus tiendas (§2.4). **Crear:** campos `employee_id`, `store_id`, `work_date`, `minutes`, `observations`, `status`, **`created_by`**; validación `status = pendiente`, **`created_by = $CURRENT_USER`** y el mismo filtro de tienda sobre `employee_id.store_id`. **Actualizar:** filtro `status = pendiente` + tienda; campos `store_id`, `minutes`, `observations` | Leer `directus_users` (solo `id`, `first_name`, `last_name`). Leer `adm_employees` y `core_stores` (ya los tiene) |
 | `time_log_comercial` | Rol del jefe comercial | **Leer:** todo. **Actualizar:** filtro `status = pendiente`; campos `status`, `reviewed_at`, `review_note`; validación `status _in [aprobada, descartada_comercial]` | Leer `adm_employees`, `core_stores`, `com_time_records`, `com_time_record_store` y `directus_users` (`id`, `first_name`, `last_name`) |
 | Política de reporte que ya existe | Report y Admin | **Leer** | Leer `directus_users` (nombres) |
 

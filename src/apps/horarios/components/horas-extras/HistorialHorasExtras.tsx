@@ -1,6 +1,8 @@
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
 	Alert,
 	Box,
+	Button,
 	FormControl,
 	MenuItem,
 	Paper,
@@ -12,16 +14,18 @@ import { useMemo, useState } from 'react';
 import {
 	ESTADO_HORA_EXTRA,
 	ESTADOS_HORA_EXTRA,
-	ETIQUETA_ESTADO_HORA_EXTRA,
 	type EstadoHoraExtra,
+	ETIQUETA_ESTADO_HORA_EXTRA,
 	formatoMinutos,
 } from '../../domain/horasExtras';
 import { useHorariosLayout } from '../../hooks/useHorariosLayout';
 import { useHorasExtras } from '../../hooks/useHorasExtras';
+import type { HoraExtraFila } from '../../interfaces/horasExtras';
 import { mensajeDeError } from '../../utils/errores';
 import { aFilaHoraExtra } from '../../utils/horasExtras';
 import { ReporteTiendasPagination } from '../com_time_record_store';
 import DateRangeFilter from '../reportes/DateRangeFilter';
+import { HoraExtraDetalleDialog } from './HoraExtraDetalleDialog';
 import { HorasExtrasTabla } from './HorasExtrasTabla';
 
 /** Todo menos `pendiente`: las pendientes tienen su propia tabla. */
@@ -46,6 +50,7 @@ export function HistorialHorasExtras() {
 	const [estado, setEstado] = useState<FiltroEstado>('todos');
 	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(10);
+	const [detalle, setDetalle] = useState<HoraExtraFila | null>(null);
 
 	const filtros = useMemo(
 		() => ({
@@ -65,7 +70,10 @@ export function HistorialHorasExtras() {
 	const pagina = filas.slice(actual * rowsPerPage, (actual + 1) * rowsPerPage);
 
 	return (
-		<Paper elevation={0} sx={{ p: 2, borderRadius: 3, border: '1px solid #e0e0e0' }}>
+		<Paper
+			elevation={0}
+			sx={{ p: 2, borderRadius: 3, border: '1px solid #e0e0e0' }}
+		>
 			<Box
 				sx={{
 					display: 'flex',
@@ -134,7 +142,10 @@ export function HistorialHorasExtras() {
 
 			{error && (
 				<Alert severity="error" sx={{ mb: 2 }}>
-					{mensajeDeError(error, 'Error al cargar el historial de horas extras')}
+					{mensajeDeError(
+						error,
+						'Error al cargar el historial de horas extras',
+					)}
 				</Alert>
 			)}
 
@@ -143,7 +154,17 @@ export function HistorialHorasExtras() {
 				loading={isLoading && tienda.storeIds.length > 0}
 				vacio="No hay horas extras en el historial con estos filtros"
 				conPeriodo={acceso.roles.has('nomina')}
+				compacta
+				acciones={(f) => (
+					<Button
+						size="small"
+						startIcon={<VisibilityOutlinedIcon />}
+						onClick={() => setDetalle(f)}
+						aria-label={`Ver detalle de ${f.empleado}`}
+					></Button>
+				)}
 			/>
+			<HoraExtraDetalleDialog fila={detalle} onClose={() => setDetalle(null)} />
 			{filas.length > 0 && (
 				<ReporteTiendasPagination
 					page={actual}

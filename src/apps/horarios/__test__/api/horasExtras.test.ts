@@ -52,12 +52,22 @@ describe('filtroHorasExtras', () => {
 
 describe('crearHoraExtra', () => {
 	it('siempre crea en pendiente', async () => {
-		await crearHoraExtra({ employee_id: 5, store_id: 26, work_date: '2026-10-19', minutes: 60 });
+		await crearHoraExtra({ employee_id: 5, store_id: 26, work_date: '2026-10-19', minutes: 60, created_by: 'uuid-lider' });
 		expect(request.mock.calls[0][0]).toMatchObject({
 			op: 'create',
 			c: 'com_over_time',
 			d: { employee_id: 5, store_id: 26, minutes: 60, status: 'pendiente' },
 		});
+	});
+
+	it('envía el uuid de quien crea y no llama a Directus sin él', async () => {
+		await crearHoraExtra({ employee_id: 5, store_id: 26, work_date: '2026-10-19', minutes: 60, created_by: 'uuid-lider' });
+		expect(request.mock.calls[0][0].d.created_by).toBe('uuid-lider');
+		request.mockClear();
+		await expect(
+			crearHoraExtra({ employee_id: 5, store_id: 26, work_date: '2026-10-19', minutes: 60, created_by: ' ' }),
+		).rejects.toThrow(/usuario/);
+		expect(request).not.toHaveBeenCalled();
 	});
 });
 
