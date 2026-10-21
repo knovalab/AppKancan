@@ -2,7 +2,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import {
 	Alert,
 	Box,
+	Button,
+	CircularProgress,
 	Dialog,
+	DialogActions,
 	DialogContent,
 	DialogTitle,
 	IconButton,
@@ -16,21 +19,29 @@ import {
 	Tabs,
 	Typography,
 } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { type ReactNode, useMemo, useState } from 'react';
+import { liquidarPeriodo } from '../../api/directus/periodos';
 import {
 	duracionDias,
 	ESTADO_PERIODO,
 	formatoMinutos,
 	resumenPorEmpleado,
 } from '../../domain/horasExtras';
-import { useHorasExtrasDePeriodo } from '../../hooks/usePeriodos';
+import { horariosKeys } from '../../hooks/registro/keys';
+import { useAvisos } from '../../hooks/useAvisos';
+import { POR_PAGAR, useHorasExtrasDePeriodo } from '../../hooks/usePeriodos';
 import type { PeriodDto } from '../../interfaces/api/period';
 import type { HoraExtraFila } from '../../interfaces/horasExtras';
 import { mensajeDeError } from '../../utils/errores';
 import { formatNombrePropio } from '../../utils/format';
 import { aFilaHoraExtra } from '../../utils/horasExtras';
 import { extraerNombreUsuario } from '../../utils/registroTienda';
+import {
+	type CambiosPreliquidacion,
+	ConfirmarLiquidacionDialog,
+} from './ConfirmarLiquidacionDialog';
 import { HorasExtrasTabla } from './HorasExtrasTabla';
 import { PeriodoEstadoChip } from './PeriodoEstadoChip';
 
@@ -68,12 +79,28 @@ function Bloque({
 	const minutos = filas.reduce((s, f) => s + f.minutos, 0);
 	return (
 		<Box sx={{ mb: 3 }}>
-			<Typography
-				variant="subtitle1"
-				sx={{ fontWeight: 700, color: '#004680', mb: 1 }}
+			<Box
+				sx={{
+					display: 'flex',
+					flexWrap: 'wrap',
+					alignItems: 'baseline',
+					gap: 2,
+					mb: 1,
+				}}
 			>
-				{titulo} · {filas.length} · {formatoMinutos(minutos)}
-			</Typography>
+				<Typography
+					variant="subtitle1"
+					sx={{ fontWeight: 700, color: '#004680' }}
+				>
+					{titulo}
+				</Typography>
+				<Typography variant="body2" sx={{ color: '#475569' }}>
+					Horas extras: <strong>{filas.length}</strong>
+				</Typography>
+				<Typography variant="body2" sx={{ color: '#475569' }}>
+					Tiempo: <strong>{formatoMinutos(minutos)}</strong>
+				</Typography>
+			</Box>
 			<HorasExtrasTabla filas={filas} vacio={vacio} />
 		</Box>
 	);
@@ -88,7 +115,14 @@ export function PeriodoDetalleDialog({
 	onClose,
 }: PeriodoDetalleDialogProps) {
 	const [vista, setVista] = useState<'detalle' | 'resumen'>('detalle');
-	const { data, isLoading, error } = useHorasExtrasDePeriodo(periodo, periodos);
+	const queryClient = useQueryClient();
+	const { showSnackbar } = useAvisos();
+	const { data, isLoading, isFetching, error, refetch } =
+		useHorasExtrasDePeriodo(periodo, periodos);
+	// `null` = confirmación cerrada.
+	const [confirmar, setConfirmar] = useState<CambiosPreliquidacion | null>(
+		null,
+	);
 
 	const { delPeriodo, rezagadas } = useMemo(() => {
 		if (!data || !periodo) return { delPeriodo: [], rezagadas: [] };
@@ -109,6 +143,69 @@ export function PeriodoDetalleDialog({
 	);
 	const resumen = useMemo(() => resumenPorEmpleado(todas), [todas]);
 
+	const liquidar = useMutation({
+		mutationFn: ({ id, ids }: { id: number; ids: number[] }) =>
+			liquidarPeriodo(id, ids),
+		onSuccess: (_, { ids }) => {
+			showSnackbar(
+				`Periodo liquidado: ${ids.length} hora${ids.length !== 1 ? 's' : ''} extra vinculada${ids.length !== 1 ? 's' : ''}`,
+				'success',
+			);
+			setConfirmar(null);
+		},
+		onError: (err) => {
+			showSnackbar(
+				mensajeDeError(err, 'Error al liquidar el periodo'),
+				'error',
+			);
+			setConfirmar(null);
+		},
+		// También tras un error: pudo vincular las horas sin cerrar el periodo.
+		onSettled: () => {
+			void queryClient.invalidateQueries({ queryKey: horariosKeys.periodos });
+			void queryClient.invalidateQueries({
+				queryKey: horariosKeys.horasExtras.todos,
+			});
+		},
+	});
+
+	/** Vuelve a calcular la preliquidación y dice qué cambió respecto a lo que había en pantalla. */
+	const recalcular = async (): Promise<CambiosPreliquidacion | null> => {
+		const antes = new Set(todas.map((f) => f.id));
+		const r = await refetch();
+		// La tabla de periodos usa la misma base: que no muestre totales viejos.
+		void queryClient.invalidateQueries({
+			queryKey: horariosKeys.horasExtras.lista(POR_PAGAR),
+		});
+		if (r.error || !r.data) {
+			showSnackbar(
+				mensajeDeError(r.error, 'Error al recalcular la preliquidación'),
+				'error',
+			);
+			return null;
+		}
+		const ahora = [...r.data.delPeriodo, ...r.data.rezagadas].map((h) => h.id);
+		const nuevas = ahora.filter((id) => !antes.has(id)).length;
+		return { nuevas, retiradas: antes.size - (ahora.length - nuevas) };
+	};
+
+	const preliquidar = async () => {
+		const c = await recalcular();
+		if (!c) return;
+		if (c.nuevas === 0 && c.retiradas === 0)
+			showSnackbar('Preliquidación al día: sin cambios', 'info');
+		else
+			showSnackbar(
+				`Preliquidación actualizada: ${c.nuevas} nueva${c.nuevas !== 1 ? 's' : ''}, ${c.retiradas} retirada${c.retiradas !== 1 ? 's' : ''}`,
+				'success',
+			);
+	};
+
+	const abrirLiquidar = async () => {
+		const c = await recalcular();
+		if (c) setConfirmar(c);
+	};
+
 	if (!periodo) return null;
 	const liquidado = periodo.status === ESTADO_PERIODO.liquidado;
 	const liquidadoPor =
@@ -119,7 +216,7 @@ export function PeriodoDetalleDialog({
 	return (
 		<Dialog
 			open
-			onClose={onClose}
+			onClose={liquidar.isPending ? undefined : onClose}
 			fullWidth
 			maxWidth="lg"
 			aria-labelledby="periodo-titulo"
@@ -216,8 +313,8 @@ export function PeriodoDetalleDialog({
 										'Empleado',
 										'Documento',
 										'Tiendas',
-										'Horas extras',
-										'Total',
+										'Vinculadas',
+										'Total horas',
 									].map((c) => (
 										<TableCell key={c} sx={celdaHead}>
 											{c}
@@ -256,6 +353,37 @@ export function PeriodoDetalleDialog({
 					</TableContainer>
 				)}
 			</DialogContent>
+			{!liquidado && (
+				<DialogActions sx={{ px: 3, py: 2 }}>
+					<Button
+						onClick={preliquidar}
+						disabled={isFetching || liquidar.isPending}
+						startIcon={isFetching ? <CircularProgress size={16} /> : undefined}
+					>
+						Preliquidar
+					</Button>
+					<Button
+						variant="contained"
+						onClick={abrirLiquidar}
+						disabled={isLoading || isFetching || liquidar.isPending}
+					>
+						Liquidar
+					</Button>
+				</DialogActions>
+			)}
+			<ConfirmarLiquidacionDialog
+				open={confirmar != null}
+				nombre={periodo.name || 'Periodo'}
+				rango={`Del ${fecha(periodo.start_date)} al ${fecha(periodo.end_date)}`}
+				delPeriodo={delPeriodo}
+				rezagadas={rezagadas}
+				cambios={confirmar}
+				guardando={liquidar.isPending}
+				onClose={() => setConfirmar(null)}
+				onConfirmar={() =>
+					liquidar.mutate({ id: periodo.id, ids: todas.map((f) => f.id) })
+				}
+			/>
 		</Dialog>
 	);
 }

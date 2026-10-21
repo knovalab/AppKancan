@@ -73,7 +73,7 @@ export function useHorasExtrasDePeriodo(
 export type PeriodoConTotales = PeriodDto & TotalesPeriodo;
 
 /** Aprobadas aún sin periodo: lo que falta por pagar (base de todos los preliquidados). */
-const POR_PAGAR: FiltrosHorasExtras = {
+export const POR_PAGAR: FiltrosHorasExtras = {
 	estados: [ESTADO_HORA_EXTRA.aprobada],
 	sinPeriodo: true,
 };
