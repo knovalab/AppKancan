@@ -2,9 +2,6 @@
 	"name": "AppKancan",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
-	// Levanta también el worker ETL (services/horarios-etl). Su puerto 3010 se publica desde
-	// docker-compose.yml; desde el contenedor `app` se llega con http://etl:3010.
-	"runServices": ["app", "etl"],
 	"workspaceFolder": "/workspace",
 	"features": {
 		"ghcr.io/devcontainers/features/git:1": {
@@ -17,13 +14,23 @@
 	"postStartCommand": "npm install",
 	"customizations": {
 		"vscode": {
-			"extensions": ["biomejs.biome"],
+			"extensions": [
+				"biomejs.biome"
+			],
 			"settings": {
 				"editor.formatOnSave": true,
-				"[typescript]": { "editor.defaultFormatter": "biomejs.biome" },
-				"[typescriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
-				"[javascript]": { "editor.defaultFormatter": "biomejs.biome" },
-				"[json]": { "editor.defaultFormatter": "biomejs.biome" },
+				"[typescript]": {
+					"editor.defaultFormatter": "biomejs.biome"
+				},
+				"[typescriptreact]": {
+					"editor.defaultFormatter": "biomejs.biome"
+				},
+				"[javascript]": {
+					"editor.defaultFormatter": "biomejs.biome"
+				},
+				"[json]": {
+					"editor.defaultFormatter": "biomejs.biome"
+				},
 				"window.titleBarStyle": "custom",
 				"editor.codeActionsOnSave": {
 					"source.organizeImports.biome": "explicit"

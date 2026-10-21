@@ -6,17 +6,3 @@ services:
     ports:
       - "11000:11000"
     restart: unless-stopped
-
-  # Worker ETL de horas extras (app de Horarios). Ver services/horarios-etl/README.md
-  horarios-etl:
-    build:
-      context: ./services/horarios-etl
-      dockerfile: Dockerfile
-    environment:
-      PORT: 3010
-      TZ: America/Bogota
-      DIRECTUS_URL: ${DIRECTUS_URL:-}
-      DIRECTUS_ETL_TOKEN: ${DIRECTUS_ETL_TOKEN:-}
-    ports:
-      - "3010:3010"
-    restart: unless-stopped
