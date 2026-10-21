@@ -35,6 +35,8 @@ export interface OverTimeDto {
 	updated_at?: string | null;
 	/** Lo llena Directus (*User Updated*): en una fila revisada, el comercial que decidió. */
 	updated_by?: UsuarioDirectus;
+	/** Periodo de nómina; lo escribe nómina al liquidar. */
+	period_id?: Relacion<{ id: number; start_date?: string; end_date?: string }>;
 }
 
 /** Entrada de `crearHoraExtra`: siempre entra en `pendiente`. */

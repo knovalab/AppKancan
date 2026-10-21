@@ -24,6 +24,10 @@ export interface FiltrosHorasExtras {
 	hasta?: string;
 	estados?: EstadoHoraExtra[];
 	incluirPruebas?: boolean;
+	/** Vinculadas a este periodo. */
+	periodo?: number;
+	/** Aún sin periodo (no se combina con `periodo`). */
+	sinPeriodo?: boolean;
 }
 
 // created_by / updated_by necesitan lectura de directus_users (first_name, last_name).
@@ -42,6 +46,9 @@ const CAMPOS = [
 	'updated_by.id',
 	'updated_by.first_name',
 	'updated_by.last_name',
+	'period_id.id',
+	'period_id.start_date',
+	'period_id.end_date',
 ];
 
 /**
@@ -64,6 +71,8 @@ export function filtroHorasExtras(f: FiltrosHorasExtras): FiltroDirectus {
 	if (f.desde) y.push({ work_date: { _gte: f.desde } });
 	if (f.hasta) y.push({ work_date: { _lte: f.hasta } });
 	if (f.estados && f.estados.length > 0) y.push({ status: { _in: f.estados } });
+	if (f.periodo != null) y.push({ period_id: { _eq: f.periodo } });
+	else if (f.sinPeriodo) y.push({ period_id: { _null: true } });
 	return y.length > 0 ? { _and: y } : {};
 }
 

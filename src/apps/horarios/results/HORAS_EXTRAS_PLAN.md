@@ -3,6 +3,7 @@
 > **Actualizado:** 2026-10-20, sobre `setup`. Cambios de código **sin commitear**.
 > **Qué es:** el plan de horas extras de Horarios, reescrito con todo lo que se decidió e implementó en las fases 0 a 3. **Sustituye** a la versión inicial de este documento, la del análisis previo a implementar.
 > **Detalle por fase:** [`HORAS_EXTRAS_F0_F1.md`](HORAS_EXTRAS_F0_F1.md) (decisiones, esquema, permisos, dominio y API), [`HORAS_EXTRAS_F2A_LIDER.md`](HORAS_EXTRAS_F2A_LIDER.md) (vista del líder) y [`HORAS_EXTRAS_F3_COMERCIAL.md`](HORAS_EXTRAS_F3_COMERCIAL.md) (vista del comercial).
+> **Nómina y periodos:** pasan a [`HORAS_EXTRAS_PLAN_V2.md`](HORAS_EXTRAS_PLAN_V2.md).
 
 ---
 

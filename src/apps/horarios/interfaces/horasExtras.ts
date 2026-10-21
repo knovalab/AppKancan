@@ -5,6 +5,7 @@ export interface HoraExtraFila {
 	id: number;
 	/** YYYY-MM-DD (para ordenar y filtrar). */
 	fecha: string;
+	empleadoId: number | null;
 	empleado: string;
 	documento: string;
 	tiendaId: number | null;
@@ -17,4 +18,6 @@ export interface HoraExtraFila {
 	creadaPor: string;
 	/** ISO, o '' si no viene. */
 	creadaEl: string;
+	/** `null` = sin vincular a un periodo. */
+	periodoId: number | null;
 }

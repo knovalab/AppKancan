@@ -27,6 +27,7 @@ export function aFilaHoraExtra(
 	return {
 		id: dto.id,
 		fecha: dto.work_date,
+		empleadoId: idRelacion(dto.employee_id),
 		empleado: nombre(empleado) || `Empleado ${idRelacion(dto.employee_id) ?? ''}`.trim(),
 		documento: formatDocumentNumber(empleado?.document_number ?? ''),
 		tiendaId,
@@ -37,5 +38,6 @@ export function aFilaHoraExtra(
 		estado: dto.status,
 		creadaPor: nombre(dto.created_by),
 		creadaEl: dto.created_at ?? '',
+		periodoId: idRelacion(dto.period_id),
 	};
 }

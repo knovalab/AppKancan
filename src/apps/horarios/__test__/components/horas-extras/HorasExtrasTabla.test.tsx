@@ -16,6 +16,8 @@ const fila: HoraExtraFila = {
 	estado: 'pendiente',
 	creadaPor: 'Luis Gómez',
 	creadaEl: '2026-10-11T14:00:00',
+	empleadoId: 7,
+	periodoId: null,
 };
 
 describe('HorasExtrasTabla', () => {
