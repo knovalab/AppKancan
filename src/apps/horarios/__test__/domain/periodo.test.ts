@@ -43,6 +43,12 @@ describe('validarPeriodo', () => {
 		expect(validarPeriodo({ inicio: '2026-10-10', fin: '2026-10-25' }, existentes).inicio).toBeDefined();
 	});
 
+	it('nombre opcional, máximo 60 caracteres', () => {
+		expect(validarPeriodo({ inicio: '2026-10-11', fin: '2026-10-11', nombre: '' }, existentes)).toEqual({});
+		expect(validarPeriodo({ inicio: '2026-10-11', fin: '2026-10-11', nombre: 'x'.repeat(60) }, existentes)).toEqual({});
+		expect(validarPeriodo({ inicio: '2026-10-11', fin: '2026-10-11', nombre: 'x'.repeat(61) }, existentes).nombre).toMatch(/60/);
+	});
+
 	it('fin obligatorio y no anterior al inicio', () => {
 		expect(validarPeriodo({ inicio: '2026-10-11', fin: '' }, existentes).fin).toMatch(/obligatoria/);
 		expect(validarPeriodo({ inicio: '2026-10-11', fin: '2026-10-10' }, existentes).fin).toMatch(/anterior/);

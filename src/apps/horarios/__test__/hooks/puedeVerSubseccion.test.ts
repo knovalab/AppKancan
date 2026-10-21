@@ -25,10 +25,10 @@ describe('sub‑secciones de Horas extras por rol', () => {
 		expect(puedeVerSubseccion(acceso(['areaManager', 'comercial']), he, sub('registradas'))).toBe(false);
 	});
 
-	it('nómina: solo Historial; con comercial suma Aprobación; nunca Registradas', () => {
-		expect(visibles(['tienda', 'nomina'])).toEqual(['historial']);
-		expect(visibles(['tienda', 'comercial', 'nomina'])).toEqual(['historial', 'aprobacion']);
-		expect(visibles(['areaManager', 'report', 'nomina'])).toEqual(['historial']);
+	it('nómina: Historial y Periodos; con comercial suma Aprobación; nunca Registradas', () => {
+		expect(visibles(['tienda', 'nomina'])).toEqual(['historial', 'periodos']);
+		expect(visibles(['tienda', 'comercial', 'nomina'])).toEqual(['historial', 'aprobacion', 'periodos']);
+		expect(visibles(['areaManager', 'report', 'nomina'])).toEqual(['historial', 'periodos']);
 	});
 
 	it('sin ninguno de los roles: nada', () => {

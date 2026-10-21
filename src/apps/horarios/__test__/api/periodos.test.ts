@@ -4,6 +4,7 @@ const request = vi.fn();
 vi.mock('@/services/directus/directus', () => ({ default: { request: (q: unknown) => request(q) } }));
 vi.mock('@/auth/services/directusInterceptor', () => ({ withAutoRefresh: (fn: () => unknown) => fn() }));
 vi.mock('@directus/sdk', () => ({
+	aggregate: (c: string, o: unknown) => ({ op: 'aggregate', c, o }),
 	createItem: (c: string, d: unknown) => ({ op: 'create', c, d }),
 	readItems: (c: string, q: unknown) => ({ op: 'read', c, q }),
 	updateItem: (c: string, id: number, d: unknown) => ({ op: 'update', c, id, d }),
@@ -11,7 +12,7 @@ vi.mock('@directus/sdk', () => ({
 }));
 
 import { filtroHorasExtras } from '@/apps/horarios/api/directus/horasExtras';
-import { crearPeriodo, liquidarPeriodo } from '@/apps/horarios/api/directus/periodos';
+import { crearPeriodo, liquidarPeriodo, totalesVinculados } from '@/apps/horarios/api/directus/periodos';
 import { filtrosDePeriodo } from '@/apps/horarios/hooks/usePeriodos';
 
 beforeEach(() => request.mockReset().mockResolvedValue({}));
@@ -24,8 +25,19 @@ describe('crearPeriodo', () => {
 		expect(request.mock.calls[1][0]).toEqual({
 			op: 'create',
 			c: 'com_period',
-			d: { start_date: '2026-10-11', end_date: '2026-10-20', status: 'preliquidado' },
+			d: { name: null, start_date: '2026-10-11', end_date: '2026-10-20', status: 'preliquidado' },
 		});
+	});
+
+	it('guarda el nombre sin espacios y rechaza uno demasiado largo', async () => {
+		const periodos = [{ id: 1, start_date: '2026-10-01', end_date: '2026-10-10', status: 'liquidado' }];
+		request.mockResolvedValueOnce(periodos);
+		await crearPeriodo({ name: '  Octubre 2  ', start_date: '2026-10-11', end_date: '2026-10-20' });
+		expect(request.mock.calls[1][0].d.name).toBe('Octubre 2');
+
+		request.mockReset().mockResolvedValueOnce(periodos);
+		await expect(crearPeriodo({ name: 'x'.repeat(61), start_date: '2026-10-11', end_date: '2026-10-20' })).rejects.toThrow(/60/);
+		expect(request).toHaveBeenCalledTimes(1);
 	});
 
 	it('no crea si deja un hueco', async () => {
@@ -64,5 +76,22 @@ describe('filtros de periodo', () => {
 		expect(filtrosDePeriodo(antiguo, todos)).toEqual({ estados: ['aprobada'], sinPeriodo: true, desde: undefined, hasta: '2026-10-10' });
 		expect(filtrosDePeriodo(nuevo, todos)).toMatchObject({ desde: '2026-10-11', hasta: '2026-10-20' });
 		expect(filtrosDePeriodo({ ...antiguo, status: 'liquidado' }, todos)).toEqual({ periodo: 1 });
+	});
+});
+
+describe('totalesVinculados', () => {
+	it('agrupa por periodo sin la tienda de pruebas y convierte los agregados de texto', async () => {
+		request.mockResolvedValueOnce([
+			{ period_id: 4, count: { id: '3' }, sum: { minutes: '180' } },
+			{ period_id: '5', count: { id: 1 }, sum: { minutes: null } },
+		]);
+		const t = await totalesVinculados();
+		expect(t.get(4)).toEqual({ horas: 3, minutos: 180 });
+		expect(t.get(5)).toEqual({ horas: 1, minutos: 0 });
+		expect(request.mock.calls[0][0]).toMatchObject({
+			op: 'aggregate',
+			c: 'com_over_time',
+			o: { groupBy: ['period_id'], query: { filter: { _and: [{ period_id: { _nnull: true } }, { store_id: { _neq: 90 } }] } } },
+		});
 	});
 });

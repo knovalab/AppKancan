@@ -14,6 +14,9 @@ export const ETIQUETA_ESTADO_PERIODO: Record<EstadoPeriodo, string> = {
 	liquidado: 'Liquidado',
 };
 
+/** Largo máximo del nombre (opcional) de un periodo. */
+export const MAX_CARACTERES_NOMBRE_PERIODO = 60;
+
 /** Accesos rápidos de duración al crear un periodo. */
 export const DIAS_RAPIDOS = [5, 10, 15] as const;
 
@@ -50,14 +53,18 @@ export function siguienteInicio(
 	return sumarDias(ultimo.end_date, 1);
 }
 
-export type ErroresPeriodo = Partial<Record<'inicio' | 'fin', string>>;
+export type ErroresPeriodo = Partial<
+	Record<'inicio' | 'fin' | 'nombre', string>
+>;
 
 /** Errores al crear un periodo; objeto vacío si es válido. */
 export function validarPeriodo(
-	nuevo: { inicio: string; fin: string },
+	nuevo: { inicio: string; fin: string; nombre?: string },
 	periodos: readonly Pick<RangoPeriodo, 'end_date'>[],
 ): ErroresPeriodo {
 	const errores: ErroresPeriodo = {};
+	if ((nuevo.nombre?.trim().length ?? 0) > MAX_CARACTERES_NOMBRE_PERIODO)
+		errores.nombre = `Máximo ${MAX_CARACTERES_NOMBRE_PERIODO} caracteres`;
 	const esperado = siguienteInicio(periodos);
 	if (!FECHA.test(nuevo.inicio))
 		errores.inicio = 'La fecha de inicio es obligatoria';

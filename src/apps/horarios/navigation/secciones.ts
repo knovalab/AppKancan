@@ -28,6 +28,7 @@ export interface SubSeccion {
 	label: string;
 	roles?: readonly Rol[];
 	ocultarA?: readonly Rol[];
+	selectorEnHeader?: boolean;
 }
 
 export interface Seccion {
@@ -148,6 +149,12 @@ export const SECCIONES: readonly Seccion[] = [
 				roles: ['comercial', 'nomina'],
 			},
 			{ path: 'aprobacion', label: 'Aprobación', roles: ['comercial'] },
+			{
+				path: 'periodos',
+				label: 'Periodos',
+				roles: ['nomina'],
+				selectorEnHeader: false,
+			},
 		],
 	},
 	{

@@ -14,12 +14,13 @@ const OPCION_TODAS: Opcion = { id: null, name: 'Todas las tiendas' };
  * y solo si el usuario tiene más de una tienda para elegir.
  */
 export function TiendaSelector() {
-	const { seccion, acceso, tienda } = useHorariosLayout();
+	const { seccion, subseccion, acceso, tienda } = useHorariosLayout();
 	const modo = seccion?.tienda ?? 'ninguno';
 
 	if (
 		modo === 'ninguno' ||
 		seccion?.selectorEnHeader === false ||
+		subseccion?.selectorEnHeader === false ||
 		acceso.tiendasPermitidas.length <= 1
 	)
 		return null;

@@ -35,6 +35,9 @@ const HorasExtrasHistorial = lazy(
 const HorasExtrasAprobacion = lazy(
 	() => import('./pages/horas-extras/AprobacionPage'),
 );
+const HorasExtrasPeriodos = lazy(
+	() => import('./pages/horas-extras/PeriodosPage'),
+);
 
 // Los roles de cada ruta salen de SECCIONES (única fuente de verdad).
 // routeValidator exige path|index en cada ruta: el guard envuelve el element
@@ -84,6 +87,7 @@ const rutasHorarios: RouteObject[] = [
 				subseccion('horas-extras', 'registradas', <HorasExtrasRegistradas />),
 				subseccion('horas-extras', 'historial', <HorasExtrasHistorial />),
 				subseccion('horas-extras', 'aprobacion', <HorasExtrasAprobacion />),
+				subseccion('horas-extras', 'periodos', <HorasExtrasPeriodos />),
 			]),
 			{ path: '*', element: <IndexRedirect /> },
 		],
