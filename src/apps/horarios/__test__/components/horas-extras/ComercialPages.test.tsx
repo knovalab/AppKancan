@@ -12,7 +12,7 @@ vi.mock('@/apps/horarios/api/directus/horasExtras', () => ({
 }));
 vi.mock('@/apps/horarios/hooks/useAvisos', () => ({ useAvisos: () => ({ showSnackbar }) }));
 vi.mock('@/apps/horarios/hooks/useHorariosLayout', () => ({
-	useHorariosLayout: () => ({ tienda: { storeIds: [26, 30] } }),
+	useHorariosLayout: () => ({ tienda: { storeIds: [26, 30] }, acceso: { roles: new Set(['comercial']) } }),
 }));
 
 import AprobacionPage from '@/apps/horarios/pages/horas-extras/AprobacionPage';

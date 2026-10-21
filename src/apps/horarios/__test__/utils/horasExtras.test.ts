@@ -33,6 +33,16 @@ describe('aFilaHoraExtra', () => {
 		expect(aFilaHoraExtra({ ...base, store_id: { id: '90', name: 'Oficina' } }).rotacion).toBe(true);
 	});
 
+	it('periodo: expandido, solo id o sin vincular', () => {
+		expect(aFilaHoraExtra(base).periodo).toBeNull();
+		expect(aFilaHoraExtra({ ...base, period_id: { id: 4, start_date: '2026-10-01', end_date: '2026-10-15' } }).periodo).toEqual({
+			id: 4,
+			inicio: '2026-10-01',
+			fin: '2026-10-15',
+		});
+		expect(aFilaHoraExtra({ ...base, period_id: 4 }).periodo).toEqual({ id: 4, inicio: '', fin: '' });
+	});
+
 	it('tolera relaciones sin expandir', () => {
 		const f = aFilaHoraExtra({ ...base, employee_id: 7, store_id: 26, created_by: 'u1', observations: null });
 		expect(f).toMatchObject({ empleado: 'Empleado 7', tienda: '', rotacion: false, creadaPor: '', observacion: '' });

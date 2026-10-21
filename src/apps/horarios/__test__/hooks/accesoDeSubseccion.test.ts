@@ -17,7 +17,7 @@ const acceso = (roles: Rol[], tiendasPermitidas = [] as typeof todas): HorariosA
 	puedeVerDemo: false,
 	tiendaPropia: 1,
 	tiendasPermitidas,
-	tiendasComercial: roles.includes('comercial') ? todas : [],
+	tiendasGlobales: roles.includes('comercial') ? todas : [],
 });
 const aprobacion = { path: 'aprobacion', label: 'Aprobación', roles: ['comercial'] as Rol[] };
 const registradas = { path: 'registradas', label: 'Registradas', roles: ['areaManager'] as Rol[] };
@@ -41,6 +41,17 @@ describe('accesoDeSubseccion', () => {
 		const base = acceso(['areaManager', 'comercial'], [todas[0]]);
 		expect(accesoDeSubseccion(base, aprobacion).tiendasPermitidas).toEqual(todas);
 		expect(accesoDeSubseccion(base, registradas).tiendasPermitidas).toEqual([todas[0]]);
+	});
+
+	it('nómina ve todas las tiendas en Historial y no queda fijada a la suya', () => {
+		const historial = { path: 'historial', label: 'Historial', roles: ['comercial', 'nomina'] as Rol[] };
+		const base = { ...acceso(['tienda', 'nomina']), tiendasGlobales: todas };
+		const efectivo = accesoDeSubseccion(base, historial);
+		expect(efectivo.tiendasPermitidas).toEqual(todas);
+		expect(efectivo.roles.has('tienda')).toBe(false);
+		expect(efectivo.rolPrincipal).toBe('nomina');
+		// Aprobación no es de nómina: no cambia nada.
+		expect(accesoDeSubseccion(base, aprobacion)).toBe(base);
 	});
 
 	it('sin el rol comercial no aplica', () => {

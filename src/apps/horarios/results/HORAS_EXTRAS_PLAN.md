@@ -167,10 +167,10 @@ Los valores viven en un único catálogo (`domain/horasExtras/estados.ts`). **No
 | Capa | Archivos |
 |---|---|
 | Dominio | `domain/horasExtras/`: `estados.ts` (catálogo, finales, activos), `transiciones.ts`, `reglas.ts` (`BLOQUE_MINUTOS`, `validarHoraExtra`, `buscarDuplicado`, `formatoMinutos`) |
-| Tipos | `interfaces/api/overTime.ts` (`OverTimeDto`, `CreateOverTimeDto`, `UpdateOverTimeDto`, `ReviewOverTimeDto`), `interfaces/horasExtras.ts` (`HoraExtraFila`), `interfaces/acceso.ts` (`tiendasComercial`) |
+| Tipos | `interfaces/api/overTime.ts` (`OverTimeDto`, `CreateOverTimeDto`, `UpdateOverTimeDto`, `ReviewOverTimeDto`), `interfaces/horasExtras.ts` (`HoraExtraFila`), `interfaces/acceso.ts` (`tiendasGlobales`) |
 | API | `api/directus/horasExtras.ts`: `filtroHorasExtras` (tiendas por la tienda trabajada **o** la del empleado, sin la 90, rango de `work_date` y estados), `listarHorasExtras`, `crearHoraExtra`, `actualizarHoraExtra`, `revisarHorasExtras` (lote en una sola petición; motivo obligatorio al rechazar) |
 | Hooks | `hooks/useHorasExtras.ts` (no consulta sin tiendas), claves `horariosKeys.horasExtras` y `empleados.tiendas` |
-| Roles y acceso | `useHorariosPolicies` (`esComercial`), `useHorariosAcceso` (rol aditivo, `tiendasComercial`), `useHorariosLayout` (`accesoDeSubseccion`), `useTiendaSeleccionada` (el comercial empieza en "Todas") |
+| Roles y acceso | `useHorariosPolicies` (`esComercial`), `useHorariosAcceso` (rol aditivo, `tiendasGlobales`), `useHorariosLayout` (`accesoDeSubseccion`), `useTiendaSeleccionada` (el comercial empieza en "Todas") |
 | Navegación | `navigation/secciones.ts`: sección `horas-extras`, `ocultarA` y `puedeVerSubseccion`. `navigation/RequireRole.tsx`: `IndexSubseccion` y `RequireSubseccion`. `routes.tsx`: sub-rutas con carga diferida. Es el primer uso de `SubSeccionLayout` con rutas hijas |
 | Páginas | `pages/horas-extras/RegistradasPage.tsx`, `HistorialPage.tsx`, `AprobacionPage.tsx`; `pages/secciones/HorasExtrasSeccion.tsx` |
 | Componentes | `components/horas-extras/`: `HorasExtrasTabla` (selección y acciones opcionales), `HoraExtraEstadoChip`, `RegistrarHoraExtraModal` (buscador de empleado, tienda, fecha, horas, observación y aviso de duplicado), `HistorialHorasExtras`, `PendientesAprobacion`, `RevisionHoraExtraDialog` |

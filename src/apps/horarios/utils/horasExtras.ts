@@ -15,6 +15,13 @@ const nombre = (v: unknown): string => {
 		: '';
 };
 
+const periodoDe = (v: unknown): HoraExtraFila['periodo'] => {
+	const id = idRelacion(v);
+	if (id == null) return null;
+	const o = objeto<{ start_date?: string; end_date?: string }>(v);
+	return { id, inicio: o?.start_date ?? '', fin: o?.end_date ?? '' };
+};
+
 /** DTO de `com_over_time` → fila de la tabla. */
 export function aFilaHoraExtra(
 	dto: OverTimeDto,
@@ -38,6 +45,6 @@ export function aFilaHoraExtra(
 		estado: dto.status,
 		creadaPor: nombre(dto.created_by),
 		creadaEl: dto.created_at ?? '',
-		periodoId: idRelacion(dto.period_id),
+		periodo: periodoDe(dto.period_id),
 	};
 }

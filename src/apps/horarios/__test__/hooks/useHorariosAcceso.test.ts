@@ -69,7 +69,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => false,
 			esAdmin: () => false,
 			esAreaManager: () => false,
-			esReport: () => false, esComercial: () => false,
+			esReport: () => false, esComercial: () => false, esNomina: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -107,7 +107,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => true,
 			esAreaManager: () => false,
-			esReport: () => false, esComercial: () => false,
+			esReport: () => false, esComercial: () => false, esNomina: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -138,7 +138,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => true,
 			esAreaManager: () => true, // User has both policies
-			esReport: () => false, esComercial: () => false,
+			esReport: () => false, esComercial: () => false, esNomina: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -160,7 +160,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => true,
-			esReport: () => false, esComercial: () => false,
+			esReport: () => false, esComercial: () => false, esNomina: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => true,
 		});
@@ -196,7 +196,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => true,
-			esReport: () => false, esComercial: () => false,
+			esReport: () => false, esComercial: () => false, esNomina: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -224,7 +224,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => false,
-			esReport: () => true, esComercial: () => false,
+			esReport: () => true, esComercial: () => false, esNomina: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -251,7 +251,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => false,
-			esReport: () => false, esComercial: () => true,
+			esReport: () => false, esComercial: () => true, esNomina: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -265,7 +265,28 @@ describe('useHorariosAcceso', () => {
 		expect(result.current.rolPrincipal).toBe('tienda');
 		expect(result.current.inicio).toBe('registros');
 		expect(result.current.tiendasPermitidas).toEqual([]);
-		expect(result.current.tiendasComercial).toEqual(allStores);
+		expect(result.current.tiendasGlobales).toEqual(allStores);
+	});
+
+	it('nómina se suma: un usuario de tienda conserva su inicio y recibe todas las tiendas para sus pestañas', async () => {
+		mockedUseHorariosPolicies.mockReturnValue({
+			hasPolicy: () => true,
+			esAdmin: () => false,
+			esAreaManager: () => false,
+			esReport: () => false, esComercial: () => false, esNomina: () => true,
+			tieneTemporal: () => false,
+			puedeVerDemo: () => false,
+		});
+		const allStores = createMockTiendas();
+		mockedGetStores.mockResolvedValue(allStores);
+
+		const { result } = renderHookWithQuery(() => useHorariosAcceso());
+		await waitFor(() => expect(result.current.cargando).toBe(false));
+
+		expect([...result.current.roles].sort()).toEqual(['nomina', 'tienda']);
+		expect(result.current.inicio).toBe('registros');
+		expect(result.current.tiendasPermitidas).toEqual([]);
+		expect(result.current.tiendasGlobales).toEqual(allStores);
 	});
 
 	it('comercial + areaManager: mantiene sus tiendas asignadas y suma el rol comercial', async () => {
@@ -273,7 +294,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => true,
-			esReport: () => true, esComercial: () => true,
+			esReport: () => true, esComercial: () => true, esNomina: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -293,7 +314,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => true,
-			esReport: () => true, esComercial: () => false,
+			esReport: () => true, esComercial: () => false, esNomina: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});

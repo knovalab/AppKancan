@@ -31,13 +31,14 @@ const idDeTienda = (valor: unknown): number => {
  */
 export function useHorariosAcceso(): HorariosAcceso {
 	const { user, loading: cargandoAuth } = useAuth();
-	const { esAdmin, esAreaManager, esReport, esComercial, puedeVerDemo } =
+	const { esAdmin, esAreaManager, esReport, esComercial, esNomina, puedeVerDemo } =
 		useHorariosPolicies();
 
 	const admin = esAdmin();
 	const areaManager = esAreaManager() && !admin;
 	const report = esReport();
 	const comercial = esComercial();
+	const nomina = esNomina();
 
 	const roles = useMemo(() => {
 		const set = new Set<Rol>();
@@ -45,9 +46,10 @@ export function useHorariosAcceso(): HorariosAcceso {
 		if (areaManager) set.add('areaManager');
 		if (report) set.add('report');
 		if (comercial) set.add('comercial');
+		if (nomina) set.add('nomina');
 		if (!admin && !areaManager && !report) set.add('tienda');
 		return set as ReadonlySet<Rol>;
-	}, [admin, areaManager, report, comercial]);
+	}, [admin, areaManager, report, comercial, nomina]);
 
 	const rolPrincipal = PRIORIDAD_ROL.find((r) => roles.has(r)) ?? 'tienda';
 
@@ -68,7 +70,7 @@ export function useHorariosAcceso(): HorariosAcceso {
 	>({
 		queryKey: ['adminTiendas'],
 		queryFn: getStores,
-		enabled: admin || report || areaManager || comercial,
+		enabled: admin || report || areaManager || comercial || nomina,
 		staleTime: 30 * 60 * 1000,
 	});
 
@@ -94,12 +96,12 @@ export function useHorariosAcceso(): HorariosAcceso {
 		return [];
 	}, [areaManager, admin, report, tiendasAcceso, todasLasTiendas]);
 
-	const tiendasComercial = comercial ? todasLasTiendas : SIN_TIENDAS;
+	const tiendasGlobales = comercial || nomina ? todasLasTiendas : SIN_TIENDAS;
 
 	const cargando =
 		cargandoAuth ||
 		!user ||
-		((admin || report || areaManager || comercial) && cargandoTiendas) ||
+		((admin || report || areaManager || comercial || nomina) && cargandoTiendas) ||
 		(areaManager && cargandoAcceso);
 	const verDemo = puedeVerDemo();
 
@@ -113,7 +115,7 @@ export function useHorariosAcceso(): HorariosAcceso {
 			puedeVerDemo: verDemo,
 			tiendaPropia,
 			tiendasPermitidas,
-			tiendasComercial,
+			tiendasGlobales,
 		}),
 		[
 			cargando,
@@ -123,7 +125,7 @@ export function useHorariosAcceso(): HorariosAcceso {
 			verDemo,
 			tiendaPropia,
 			tiendasPermitidas,
-			tiendasComercial,
+			tiendasGlobales,
 		],
 	);
 }

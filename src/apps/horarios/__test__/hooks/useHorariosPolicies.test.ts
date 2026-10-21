@@ -156,6 +156,21 @@ describe('useHorariosPolicies', () => {
 		});
 	});
 
+	describe('esNomina', () => {
+		it('exige "nomina" y el módulo (time_log/horario)', () => {
+			mockUserWithPolicies(['time_log_nomina']);
+			const { result } = renderHook(() => useHorariosPolicies());
+			expect(result.current.esNomina()).toBe(true);
+			expect(result.current.esComercial()).toBe(false);
+		});
+
+		it('ignora políticas "nomina" de otros módulos', () => {
+			mockUserWithPolicies(['nomina_rrhh']);
+			const { result } = renderHook(() => useHorariosPolicies());
+			expect(result.current.esNomina()).toBe(false);
+		});
+	});
+
 	describe('tieneTemporal', () => {
 		it('should return true when policy is strictly temporal', () => {
 			mockUserWithPolicies(['temporal']);

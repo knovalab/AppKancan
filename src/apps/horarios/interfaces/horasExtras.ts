@@ -18,6 +18,6 @@ export interface HoraExtraFila {
 	creadaPor: string;
 	/** ISO, o '' si no viene. */
 	creadaEl: string;
-	/** `null` = sin vincular a un periodo. */
-	periodoId: number | null;
+	/** Periodo de nómina vinculado; `null` = sin vincular. Fechas YYYY-MM-DD ('' si no se expandieron). */
+	periodo: { id: number; inicio: string; fin: string } | null;
 }

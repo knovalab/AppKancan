@@ -10,7 +10,13 @@ import MoreTimeIcon from '@mui/icons-material/MoreTime';
 
 export const BASE = '/horarios';
 
-export type Rol = 'tienda' | 'admin' | 'areaManager' | 'report' | 'comercial';
+export type Rol =
+	| 'tienda'
+	| 'admin'
+	| 'areaManager'
+	| 'report'
+	| 'comercial'
+	| 'nomina';
 
 export type ModoTienda =
 	| 'ninguno' // no se muestra
@@ -126,7 +132,7 @@ export const SECCIONES: readonly Seccion[] = [
 		titulo: 'Horas Extras',
 		subtitulo: 'Registra, consulta y aprueba horas extras',
 		icon: MoreTimeIcon,
-		roles: ['areaManager', 'comercial'],
+		roles: ['areaManager', 'comercial', 'nomina'],
 		tienda: 'una-o-todas',
 		mostrarNormas: false,
 		subsecciones: [
@@ -134,9 +140,13 @@ export const SECCIONES: readonly Seccion[] = [
 				path: 'registradas',
 				label: 'Registradas',
 				roles: ['areaManager'],
-				ocultarA: ['comercial'],
+				ocultarA: ['comercial', 'nomina'],
 			},
-			{ path: 'historial', label: 'Historial', roles: ['comercial'] },
+			{
+				path: 'historial',
+				label: 'Historial',
+				roles: ['comercial', 'nomina'],
+			},
 			{ path: 'aprobacion', label: 'Aprobación', roles: ['comercial'] },
 		],
 	},
@@ -159,6 +169,7 @@ export const INICIO_POR_ROL: Record<Rol, string> = {
 	tienda: 'registros',
 	report: 'reportes',
 	comercial: 'horas-extras',
+	nomina: 'horas-extras',
 };
 
 /** Orden de prioridad para decidir el rol principal cuando hay varios. */
@@ -167,7 +178,8 @@ export const PRIORIDAD_ROL: readonly Rol[] = [
 	'areaManager',
 	'tienda',
 	'report',
-	'comercial', // último: no cambia la página de entrada que ya tenía el usuario
+	'comercial',
+	'nomina',
 ];
 
 export const buscarSeccion = (path: string | undefined): Seccion | null =>

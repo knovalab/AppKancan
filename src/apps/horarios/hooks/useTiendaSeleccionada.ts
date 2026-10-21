@@ -45,9 +45,11 @@ export function useTiendaSeleccionada(
 		if (pedida?.tipo === 'una' && permitida(pedida.id)) return pedida;
 		if (pedida?.tipo === 'todas' && modo === 'una-o-todas') return pedida;
 
-		// Roles "solo reporte" y comercial: por defecto ven todas.
+		// Roles "solo reporte", comercial y nómina: por defecto ven todas.
 		if (
-			(rolPrincipal === 'report' || rolPrincipal === 'comercial') &&
+			(rolPrincipal === 'report' ||
+				rolPrincipal === 'comercial' ||
+				rolPrincipal === 'nomina') &&
 			modo === 'una-o-todas'
 		) {
 			return { tipo: 'todas' };

@@ -28,6 +28,11 @@ const COLUMNAS = [
 	'Estado',
 ];
 
+const rangoPeriodo = (p: NonNullable<HoraExtraFila['periodo']>) =>
+	p.inicio && p.fin
+		? `${dayjs(p.inicio).format('DD/MM/YYYY')} – ${dayjs(p.fin).format('DD/MM/YYYY')}`
+		: `Periodo ${p.id}`;
+
 const celdaHead = { fontWeight: 700, py: 1.5, color: '#1e293b' };
 
 export interface HorasExtrasTablaProps {
@@ -39,6 +44,8 @@ export interface HorasExtrasTablaProps {
 		onCambiar: (ids: number[], marcar: boolean) => void;
 	};
 	acciones?: (fila: HoraExtraFila) => ReactNode;
+	/** Columna "Periodo" (nómina). */
+	conPeriodo?: boolean;
 }
 
 export function HorasExtrasTabla({
@@ -47,8 +54,10 @@ export function HorasExtrasTabla({
 	vacio = 'No hay horas extras con estos filtros',
 	seleccion,
 	acciones,
+	conPeriodo = false,
 }: HorasExtrasTablaProps) {
-	const columnas = COLUMNAS.length + (seleccion ? 1 : 0) + (acciones ? 1 : 0);
+	const titulos = conPeriodo ? [...COLUMNAS, 'Periodo'] : COLUMNAS;
+	const columnas = titulos.length + (seleccion ? 1 : 0) + (acciones ? 1 : 0);
 	const marcadas = seleccion
 		? filas.filter((f) => seleccion.ids.has(f.id)).length
 		: 0;
@@ -75,7 +84,7 @@ export function HorasExtrasTabla({
 								/>
 							</TableCell>
 						)}
-						{COLUMNAS.map((c) => (
+						{titulos.map((c) => (
 							<TableCell key={c} sx={celdaHead}>
 								{c}
 							</TableCell>
@@ -165,6 +174,17 @@ export function HorasExtrasTabla({
 								<TableCell>
 									<HoraExtraEstadoChip estado={f.estado} />
 								</TableCell>
+								{conPeriodo && (
+									<TableCell sx={{ whiteSpace: 'nowrap' }}>
+										{f.periodo ? (
+											rangoPeriodo(f.periodo)
+										) : (
+											<Typography variant="body2" sx={{ color: '#94a3b8' }}>
+												Sin vincular
+											</Typography>
+										)}
+									</TableCell>
+								)}
 								{acciones && (
 									<TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
 										{acciones(f)}

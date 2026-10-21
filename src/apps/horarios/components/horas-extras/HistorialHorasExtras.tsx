@@ -32,12 +32,12 @@ export const ESTADOS_HISTORIAL = ESTADOS_HORA_EXTRA.filter(
 type FiltroEstado = EstadoHoraExtra | 'todos';
 
 /**
- * Historial del comercial: horas extras ya revisadas (y cualquier estado que no
+ * Historial del comercial y de nómina (con la columna Periodo): horas extras ya revisadas (y cualquier estado que no
  * sea pendiente) de las tiendas del header, con rango de fechas y estado.
  * Filtros con el mismo calendario que "Apertura y Cierre de Tiendas" (Monitoreo).
  */
 export function HistorialHorasExtras() {
-	const { tienda } = useHorariosLayout();
+	const { tienda, acceso } = useHorariosLayout();
 	// Por defecto, el mes en curso (igual que Monitoreo).
 	const [fechaInicio, setFechaInicio] = useState<Dayjs | null>(() =>
 		dayjs().startOf('month'),
@@ -142,6 +142,7 @@ export function HistorialHorasExtras() {
 				filas={pagina}
 				loading={isLoading && tienda.storeIds.length > 0}
 				vacio="No hay horas extras en el historial con estos filtros"
+				conPeriodo={acceso.roles.has('nomina')}
 			/>
 			{filas.length > 0 && (
 				<ReporteTiendasPagination

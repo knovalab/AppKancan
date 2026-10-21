@@ -27,22 +27,23 @@ export const HorariosLayoutContext = createContext<HorariosLayoutValue | null>(
 	null,
 );
 
+const ROLES_GLOBALES: readonly Rol[] = ['comercial', 'nomina'];
+
 export function accesoDeSubseccion(
 	acceso: HorariosAcceso,
 	subseccion: SubSeccion | null,
 ): HorariosAcceso {
-	if (
-		!subseccion?.roles?.includes('comercial') ||
-		!acceso.roles.has('comercial')
-	)
-		return acceso;
+	const rol = ROLES_GLOBALES.find(
+		(r) => subseccion?.roles?.includes(r) && acceso.roles.has(r),
+	);
+	if (!rol) return acceso;
 	const roles = new Set<Rol>(acceso.roles);
 	roles.delete('tienda'); // si no, useTiendaSeleccionada fija la tienda propia
 	return {
 		...acceso,
 		roles,
-		rolPrincipal: 'comercial',
-		tiendasPermitidas: acceso.tiendasComercial,
+		rolPrincipal: rol,
+		tiendasPermitidas: acceso.tiendasGlobales,
 	};
 }
 

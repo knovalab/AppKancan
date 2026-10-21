@@ -17,7 +17,7 @@ const fila: HoraExtraFila = {
 	creadaPor: 'Luis Gómez',
 	creadaEl: '2026-10-11T14:00:00',
 	empleadoId: 7,
-	periodoId: null,
+	periodo: null,
 };
 
 describe('HorasExtrasTabla', () => {
@@ -28,6 +28,16 @@ describe('HorasExtrasTabla', () => {
 		expect(screen.getByText('1 h 30 min')).toBeInTheDocument();
 		expect(screen.getByText('Pendiente')).toBeInTheDocument();
 		expect(screen.getByText('Rotación')).toBeInTheDocument();
+	});
+
+	it('columna Periodo solo si se pide: rango o "Sin vincular"', () => {
+		const vinculada = { ...fila, id: 2, periodo: { id: 4, inicio: '2026-10-01', fin: '2026-10-15' } };
+		const { rerender } = render(<HorasExtrasTabla filas={[fila, vinculada]} />);
+		expect(screen.queryByText('Periodo')).not.toBeInTheDocument();
+		rerender(<HorasExtrasTabla filas={[fila, vinculada]} conPeriodo />);
+		expect(screen.getByText('Periodo')).toBeInTheDocument();
+		expect(screen.getByText('01/10/2026 – 15/10/2026')).toBeInTheDocument();
+		expect(screen.getByText('Sin vincular')).toBeInTheDocument();
 	});
 
 	it('muestra el estado vacío y el de carga', () => {
