@@ -1,9 +1,11 @@
 import AddIcon from '@mui/icons-material/Add';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Alert, Box, Button, Paper, Typography } from '@mui/material';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ReporteTiendasPagination } from '../../components/com_time_record_store';
 import { CrearPeriodoModal } from '../../components/horas-extras/CrearPeriodoModal';
+import { ExportarPeriodosDialog } from '../../components/horas-extras/ExportarPeriodosDialog';
 import { PeriodoDetalleDialog } from '../../components/horas-extras/PeriodoDetalleDialog';
 import { PeriodosTabla } from '../../components/horas-extras/PeriodosTabla';
 import { usePeriodosConTotales } from '../../hooks/usePeriodos';
@@ -18,6 +20,7 @@ export default function PeriodosPage() {
 	const [rowsPerPage, setRowsPerPage] = useState(10);
 	const [aperturas, setAperturas] = useState(0);
 	const [creando, setCreando] = useState(false);
+	const [exportando, setExportando] = useState(false);
 
 	const abiertoId = Number(params.get(PARAM_PERIODO));
 	const abierto = periodos.find((p) => p.id === abiertoId);
@@ -60,17 +63,30 @@ export default function PeriodosPage() {
 						tiendas
 					</Typography>
 				</Box>
-				<Button
-					variant="contained"
-					startIcon={<AddIcon />}
-					disabled={isLoading}
-					onClick={() => {
-						setAperturas((n) => n + 1);
-						setCreando(true);
-					}}
-				>
-					Crear periodo
-				</Button>
+				<Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+					<Button
+						variant="outlined"
+						startIcon={<FileDownloadIcon />}
+						disabled={isLoading || periodos.length === 0}
+						onClick={() => {
+							setAperturas((n) => n + 1);
+							setExportando(true);
+						}}
+					>
+						Exportar a Excel
+					</Button>
+					<Button
+						variant="contained"
+						startIcon={<AddIcon />}
+						disabled={isLoading}
+						onClick={() => {
+							setAperturas((n) => n + 1);
+							setCreando(true);
+						}}
+					>
+						Crear periodo
+					</Button>
+				</Box>
 			</Box>
 
 			{error && (
@@ -98,6 +114,12 @@ export default function PeriodosPage() {
 				/>
 			)}
 
+			<ExportarPeriodosDialog
+				key={`exportar-${aperturas}`}
+				open={exportando}
+				periodos={periodos}
+				onClose={() => setExportando(false)}
+			/>
 			<CrearPeriodoModal
 				key={aperturas}
 				open={creando}

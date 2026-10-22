@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { OverTimeDto } from '@/apps/horarios/interfaces/api/overTime';
-import { aFilaHoraExtra } from '@/apps/horarios/utils/horasExtras';
+import { aFilaHoraExtra, coincideEmpleado } from '@/apps/horarios/utils/horasExtras';
 
 const base: OverTimeDto = {
 	id: 1,
@@ -61,3 +61,20 @@ describe('aFilaHoraExtra', () => {
 		expect(f).toMatchObject({ empleado: 'Empleado 7', tienda: '', rotacion: false, creadaPor: '', observacion: '' });
 	});
 });
+
+describe('coincideEmpleado', () => {
+	const ana = { empleado: 'Ana María Pérez', documento: '1 107 837 464' };
+	it('por nombre sin tildes ni mayúsculas', () => {
+		expect(coincideEmpleado(ana, 'maria perez')).toBe(true);
+		expect(coincideEmpleado(ana, 'jose')).toBe(false);
+	});
+	it('por documento ignorando espacios y puntos', () => {
+		expect(coincideEmpleado(ana, '1107837')).toBe(true);
+		expect(coincideEmpleado(ana, '1.107.837.464')).toBe(true);
+		expect(coincideEmpleado(ana, '999')).toBe(false);
+	});
+	it('vacío: todos', () => {
+		expect(coincideEmpleado(ana, '  ')).toBe(true);
+	});
+});
+

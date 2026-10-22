@@ -43,14 +43,11 @@ import { useHorasExtras } from '../../hooks/useHorasExtras';
 import type { OverTimeDto } from '../../interfaces/api/overTime';
 import { mensajeDeError } from '../../utils/errores';
 import { formatNombrePropio } from '../../utils/format';
+import { coincideEmpleado } from '../../utils/horasExtras';
 import { getRealColombiaTime } from '../../utils/timeSync';
 
 /** Valores rápidos (minutos) para rellenar. */
 const VALORES_RAPIDOS = [30, 60, 90, 120, 180];
-
-/** Sin tildes ni mayúsculas, para buscar "jose" y encontrar "José". */
-const normalizar = (s: string) =>
-	s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 const plural = (n: number, uno: string, varios: string) =>
 	`${n} ${n === 1 ? uno : varios}`;
@@ -113,10 +110,10 @@ export default function CrearHorasExtrasPage() {
 		[empleados],
 	);
 	const visibles = useMemo(() => {
-		const q = normalizar(busqueda.trim());
+		const q = busqueda.trim();
 		return q
 			? personas.filter((p) =>
-					normalizar(`${p.nombre} ${p.documento}`).includes(q),
+					coincideEmpleado({ empleado: p.nombre, documento: p.documento }, q),
 				)
 			: personas;
 	}, [personas, busqueda]);

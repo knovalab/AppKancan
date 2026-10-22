@@ -10,21 +10,24 @@ import {
 	Typography,
 } from '@mui/material';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 import { revisarHorasExtras } from '../../api/directus/horasExtras';
-import { ReporteTiendasPagination } from '../com_time_record_store';
-import { HorasExtrasTabla } from './HorasExtrasTabla';
-import {
-	type DecisionRevision,
-	RevisionHoraExtraDialog,
-} from './RevisionHoraExtraDialog';
 import { ESTADO_HORA_EXTRA, formatoMinutos } from '../../domain/horasExtras';
 import { horariosKeys } from '../../hooks/registro/keys';
 import { useAvisos } from '../../hooks/useAvisos';
 import { useHorariosLayout } from '../../hooks/useHorariosLayout';
 import { useHorasExtras } from '../../hooks/useHorasExtras';
 import { mensajeDeError } from '../../utils/errores';
-import { aFilaHoraExtra } from '../../utils/horasExtras';
+import { aFilaHoraExtra, coincideEmpleado } from '../../utils/horasExtras';
+import { ReporteTiendasPagination } from '../com_time_record_store';
+import DateRangeFilter from '../reportes/DateRangeFilter';
+import { BuscarEmpleado } from './BuscarEmpleado';
+import { HorasExtrasTabla } from './HorasExtrasTabla';
+import {
+	type DecisionRevision,
+	RevisionHoraExtraDialog,
+} from './RevisionHoraExtraDialog';
 
 const SOLO_PENDIENTES = [ESTADO_HORA_EXTRA.pendiente];
 
@@ -38,6 +41,10 @@ export function PendientesAprobacion() {
 	const { showSnackbar } = useAvisos();
 	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(10);
+	const [busqueda, setBusqueda] = useState('');
+	// Sin rango por defecto: ninguna pendiente queda oculta.
+	const [fechaInicio, setFechaInicio] = useState<Dayjs | null>(null);
+	const [fechaFin, setFechaFin] = useState<Dayjs | null>(null);
 	const [marcadas, setMarcadas] = useState<ReadonlySet<number>>(new Set());
 	const [revision, setRevision] = useState<{
 		decision: DecisionRevision;
@@ -47,18 +54,30 @@ export function PendientesAprobacion() {
 	const [aperturas, setAperturas] = useState(0);
 
 	const filtros = useMemo(
-		() => ({ tiendas: tienda.storeIds, estados: SOLO_PENDIENTES }),
-		[tienda.storeIds],
+		() => ({
+			tiendas: tienda.storeIds,
+			estados: SOLO_PENDIENTES,
+			desde: fechaInicio?.format('YYYY-MM-DD'),
+			hasta: fechaFin?.format('YYYY-MM-DD'),
+		}),
+		[tienda.storeIds, fechaInicio, fechaFin],
 	);
 	const { data = [], isLoading, error } = useHorasExtras(filtros);
-	const filas = useMemo(() => data.map(aFilaHoraExtra), [data]);
+	// Las marcadas que el buscador oculta no se aprueban: se revisa lo que se ve.
+	const filas = useMemo(
+		() => data.map(aFilaHoraExtra).filter((f) => coincideEmpleado(f, busqueda)),
+		[data, busqueda],
+	);
 
 	// Solo cuentan las marcadas que siguen en la lista (otra persona pudo revisarlas).
 	const seleccion = useMemo(
 		() => filas.filter((f) => marcadas.has(f.id)),
 		[filas, marcadas],
 	);
-	const idsSeleccion = useMemo(() => new Set(seleccion.map((f) => f.id)), [seleccion]);
+	const idsSeleccion = useMemo(
+		() => new Set(seleccion.map((f) => f.id)),
+		[seleccion],
+	);
 
 	const totalMinutos = filas.reduce((s, f) => s + f.minutos, 0);
 	const totalPages = Math.max(1, Math.ceil(filas.length / rowsPerPage));
@@ -66,21 +85,36 @@ export function PendientesAprobacion() {
 	const pagina = filas.slice(actual * rowsPerPage, (actual + 1) * rowsPerPage);
 
 	const revisar = useMutation({
-		mutationFn: ({ ids, decision, nota }: { ids: number[]; decision: DecisionRevision; nota: string }) =>
-			revisarHorasExtras(ids, { decision, nota }),
+		mutationFn: ({
+			ids,
+			decision,
+			nota,
+		}: {
+			ids: number[];
+			decision: DecisionRevision;
+			nota: string;
+		}) => revisarHorasExtras(ids, { decision, nota }),
 		onSuccess: (_, { ids, decision }) => {
-			void queryClient.invalidateQueries({ queryKey: horariosKeys.horasExtras.todos });
+			void queryClient.invalidateQueries({
+				queryKey: horariosKeys.horasExtras.todos,
+			});
 			const n = ids.length;
-			const verbo = decision === ESTADO_HORA_EXTRA.aprobada ? 'aprobada' : 'rechazada';
+			const verbo =
+				decision === ESTADO_HORA_EXTRA.aprobada ? 'aprobada' : 'rechazada';
 			showSnackbar(
 				n === 1 ? `Hora extra ${verbo}` : `${n} horas extras ${verbo}s`,
 				'success',
 			);
-			setMarcadas((prev) => new Set([...prev].filter((id) => !ids.includes(id))));
+			setMarcadas(
+				(prev) => new Set([...prev].filter((id) => !ids.includes(id))),
+			);
 			setRevision(null);
 		},
 		onError: (err) =>
-			showSnackbar(mensajeDeError(err, 'Error al guardar la revisión'), 'error'),
+			showSnackbar(
+				mensajeDeError(err, 'Error al guardar la revisión'),
+				'error',
+			),
 	});
 
 	const abrir = (decision: DecisionRevision, ids: number[]) => {
@@ -103,7 +137,10 @@ export function PendientesAprobacion() {
 		: [];
 
 	return (
-		<Paper elevation={0} sx={{ p: 2, borderRadius: 3, border: '1px solid #e0e0e0' }}>
+		<Paper
+			elevation={0}
+			sx={{ p: 2, borderRadius: 3, border: '1px solid #e0e0e0' }}
+		>
 			<Box
 				sx={{
 					display: 'flex',
@@ -123,9 +160,38 @@ export function PendientesAprobacion() {
 						{formatoMinutos(totalMinutos)} en total
 					</Typography>
 				</Box>
-				<Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5 }}>
+				<Box
+					sx={{
+						display: 'flex',
+						flexWrap: 'wrap',
+						alignItems: 'center',
+						gap: 1.5,
+					}}
+				>
+					<BuscarEmpleado
+						value={busqueda}
+						onChange={(t) => {
+							setBusqueda(t);
+							setPage(0);
+						}}
+					/>
+					{/* DateRangeFilter es fullWidth: sin ancho acotado ocuparía toda la fila. */}
+					<Box sx={{ width: { xs: '100%', sm: 280 } }}>
+						<DateRangeFilter
+							fechaInicio={fechaInicio}
+							fechaFin={fechaFin}
+							onChange={(inicio, fin) => {
+								setFechaInicio(inicio);
+								setFechaFin(fin);
+								setPage(0);
+							}}
+						/>
+					</Box>
 					{seleccion.length > 0 && (
-						<Typography variant="body2" sx={{ fontWeight: 600, color: '#334155' }}>
+						<Typography
+							variant="body2"
+							sx={{ fontWeight: 600, color: '#334155' }}
+						>
 							{seleccion.length} seleccionada{seleccion.length !== 1 ? 's' : ''}
 						</Typography>
 					)}

@@ -87,6 +87,21 @@ describe('HistorialPage', () => {
 		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 	});
 
+	it('busca por nombre o por documento', async () => {
+		listarHorasExtras.mockResolvedValue([
+			{ ...historial[0] },
+			{ ...dto(10, 'Diana'), status: 'aprobada', employee_id: { id: 110, first_name: 'Diana', last_name: 'X', document_number: '1107837464', store_id: 26 } },
+		]);
+		montarHistorial();
+		await screen.findByText('Diana X');
+		fireEvent.change(screen.getByLabelText('Buscar empleado'), { target: { value: '1.107.837' } });
+		expect(screen.getByText('Diana X')).toBeInTheDocument();
+		expect(screen.queryByText('Carla X')).not.toBeInTheDocument();
+		fireEvent.change(screen.getByLabelText('Buscar empleado'), { target: { value: 'carla' } });
+		expect(screen.getByText('Carla X')).toBeInTheDocument();
+		expect(screen.queryByText('Diana X')).not.toBeInTheDocument();
+	});
+
 	it('filtra por un estado', async () => {
 		montarHistorial();
 		await screen.findByText('Carla X');
@@ -111,6 +126,14 @@ describe('AprobacionPage', () => {
 		expect(await screen.findByText('Ana X')).toBeInTheDocument();
 		expect(listarHorasExtras).toHaveBeenCalledWith({ tiendas: [26, 30], estados: ['pendiente'] });
 		expect(screen.getByText('2 pendientes · 2 h en total')).toBeInTheDocument();
+	});
+
+	it('el buscador acota lo que se ve y lo que se aprueba en lote', async () => {
+		montar();
+		await screen.findByText('Ana X');
+		fireEvent.change(screen.getByLabelText('Buscar empleado'), { target: { value: 'beto' } });
+		expect(screen.queryByText('Ana X')).not.toBeInTheDocument();
+		expect(screen.getByText(/1 pendiente/)).toBeInTheDocument();
 	});
 
 	it('aprueba en lote las seleccionadas', async () => {

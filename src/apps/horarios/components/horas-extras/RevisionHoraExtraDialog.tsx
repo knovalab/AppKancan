@@ -39,7 +39,7 @@ export function RevisionHoraExtraDialog({
 	const quien =
 		filas.length === 1
 			? `${filas[0].empleado} · ${formatoMinutos(filas[0].minutos)}`
-			: `${filas.length} horas extras · ${formatoMinutos(total)} en total`;
+			: `${filas.length} registros vinculados · ${formatoMinutos(total)} en total`;
 
 	const confirmar = () => {
 		if (rechazar && !nota.trim()) {

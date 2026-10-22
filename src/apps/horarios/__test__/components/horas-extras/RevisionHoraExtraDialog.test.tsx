@@ -42,7 +42,7 @@ describe('RevisionHoraExtraDialog', () => {
 		render(
 			<RevisionHoraExtraDialog decision="aprobada" filas={[fila(1, 60), fila(2, 30)]} guardando={false} onClose={vi.fn()} onConfirmar={onConfirmar} />,
 		);
-		expect(screen.getByText('2 horas extras · 1 h 30 min en total')).toBeInTheDocument();
+		expect(screen.getByText('2 registros vinculados · 1 h 30 min en total')).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'Aprobar' }));
 		expect(onConfirmar).toHaveBeenCalledWith('');
 	});

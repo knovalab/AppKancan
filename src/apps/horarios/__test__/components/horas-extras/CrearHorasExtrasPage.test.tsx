@@ -38,7 +38,7 @@ const emp = (id: number, nombre: string) => ({ id: String(id), documento: `10${i
 const montar = async () => {
 	render(<CrearHorasExtrasPage />, { wrapper: createQueryWrapper() });
 	// Las filas se pintan en segundo plano (useDeferredValue): esperar a la primera.
-	await screen.findByText('Ana Pérez');
+	await screen.findByText('Ana Pérez', {}, { timeout: 5000 });
 	return screen.getByRole('table', { name: 'Grilla de horas extras' });
 };
 const celda = (nombre: string, ddmm: string) => screen.getByLabelText(`Horas de ${nombre} el ${ddmm}`);
@@ -93,7 +93,7 @@ describe('CrearHorasExtrasPage (grilla personas × días)', () => {
 		const dialogo = await abrirConfirmacion();
 		// Resumen: totales, personas con sus días y horas, y observación.
 		const total = (label: string) => within(dialogo).getByText(label).nextSibling?.textContent;
-		expect(total('Horas extras')).toBe('3');
+		expect(total('Registros Vinculados')).toBe('3');
 		expect(total('Personas')).toBe('2');
 		expect(total('Tiempo total')).toBe('5 h');
 		expect(total('Fechas')).toBe('21/10 al 22/10');

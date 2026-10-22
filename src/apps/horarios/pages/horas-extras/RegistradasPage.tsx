@@ -12,12 +12,15 @@ import {
 	Typography,
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
+import type { Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 import { getStores } from '../../api/directus/read';
 import { getEmpleadosBulk } from '../../api/directus/readBulk';
 import { ReporteTiendasPagination } from '../../components/com_time_record_store';
+import { BuscarEmpleado } from '../../components/horas-extras/BuscarEmpleado';
 import { HorasExtrasTabla } from '../../components/horas-extras/HorasExtrasTabla';
 import { RegistrarHoraExtraModal } from '../../components/horas-extras/RegistrarHoraExtraModal';
+import DateRangeFilter from '../../components/reportes/DateRangeFilter';
 import {
 	ESTADOS_HORA_EXTRA,
 	type EstadoHoraExtra,
@@ -29,7 +32,7 @@ import { useHorariosLayout } from '../../hooks/useHorariosLayout';
 import { useHorasExtras } from '../../hooks/useHorasExtras';
 import type { Tienda } from '../../interfaces/tiendas';
 import { mensajeDeError } from '../../utils/errores';
-import { aFilaHoraExtra } from '../../utils/horasExtras';
+import { aFilaHoraExtra, coincideEmpleado } from '../../utils/horasExtras';
 
 type FiltroEstado = EstadoHoraExtra | 'todos';
 
@@ -43,6 +46,9 @@ export default function RegistradasPage() {
 	const [estado, setEstado] = useState<FiltroEstado>('todos');
 	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(10);
+	const [busqueda, setBusqueda] = useState('');
+	const [fechaInicio, setFechaInicio] = useState<Dayjs | null>(null);
+	const [fechaFin, setFechaFin] = useState<Dayjs | null>(null);
 	// Cada apertura cambia la key del modal para empezar con el formulario vacío.
 	const [aperturas, setAperturas] = useState(0);
 	const [abierto, setAbierto] = useState(false);
@@ -51,8 +57,10 @@ export default function RegistradasPage() {
 		() => ({
 			tiendas: tienda.storeIds,
 			estados: estado === 'todos' ? undefined : [estado],
+			desde: fechaInicio?.format('YYYY-MM-DD'),
+			hasta: fechaFin?.format('YYYY-MM-DD'),
 		}),
-		[tienda.storeIds, estado],
+		[tienda.storeIds, estado, fechaInicio, fechaFin],
 	);
 	const { data = [], isLoading, error } = useHorasExtras(filtros);
 
@@ -74,7 +82,10 @@ export default function RegistradasPage() {
 		staleTime: 30 * 60 * 1000,
 	});
 
-	const filas = useMemo(() => data.map(aFilaHoraExtra), [data]);
+	const filas = useMemo(
+		() => data.map(aFilaHoraExtra).filter((f) => coincideEmpleado(f, busqueda)),
+		[data, busqueda],
+	);
 	const totalMinutos = filas.reduce((s, f) => s + f.minutos, 0);
 	const totalPages = Math.max(1, Math.ceil(filas.length / rowsPerPage));
 	const actual = Math.min(page, totalPages - 1);
@@ -143,6 +154,35 @@ export default function RegistradasPage() {
 					>
 						Registrar horas (masiva)
 					</Button>
+				</Box>
+			</Box>
+
+			<Box
+				sx={{
+					display: 'flex',
+					flexWrap: 'wrap',
+					alignItems: 'center',
+					gap: 1.5,
+					mb: 2,
+				}}
+			>
+				<BuscarEmpleado
+					value={busqueda}
+					onChange={(t) => {
+						setBusqueda(t);
+						setPage(0);
+					}}
+				/>
+				<Box sx={{ width: { xs: '100%', sm: 300 } }}>
+					<DateRangeFilter
+						fechaInicio={fechaInicio}
+						fechaFin={fechaFin}
+						onChange={(inicio, fin) => {
+							setFechaInicio(inicio);
+							setFechaFin(fin);
+							setPage(0);
+						}}
+					/>
 				</Box>
 			</Box>
 

@@ -92,7 +92,7 @@ export function ConfirmarRegistroDialog({
 			</DialogTitle>
 			<DialogContent dividers>
 				<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
-					<Total label="Horas extras" valor={dias.length} />
+					<Total label="Registros Vinculados" valor={dias.length} />
 					<Total label="Personas" valor={personas.length} />
 					<Total label="Tiempo total" valor={formatoMinutos(total)} />
 					<Total
