@@ -163,7 +163,6 @@ export async function handleTerminarJornada(
 		await directus.updateTimeRecordStore(existing.id, {
 			close_time: closeTime,
 			close_user: closeUser,
-			closed_user: closeUser,
 			...(operativeTime !== null ? { operative_time: operativeTime } : {}),
 		});
 
@@ -197,7 +196,6 @@ export async function handleTerminarJornada(
 		open_user: null,
 		close_time: closeTime,
 		close_user: closeUser,
-		closed_user: closeUser,
 		operative_time: null,
 	});
 

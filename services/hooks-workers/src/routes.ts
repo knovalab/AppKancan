@@ -18,27 +18,33 @@ routes.get('/', (c) => {
 
 /**
  * GET /api/hooks/jobs
- * Lists the most recent background jobs.
+ * Lists the most recent background jobs with optional limit and status filtering.
  */
 routes.get('/jobs', (c) => {
-	const jobs = worker
-		.listRecentJobs()
-		.slice(0, 20)
-		.map((j) => ({
-			jobId: j.id,
-			name: j.name,
-			status: j.status,
-			enqueuedAt: j.enqueuedAt,
-			startedAt: j.startedAt,
-			finishedAt: j.finishedAt,
-			durationMs: j.durationMs,
-			error: j.error,
-		}));
+	const limit = Math.max(1, Math.min(100, Number(c.req.query('limit')) || 20));
+	const statusFilter = c.req.query('status');
+
+	let jobs = worker.listRecentJobs();
+	if (statusFilter) {
+		jobs = jobs.filter((j) => j.status === statusFilter);
+	}
+
+	const paginated = jobs.slice(0, limit).map((j) => ({
+		jobId: j.id,
+		name: j.name,
+		status: j.status,
+		enqueuedAt: j.enqueuedAt,
+		startedAt: j.startedAt,
+		finishedAt: j.finishedAt,
+		durationMs: j.durationMs,
+		retriesAttempted: j.retriesAttempted ?? 0,
+		error: j.error,
+	}));
 
 	return c.json({
 		success: true,
-		count: jobs.length,
-		jobs,
+		count: paginated.length,
+		jobs: paginated,
 	});
 });
 
@@ -71,6 +77,8 @@ routes.get('/jobs/:jobId', (c) => {
 			startedAt: job.startedAt,
 			finishedAt: job.finishedAt,
 			durationMs: job.durationMs,
+			retriesAttempted: job.retriesAttempted ?? 0,
+			maxRetries: job.maxRetries ?? 0,
 			result: job.result,
 			error: job.error,
 			logs: job.logs,
@@ -87,14 +95,19 @@ routes.post('/:name', async (c) => {
 	const name = c.req.param('name');
 	let payload: unknown = {};
 
-	try {
-		payload = await c.req.json();
-	} catch {
+	const rawBody = await c.req.text();
+	if (rawBody && rawBody.trim().length > 0) {
 		try {
-			const text = await c.req.text();
-			payload = text ? JSON.parse(text) : {};
+			payload = JSON.parse(rawBody);
 		} catch {
-			payload = {};
+			return c.json(
+				{
+					success: false,
+					error: 'Bad Request',
+					message: 'Malformed request body; expected valid JSON',
+				},
+				400,
+			);
 		}
 	}
 
@@ -122,6 +135,17 @@ routes.post('/:name', async (c) => {
 					message: error.message,
 				},
 				404,
+			);
+		}
+
+		if (error.statusCode === 503) {
+			return c.json(
+				{
+					success: false,
+					error: 'Service Unavailable',
+					message: error.message,
+				},
+				503,
 			);
 		}
 

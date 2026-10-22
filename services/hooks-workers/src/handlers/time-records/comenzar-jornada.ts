@@ -17,7 +17,7 @@ export interface HandleTimeRecordResult {
 }
 
 export async function handleComenzarJornada(
-	record: Partial<TimeRecords> | Record<string, any>,
+	record: Partial<TimeRecords>,
 	context: WorkerContext,
 ): Promise<HandleTimeRecordResult> {
 	const { directus, logger } = context;
@@ -68,10 +68,6 @@ export async function handleComenzarJornada(
 			work_day: workDay,
 			open_time: openTime,
 			open_user: openUser,
-			close_time: null,
-			closed_user: null,
-			close_user: null,
-			operative_time: null,
 		});
 
 		logger.info(

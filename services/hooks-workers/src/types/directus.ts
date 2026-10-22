@@ -9,18 +9,17 @@ export interface Store {
 export interface TimeRecordStore {
 	id: number;
 	open_user: string | null;
-	closed_user: string | null;
 	close_user?: string | null;
 	operative_time: number | null; // minutes
 	work_day: string | null; // YYYY-MM-DD
 	close_time: string | null; // AAAA-MM-DDTHH:mm:ss
 	open_time: string | null; // AAAA-MM-DDTHH:mm:ss
-	store: string | Store | null;
+	store: string | null;
 }
 
 export interface TimeRecords {
 	id: number;
-	store_id: string | Store | null;
+	store_id: string | null;
 	employee_id: string | null;
 	log_type:
 		| 'Comenzar Jornada'
@@ -37,7 +36,7 @@ export interface TimeRecords {
  */
 export interface DirectusService {
 	getStores(params?: Record<string, unknown>): Promise<Store[]>;
-	getStoreById?(id: string | number): Promise<Store | null>;
+	getStoreById(id: string | number): Promise<Store | null>;
 	getTimeRecordStores(
 		params?: Record<string, unknown>,
 	): Promise<TimeRecordStore[]>;
@@ -49,9 +48,9 @@ export interface DirectusService {
 		data: Partial<TimeRecordStore>,
 	): Promise<TimeRecordStore>;
 	getTimeRecords(params?: Record<string, unknown>): Promise<TimeRecords[]>;
-	getTimeRecordById?(
+	getTimeRecordById(
 		id: string | number,
-		fields?: string[],
+		params?: Record<string, unknown>,
 	): Promise<TimeRecords | null>;
 }
 

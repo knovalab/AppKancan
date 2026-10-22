@@ -115,7 +115,7 @@ describe('sync-store-time-records handler', () => {
 			open_time: null,
 			open_user: null,
 			close_time: null,
-			closed_user: null,
+			close_user: null,
 			operative_time: null,
 		};
 
@@ -194,7 +194,7 @@ describe('sync-store-time-records handler', () => {
 			open_time: null,
 			open_user: null,
 			close_time: null,
-			closed_user: null,
+			close_user: null,
 			operative_time: null,
 		};
 

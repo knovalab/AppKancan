@@ -55,10 +55,9 @@ describe('on-time-record-created handler', () => {
 			context,
 		);
 
-		expect(getTimeRecordByIdMock).toHaveBeenCalledWith(
-			110513,
-			expect.any(Array),
-		);
+		expect(getTimeRecordByIdMock).toHaveBeenCalledWith(110513, {
+			fields: expect.any(Array),
+		});
 		expect(result.status).toBe('created');
 		expect(result.storeId).toBe('1003');
 		expect(result.openTime).toBe('2026-10-22T08:00:00.000Z');
@@ -119,7 +118,7 @@ describe('on-time-record-created handler', () => {
 			open_time: '2026-10-22T09:00:00.000Z',
 			open_user: '1100',
 			close_time: null,
-			closed_user: null,
+			close_user: null,
 			operative_time: null,
 		};
 
@@ -163,7 +162,7 @@ describe('on-time-record-created handler', () => {
 			open_time: '2026-10-22T07:45:00.000Z',
 			open_user: '1100',
 			close_time: null,
-			closed_user: null,
+			close_user: null,
 			operative_time: null,
 		};
 
@@ -279,7 +278,7 @@ describe('on-time-record-created handler', () => {
 			open_time: '2026-10-22T08:00:00.000Z',
 			open_user: '101',
 			close_time: null,
-			closed_user: null,
+			close_user: null,
 			operative_time: null,
 		};
 
@@ -302,7 +301,6 @@ describe('on-time-record-created handler', () => {
 		expect(updateMock).toHaveBeenCalledWith(77, {
 			close_time: '2026-10-22T20:30:00.000Z',
 			close_user: '102',
-			closed_user: '102',
 			operative_time: 750,
 		});
 	});

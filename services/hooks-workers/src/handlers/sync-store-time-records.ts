@@ -1,7 +1,17 @@
-import type { HookHandler, WorkerContext } from '../types/index.ts';
+import type {
+	HookHandler,
+	TimeRecordStore,
+	TimeRecords,
+	WorkerContext,
+} from '../types/index.ts';
+import {
+	buildTimestamp,
+	extractStoreId,
+	getTodayDateStr,
+} from './time-records/utils.ts';
 
 export interface SyncStoreTimeRecordsPayload {
-	date?: string; // YYYY-MM-DD (defaults to current date)
+	date?: string; // YYYY-MM-DD (defaults to current date in service timezone)
 	store_id?: string; // Optional: sync a specific store only
 }
 
@@ -25,44 +35,15 @@ export interface SyncStoreTimeRecordsResult {
 	details: SyncStoreDetail[];
 }
 
-function formatDateParts(dateInput?: string): {
+function resolveDateParts(dateInput?: string): {
 	dateStr: string;
 	workDay: string;
 } {
 	if (dateInput && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-		return {
-			dateStr: dateInput,
-			workDay: dateInput,
-		};
+		return { dateStr: dateInput, workDay: dateInput };
 	}
-
-	const now = new Date();
-	const yyyy = now.getFullYear();
-	const mm = String(now.getMonth() + 1).padStart(2, '0');
-	const dd = String(now.getDate()).padStart(2, '0');
-	const dateStr = `${yyyy}-${mm}-${dd}`;
-
+	const dateStr = getTodayDateStr();
 	return { dateStr, workDay: dateStr };
-}
-
-function buildTimestamp(
-	dateStr: string,
-	timeStr: string | null | undefined,
-): string | null {
-	if (!timeStr) return null;
-	if (timeStr.includes('T')) {
-		const d = new Date(timeStr);
-		return Number.isNaN(d.getTime()) ? null : d.toISOString();
-	}
-	const time = timeStr.trim();
-	const fullTime =
-		time.length === 5
-			? `${time}:00.000Z`
-			: time.includes('.')
-				? `${time}Z`
-				: `${time}.000Z`;
-	const d = new Date(`${dateStr}T${fullTime}`);
-	return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
 const syncStoreTimeRecordsHandler: HookHandler<
@@ -74,6 +55,7 @@ const syncStoreTimeRecordsHandler: HookHandler<
 		'Reviews every store to ensure a daily TimeRecordStore exists and synchronizes opening time with earliest employee time record',
 	options: {
 		timeoutMs: 60000,
+		maxRetries: 1,
 	},
 
 	async run(
@@ -81,7 +63,7 @@ const syncStoreTimeRecordsHandler: HookHandler<
 		context: WorkerContext,
 	): Promise<SyncStoreTimeRecordsResult> {
 		const { directus, logger } = context;
-		const { dateStr, workDay } = formatDateParts(payload.date);
+		const { dateStr, workDay } = resolveDateParts(payload.date);
 
 		logger.info(
 			{ date: dateStr, workDay, storeId: payload.store_id },
@@ -99,6 +81,58 @@ const syncStoreTimeRecordsHandler: HookHandler<
 
 		logger.info({ storeCount: stores.length }, 'Fetched stores for evaluation');
 
+		// 2. Batch fetch: All time records for this date across stores (1 query instead of N)
+		const timeRecordsFilter: Record<string, unknown> = {
+			record_date: { _eq: dateStr },
+		};
+		if (payload.store_id) {
+			timeRecordsFilter._or = [
+				{ store_id: { _eq: payload.store_id } },
+				{ store_id: { id: { _eq: payload.store_id } } },
+			];
+		}
+
+		const allDailyTimeRecords = await directus.getTimeRecords({
+			filter: timeRecordsFilter,
+			limit: -1,
+		});
+
+		// 3. Batch fetch: All existing store daily records for this workDay (1 query instead of N)
+		const storeRecordsFilter: Record<string, unknown> = {
+			work_day: { _eq: workDay },
+		};
+		if (payload.store_id) {
+			storeRecordsFilter._or = [
+				{ store: { _eq: payload.store_id } },
+				{ store: { id: { _eq: payload.store_id } } },
+			];
+		}
+
+		const allExistingStoreRecords = await directus.getTimeRecordStores({
+			filter: storeRecordsFilter,
+			limit: -1,
+		});
+
+		// Index employee time records by store ID
+		const timeRecordsByStore = new Map<string, TimeRecords[]>();
+		for (const rec of allDailyTimeRecords || []) {
+			const sId = extractStoreId(rec.store_id);
+			if (sId) {
+				const list = timeRecordsByStore.get(sId) || [];
+				list.push(rec);
+				timeRecordsByStore.set(sId, list);
+			}
+		}
+
+		// Index existing TimeRecordStore by store ID
+		const existingRecordByStore = new Map<string, TimeRecordStore>();
+		for (const rec of allExistingStoreRecords || []) {
+			const sId = extractStoreId(rec.store);
+			if (sId && !existingRecordByStore.has(sId)) {
+				existingRecordByStore.set(sId, rec);
+			}
+		}
+
 		const details: SyncStoreDetail[] = [];
 		let createdCount = 0;
 		let updatedCount = 0;
@@ -108,23 +142,11 @@ const syncStoreTimeRecordsHandler: HookHandler<
 			const storeId = String(store.id);
 			const storeName = store.name || storeId;
 
-			// 2. Fetch employee time records for this store on this date
-			const timeRecords = await directus.getTimeRecords({
-				filter: {
-					_and: [
-						{
-							_or: [
-								{ store_id: { _eq: storeId } },
-								{ store_id: { id: { _eq: storeId } } },
-							],
-						},
-						{ record_date: { _eq: dateStr } },
-					],
-				},
-			});
+			// In-memory lookup of employee time records for this store
+			const storeTimeRecords = timeRecordsByStore.get(storeId) || [];
 
 			// Filter for opening logs ('Comenzar Jornada' or 'Iniciar Jornada')
-			const openingRecords = (timeRecords || []).filter((rec) => {
+			const openingRecords = storeTimeRecords.filter((rec) => {
 				const logType = rec.log_type?.toLowerCase()?.trim();
 				return logType === 'comenzar jornada' || logType === 'iniciar jornada';
 			});
@@ -135,30 +157,16 @@ const syncStoreTimeRecordsHandler: HookHandler<
 			);
 
 			const earliest = openingRecords[0] ?? null;
-
-			// 3. Check for existing TimeRecordStore for this store and workDay
-			const existingStoreRecords = await directus.getTimeRecordStores({
-				filter: {
-					_and: [
-						{
-							_or: [
-								{ store: { _eq: storeId } },
-								{ store: { id: { _eq: storeId } } },
-							],
-						},
-						{ work_day: { _eq: workDay } },
-					],
-				},
-			});
-
-			const existing = existingStoreRecords?.[0] ?? null;
+			const existing = existingRecordByStore.get(storeId) ?? null;
 
 			if (earliest) {
 				const openTime = buildTimestamp(dateStr, earliest.record_time);
-				const openUser = earliest.employee_id ?? null;
+				const openUser = earliest.employee_id
+					? String(earliest.employee_id)
+					: null;
 
 				if (existing) {
-					// Secure match found -> update if open_time or open_user differ
+					// Check if open_time or open_user differ
 					const needsUpdate =
 						existing.open_time !== openTime || existing.open_user !== openUser;
 
@@ -201,7 +209,7 @@ const syncStoreTimeRecordsHandler: HookHandler<
 						open_time: openTime,
 						open_user: openUser,
 						close_time: null,
-						closed_user: null,
+						close_user: null,
 						operative_time: null,
 					});
 
@@ -223,7 +231,6 @@ const syncStoreTimeRecordsHandler: HookHandler<
 			} else {
 				// No time records for opening found
 				if (existing) {
-					// Already exists, keep unchanged
 					unchangedCount++;
 					details.push({
 						storeId,
@@ -242,7 +249,7 @@ const syncStoreTimeRecordsHandler: HookHandler<
 						open_time: null,
 						open_user: null,
 						close_time: null,
-						closed_user: null,
+						close_user: null,
 						operative_time: null,
 					});
 

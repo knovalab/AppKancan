@@ -11,7 +11,18 @@ import type {
 // Bounded in-memory job tracker (stores the last MAX_HISTORY jobs)
 const MAX_HISTORY = 100;
 const MAX_LOGS_PER_JOB = 100;
+const MAX_CONCURRENT_JOBS =
+	Number(process.env.MAX_CONCURRENT_JOBS) > 0
+		? Number(process.env.MAX_CONCURRENT_JOBS)
+		: 5;
+
 const jobsMap = new Map<string, JobRecord>();
+const pendingQueue: string[] = [];
+const runningJobIds = new Set<string>();
+const keyLocks = new Map<string, Promise<void>>();
+
+let activeJobCount = 0;
+let isShuttingDown = false;
 
 /**
  * Prunes the oldest jobs if the history exceeds MAX_HISTORY.
@@ -33,31 +44,47 @@ function generateJobId(): string {
 }
 
 /**
- * Executes a promise with a timeout limit.
+ * Acquires a sequential lock for a given resource key (e.g. store ID).
  */
-function withTimeout<T>(
-	promise: Promise<T>,
-	timeoutMs: number,
-	jobLabel: string,
-): Promise<T> {
-	return Promise.race([
-		promise,
-		new Promise<never>((_, reject) =>
-			setTimeout(
-				() =>
-					reject(
-						new Error(
-							`Execution timed out after ${timeoutMs}ms for ${jobLabel}`,
-						),
-					),
-				timeoutMs,
-			),
-		),
-	]);
+async function acquireKeyLock(key: string): Promise<() => void> {
+	while (keyLocks.has(key)) {
+		try {
+			await keyLocks.get(key);
+		} catch {
+			// Continue if previous lock holder failed
+		}
+	}
+	let release!: () => void;
+	const lockPromise = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	keyLocks.set(key, lockPromise);
+
+	return () => {
+		keyLocks.delete(key);
+		release();
+	};
 }
 
 /**
- * Worker execution engine.
+ * Extracts a concurrency key (such as store_id) from the job payload if present.
+ */
+function extractConcurrencyKey(payload: unknown): string | null {
+	if (!payload || typeof payload !== 'object') return null;
+	const p = payload as Record<string, unknown>;
+	const rawStore = p.store_id ?? p.storeId ?? p.store;
+	if (rawStore) {
+		const storeId =
+			typeof rawStore === 'object' && rawStore !== null && 'id' in rawStore
+				? String((rawStore as { id: unknown }).id)
+				: String(rawStore);
+		return `store:${storeId}`;
+	}
+	return null;
+}
+
+/**
+ * Worker execution engine with retries, timeout with AbortSignal, and resource locking.
  */
 async function processJob(jobId: string): Promise<void> {
 	const job = jobsMap.get(jobId);
@@ -105,73 +132,152 @@ async function processJob(jobId: string): Promise<void> {
 		}
 	};
 
+	function logWithChild(
+		level: LogLevel,
+		a: string | object,
+		b?: unknown,
+	): void {
+		if (typeof a === 'string') {
+			if (b !== undefined && typeof b === 'object' && b !== null) {
+				child[level](b, a);
+			} else if (b !== undefined) {
+				child[level]({ data: b }, a);
+			} else {
+				child[level](a);
+			}
+		} else {
+			child[level](a, typeof b === 'string' ? b : undefined);
+		}
+		appendLog(level, a, b);
+	}
+
 	const logger: WorkerLogger = {
-		debug: (a: any, b?: any) => {
-			if (typeof a === 'string') child.debug(b, a);
-			else child.debug(a, b);
-			appendLog('debug', a, b);
-		},
-		info: (a: any, b?: any) => {
-			if (typeof a === 'string') child.info(b, a);
-			else child.info(a, b);
-			appendLog('info', a, b);
-		},
-		warn: (a: any, b?: any) => {
-			if (typeof a === 'string') child.warn(b, a);
-			else child.warn(a, b);
-			appendLog('warn', a, b);
-		},
-		error: (a: any, b?: any) => {
-			if (typeof a === 'string') child.error(b, a);
-			else child.error(a, b);
-			appendLog('error', a, b);
-		},
+		debug: (a: string | object, b?: unknown) => logWithChild('debug', a, b),
+		info: (a: string | object, b?: unknown) => logWithChild('info', a, b),
+		warn: (a: string | object, b?: unknown) => logWithChild('warn', a, b),
+		error: (a: string | object, b?: unknown) => logWithChild('error', a, b),
 	};
 
-	const context: WorkerContext = {
-		jobId,
-		hookName: job.name,
-		directus,
-		logger,
-		log: (...args: unknown[]) => logger.info(args.map(String).join(' ')),
-		warn: (...args: unknown[]) => logger.warn(args.map(String).join(' ')),
-		error: (...args: unknown[]) => logger.error(args.map(String).join(' ')),
-	};
+	const timeoutMs = handler.options?.timeoutMs ?? 60000;
+	const maxRetries = handler.options?.maxRetries ?? 0;
+	job.maxRetries = maxRetries;
+	job.retriesAttempted = 0;
 
 	logger.info({ payload: job.payload }, 'Job execution started');
 
-	const timeoutMs = handler.options?.timeoutMs ?? 60000;
+	// Resource-level serialization if a concurrency key exists
+	const concurrencyKey = extractConcurrencyKey(job.payload);
+	let releaseLock: (() => void) | null = null;
+	if (concurrencyKey) {
+		releaseLock = await acquireKeyLock(concurrencyKey);
+	}
 
 	try {
-		const result = await withTimeout(
-			handler.run(job.payload, context),
-			timeoutMs,
-			`[${jobId}] [${job.name}]`,
-		);
+		let attempt = 0;
+		let lastError: Error | unknown = null;
+		let successResult: unknown;
+		let succeeded = false;
+
+		while (attempt <= maxRetries && !succeeded) {
+			if (attempt > 0) {
+				const backoffMs = Math.min(1000 * 2 ** (attempt - 1), 10000);
+				logger.warn(
+					{ attempt, maxRetries, backoffMs },
+					`Retrying failed job after ${backoffMs}ms backoff`,
+				);
+				await new Promise((res) => setTimeout(res, backoffMs));
+			}
+
+			const abortController = new AbortController();
+			const timeoutTimer = setTimeout(() => {
+				abortController.abort(
+					new Error(`Execution timed out after ${timeoutMs}ms`),
+				);
+			}, timeoutMs);
+
+			const context: WorkerContext = {
+				jobId,
+				hookName: job.name,
+				directus,
+				logger,
+				signal: abortController.signal,
+				log: (...args: unknown[]) => logger.info(args.map(String).join(' ')),
+				warn: (...args: unknown[]) => logger.warn(args.map(String).join(' ')),
+				error: (...args: unknown[]) => logger.error(args.map(String).join(' ')),
+			};
+
+			try {
+				const runPromise = handler.run(job.payload, context);
+				const abortPromise = new Promise<never>((_, reject) => {
+					abortController.signal.addEventListener('abort', () => {
+						reject(abortController.signal.reason);
+					});
+				});
+
+				successResult = await Promise.race([runPromise, abortPromise]);
+				succeeded = true;
+			} catch (err) {
+				lastError = err;
+				attempt++;
+				job.retriesAttempted = attempt;
+			} finally {
+				clearTimeout(timeoutTimer);
+			}
+		}
 
 		const durationMs = Date.now() - startTime;
-		job.status = 'completed';
-		job.result = result !== undefined ? result : null;
-		job.finishedAt = new Date().toISOString();
 		job.durationMs = durationMs;
-
-		logger.info(
-			{ durationMs },
-			`Job completed successfully in ${durationMs}ms`,
-		);
-	} catch (err: unknown) {
-		const durationMs = Date.now() - startTime;
-		const errorMsg = err instanceof Error ? err.message : String(err);
-
-		job.status = 'failed';
-		job.error = errorMsg;
 		job.finishedAt = new Date().toISOString();
-		job.durationMs = durationMs;
 
-		logger.error(
-			{ durationMs, error: errorMsg },
-			`Job failed after ${durationMs}ms`,
-		);
+		if (succeeded) {
+			job.status = 'completed';
+			job.result = successResult !== undefined ? successResult : null;
+			logger.info(
+				{ durationMs },
+				`Job completed successfully in ${durationMs}ms`,
+			);
+		} else {
+			const errorMsg =
+				lastError instanceof Error ? lastError.message : String(lastError);
+			job.status = 'failed';
+			job.error = errorMsg;
+			logger.error(
+				{ durationMs, error: errorMsg, retriesAttempted: job.retriesAttempted },
+				`Job failed after ${durationMs}ms`,
+			);
+		}
+	} finally {
+		if (releaseLock) {
+			releaseLock();
+		}
+	}
+}
+
+/**
+ * Pump the pending queue respecting the concurrency limit.
+ */
+function pumpQueue(): void {
+	if (isShuttingDown) return;
+
+	while (activeJobCount < MAX_CONCURRENT_JOBS && pendingQueue.length > 0) {
+		const nextJobId = pendingQueue.shift();
+		if (!nextJobId) break;
+
+		activeJobCount++;
+		runningJobIds.add(nextJobId);
+
+		processJob(nextJobId)
+			.catch((err) => {
+				baseLogger.error(
+					{ jobId: nextJobId, err },
+					'Uncaught error during background execution',
+				);
+			})
+			.finally(() => {
+				activeJobCount--;
+				runningJobIds.delete(nextJobId);
+				pumpQueue();
+			});
 	}
 }
 
@@ -182,9 +288,17 @@ export interface EnqueueResult {
 }
 
 /**
- * Enqueues a job for background processing.
+ * Enqueues a job for background processing with concurrency throttling.
  */
 export function enqueue(name: string, payload: unknown = {}): EnqueueResult {
+	if (isShuttingDown) {
+		const error = new Error('Service is shutting down') as Error & {
+			statusCode?: number;
+		};
+		error.statusCode = 503;
+		throw error;
+	}
+
 	const handler = getHandler(name);
 	if (!handler) {
 		const available = listHandlers().map((h) => h.name);
@@ -213,15 +327,8 @@ export function enqueue(name: string, payload: unknown = {}): EnqueueResult {
 	jobsMap.set(jobId, jobRecord);
 	pruneHistory();
 
-	// Asynchronously execute in the background on the next tick
-	setImmediate(() => {
-		processJob(jobId).catch((err) => {
-			baseLogger.error(
-				{ jobId, err },
-				'Uncaught error during background execution',
-			);
-		});
-	});
+	pendingQueue.push(jobId);
+	setImmediate(pumpQueue);
 
 	return {
 		jobId,
@@ -242,6 +349,44 @@ export function getJob(jobId: string): JobRecord | null {
  */
 export function listRecentJobs(): JobRecord[] {
 	return Array.from(jobsMap.values()).reverse();
+}
+
+/**
+ * Returns queue health and concurrency metrics.
+ */
+export function getQueueStats() {
+	return {
+		activeJobs: activeJobCount,
+		queuedJobs: pendingQueue.length,
+		maxConcurrentJobs: MAX_CONCURRENT_JOBS,
+		totalTracked: jobsMap.size,
+		isShuttingDown,
+	};
+}
+
+/**
+ * Drains all in-flight jobs for graceful shutdown.
+ */
+export async function drainInFlightJobs(timeoutMs = 10000): Promise<void> {
+	isShuttingDown = true;
+	baseLogger.info(
+		{ running: runningJobIds.size, queued: pendingQueue.length },
+		'Draining in-flight jobs for graceful shutdown',
+	);
+
+	const start = Date.now();
+	while (runningJobIds.size > 0 && Date.now() - start < timeoutMs) {
+		await new Promise((res) => setTimeout(res, 100));
+	}
+
+	if (runningJobIds.size > 0) {
+		baseLogger.warn(
+			{ remaining: runningJobIds.size },
+			'Graceful drain timed out before all jobs completed',
+		);
+	} else {
+		baseLogger.info('All in-flight jobs completed cleanly');
+	}
 }
 
 export { getHandler, listHandlers };

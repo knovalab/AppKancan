@@ -1,19 +1,19 @@
 import type { HookHandler, WorkerContext } from '../types/index.ts';
-import onTimeRecordCreatedHandler, {
-	type OnTimeRecordCreatedResult,
-} from './on-time-record-created.ts';
-import { extractUpdateKey } from './time-records/utils.ts';
+import {
+	type ProcessTimeRecordResult,
+	processTimeRecord,
+} from './time-records/process-time-record.ts';
 
 /**
  * Payload interface strictly for time record updates.
- * Expects { keys: number[] } or { key: number[] }
+ * Expects { keys: Array<number | string> } or { key: Array<number | string> }
  */
 export interface OnTimeRecordUpdatedPayload {
 	keys?: Array<number | string>;
-	key?: Array<number | string>;
+	key?: Array<number | string> | number | string;
 }
 
-export type OnTimeRecordUpdatedResult = OnTimeRecordCreatedResult;
+export type OnTimeRecordUpdatedResult = ProcessTimeRecordResult;
 
 const onTimeRecordUpdatedHandler: HookHandler<
 	OnTimeRecordUpdatedPayload,
@@ -32,7 +32,7 @@ const onTimeRecordUpdatedHandler: HookHandler<
 	): Promise<OnTimeRecordUpdatedResult> {
 		const { logger } = context;
 
-		const resolvedKey = extractUpdateKey(rawPayload);
+		const resolvedKey = rawPayload?.keys?.[0] ?? 0;
 
 		if (!resolvedKey) {
 			logger.warn({ payload: rawPayload }, 'Missing keys in update payload');
@@ -44,10 +44,10 @@ const onTimeRecordUpdatedHandler: HookHandler<
 
 		logger.info(
 			{ payload: rawPayload, resolvedKey },
-			'Received on-time-record-updated webhook; resolving key and delegating',
+			'Received on-time-record-updated webhook; processing time record',
 		);
 
-		return await onTimeRecordCreatedHandler.run({ key: resolvedKey }, context);
+		return await processTimeRecord(resolvedKey, context);
 	},
 };
 

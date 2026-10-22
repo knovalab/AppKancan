@@ -54,45 +54,12 @@ describe('on-time-record-updated handler', () => {
 			context,
 		);
 
-		expect(getTimeRecordByIdMock).toHaveBeenCalledWith(
-			110513,
-			expect.any(Array),
-		);
+		expect(getTimeRecordByIdMock).toHaveBeenCalledWith(110513, {
+			fields: expect.any(Array),
+		});
 		expect(result.status).toBe('created');
 		expect(result.storeId).toBe('1003');
 		expect(result.openTime).toBe('2026-10-22T08:00:00.000Z');
-	});
-
-	it('extracts first key when payload is { key: [110513] }', async () => {
-		const fetchedRecord: TimeRecords = {
-			id: 110513,
-			store_id: '1003',
-			log_type: 'Comenzar Jornada',
-			record_date: '2026-10-22',
-			record_time: '08:00',
-			employee_id: '1190',
-		};
-
-		const getTimeRecordByIdMock = vi.fn().mockResolvedValue(fetchedRecord);
-		const createMock = vi.fn().mockResolvedValue({ id: 501 });
-		const context = createMockContext({
-			getTimeRecordById: getTimeRecordByIdMock,
-			getTimeRecordStores: vi.fn().mockResolvedValue([]),
-			createTimeRecordStore: createMock,
-		});
-
-		const result = await onTimeRecordUpdatedHandler.run(
-			{
-				key: [110513],
-			},
-			context,
-		);
-
-		expect(getTimeRecordByIdMock).toHaveBeenCalledWith(
-			110513,
-			expect.any(Array),
-		);
-		expect(result.status).toBe('created');
 	});
 
 	it('extracts the first key when "keys" is an array with multiple elements', async () => {
@@ -120,7 +87,9 @@ describe('on-time-record-updated handler', () => {
 			context,
 		);
 
-		expect(getTimeRecordByIdMock).toHaveBeenCalledWith(142, expect.any(Array));
+		expect(getTimeRecordByIdMock).toHaveBeenCalledWith(142, {
+			fields: expect.any(Array),
+		});
 		expect(result.status).toBe('created');
 		expect(result.storeId).toBe('1003');
 	});

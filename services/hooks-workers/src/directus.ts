@@ -69,14 +69,10 @@ export const directus: DirectusService = {
 	},
 	async getTimeRecordById(
 		id: string | number,
-		fields?: string[],
+		params?: Record<string, unknown>,
 	): Promise<TimeRecords | null> {
 		return (await client.request(
-			readItem(
-				'com_time_records',
-				id,
-				(fields ? { fields } : undefined) as any,
-			),
+			readItem('com_time_records', id, params),
 		)) as unknown as TimeRecords | null;
 	},
 };

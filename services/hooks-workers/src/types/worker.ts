@@ -27,6 +27,7 @@ export interface WorkerContext<TDirectus = DirectusService> {
 	hookName: string;
 	directus: TDirectus;
 	logger: WorkerLogger;
+	signal?: AbortSignal;
 	log: (...args: unknown[]) => void;
 	warn: (...args: unknown[]) => void;
 	error: (...args: unknown[]) => void;
@@ -35,6 +36,7 @@ export interface WorkerContext<TDirectus = DirectusService> {
 export interface HookOptions {
 	timeoutMs?: number;
 	maxRetries?: number;
+	concurrencyKey?: string;
 }
 
 export interface HookHandler<
@@ -59,6 +61,8 @@ export interface JobRecord<TPayload = any, TResult = any> {
 	startedAt: string | null;
 	finishedAt: string | null;
 	durationMs: number | null;
+	retriesAttempted?: number;
+	maxRetries?: number;
 	payload: TPayload;
 	result: TResult | null;
 	error: string | null;

@@ -70,15 +70,29 @@ async function main(): Promise<void> {
 		'Executing hook locally via CLI',
 	);
 
+	function logWithCli(
+		level: 'debug' | 'info' | 'warn' | 'error',
+		a: string | object,
+		b?: unknown,
+	): void {
+		if (typeof a === 'string') {
+			if (b !== undefined && typeof b === 'object' && b !== null) {
+				cliLogger[level](b, a);
+			} else if (b !== undefined) {
+				cliLogger[level]({ data: b }, a);
+			} else {
+				cliLogger[level](a);
+			}
+		} else {
+			cliLogger[level](a, typeof b === 'string' ? b : undefined);
+		}
+	}
+
 	const logger: WorkerLogger = {
-		debug: (a: any, b?: any) =>
-			typeof a === 'string' ? cliLogger.debug(b, a) : cliLogger.debug(a, b),
-		info: (a: any, b?: any) =>
-			typeof a === 'string' ? cliLogger.info(b, a) : cliLogger.info(a, b),
-		warn: (a: any, b?: any) =>
-			typeof a === 'string' ? cliLogger.warn(b, a) : cliLogger.warn(a, b),
-		error: (a: any, b?: any) =>
-			typeof a === 'string' ? cliLogger.error(b, a) : cliLogger.error(a, b),
+		debug: (a: string | object, b?: unknown) => logWithCli('debug', a, b),
+		info: (a: string | object, b?: unknown) => logWithCli('info', a, b),
+		warn: (a: string | object, b?: unknown) => logWithCli('warn', a, b),
+		error: (a: string | object, b?: unknown) => logWithCli('error', a, b),
 	};
 
 	const mockContext: WorkerContext = {
@@ -86,6 +100,7 @@ async function main(): Promise<void> {
 		hookName,
 		directus,
 		logger,
+		signal: new AbortController().signal,
 		log: (...msg: unknown[]) => logger.info(msg.map(String).join(' ')),
 		warn: (...msg: unknown[]) => logger.warn(msg.map(String).join(' ')),
 		error: (...msg: unknown[]) => logger.error(msg.map(String).join(' ')),

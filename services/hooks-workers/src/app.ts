@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { verifyStaticToken } from './auth.ts';
 import hookRoutes from './routes.ts';
+import { getQueueStats } from './worker.ts';
 
 export function createApp() {
 	const app = new Hono();
@@ -11,9 +12,12 @@ export function createApp() {
 
 	// Public health check
 	app.get('/health', (c) => {
+		const queue = getQueueStats();
 		return c.json({
-			status: 'ok',
+			status: queue.isShuttingDown ? 'shutting_down' : 'ok',
 			service: 'hooks-workers',
+			timezone: process.env.SERVICE_TIMEZONE || 'America/Bogota',
+			queue,
 			timestamp: new Date().toISOString(),
 		});
 	});
