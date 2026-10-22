@@ -36,9 +36,7 @@ export const directus: DirectusService = {
 		)) as unknown as Store[];
 	},
 	async getStoreById(id: string | number): Promise<Store | null> {
-		return (await client.request(
-			readItem('core_stores', id),
-		)) as unknown as Store | null;
+		return await client.request(readItem('core_stores', id));
 	},
 	async getTimeRecordStores(
 		params?: Record<string, unknown>,
@@ -68,6 +66,18 @@ export const directus: DirectusService = {
 		return (await client.request(
 			readItems('com_time_records', params),
 		)) as unknown as TimeRecords[];
+	},
+	async getTimeRecordById(
+		id: string | number,
+		fields?: string[],
+	): Promise<TimeRecords | null> {
+		return (await client.request(
+			readItem(
+				'com_time_records',
+				id,
+				(fields ? { fields } : undefined) as any,
+			),
+		)) as unknown as TimeRecords | null;
 	},
 };
 

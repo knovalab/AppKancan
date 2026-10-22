@@ -101,7 +101,6 @@ async function main(): Promise<void> {
 		);
 	} catch (err: unknown) {
 		const durationMs = Date.now() - startTime;
-		console.log('Error during hook execution:', err);
 		const errorMsg = err instanceof Error ? err.message : String(err);
 		cliLogger.error(
 			{ durationMs, error: errorMsg },

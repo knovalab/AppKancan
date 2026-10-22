@@ -10,6 +10,7 @@ export interface TimeRecordStore {
 	id: number;
 	open_user: string | null;
 	closed_user: string | null;
+	close_user?: string | null;
 	operative_time: number | null; // minutes
 	work_day: string | null; // YYYY-MM-DD
 	close_time: string | null; // AAAA-MM-DDTHH:mm:ss
@@ -48,6 +49,10 @@ export interface DirectusService {
 		data: Partial<TimeRecordStore>,
 	): Promise<TimeRecordStore>;
 	getTimeRecords(params?: Record<string, unknown>): Promise<TimeRecords[]>;
+	getTimeRecordById?(
+		id: string | number,
+		fields?: string[],
+	): Promise<TimeRecords | null>;
 }
 
 export interface DirectusSchema {

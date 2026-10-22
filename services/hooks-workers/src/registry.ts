@@ -1,6 +1,9 @@
-import dummyTask from './handlers/dummy.ts';
-import onTimeRecordCreatedHandler from './handlers/on-time-record-created.ts';
-import syncStoreTimeRecordsHandler from './handlers/sync-store-time-records.ts';
+import {
+	dummyTask,
+	onTimeRecordCreatedHandler,
+	syncStoreTimeRecordsHandler,
+} from './handlers/index.ts';
+
 import type { HookHandler } from './types/index.ts';
 
 /**
