@@ -1,5 +1,5 @@
 services:
-  appkancan:
+  hooks-workers:
     build:
       context: .
       dockerfile: Dockerfile
