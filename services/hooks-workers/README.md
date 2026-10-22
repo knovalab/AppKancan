@@ -19,6 +19,18 @@ cd services/hooks-workers
 npm install
 ```
 
+### Configure Environment Variables
+Copy `.env.example` to `.env` in this directory:
+```bash
+cp .env.example .env
+```
+Key variables:
+- `STATIC_HOOK_TOKEN`: Shared secret token for webhook authentication.
+- `DIRECTUS_URL`: Directus instance URL (default: `https://directus.kancan.knovalab.com`).
+- `DIRECTUS_SERVICE_TOKEN`: Directus static service token for SDK requests.
+- `PORT`: Service port (default: `3020`).
+- `LOG_LEVEL`: Pino logger severity level (`debug`, `info`, `warn`, `error`).
+
 ### Start Dev Server (with hot reloading on port 3020)
 ```bash
 npm run dev

@@ -10,21 +10,11 @@
  *   npm run cli -- dummy-task '{"test": 123}'
  */
 
-import { resolve } from 'node:path';
+import 'dotenv/config';
 import { directus } from './directus.ts';
 import { baseLogger } from './logger.ts';
 import { getHandler, listHandlers } from './registry.ts';
 import type { WorkerContext, WorkerLogger } from './types.ts';
-
-// Load .env
-const envPath = resolve(process.cwd(), '../../.env');
-try {
-	if (typeof process.loadEnvFile === 'function') {
-		process.loadEnvFile(envPath);
-	}
-} catch {
-	// Continue if .env is already loaded
-}
 
 async function main(): Promise<void> {
 	const args = process.argv.slice(2);
