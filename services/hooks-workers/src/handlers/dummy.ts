@@ -1,4 +1,4 @@
-import type { HookHandler, WorkerContext } from '../types.ts';
+import type { HookHandler, WorkerContext } from '../types/index.ts';
 
 export interface DummyPayload {
 	id?: string | number;

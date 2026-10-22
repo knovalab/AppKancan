@@ -11,7 +11,6 @@
 			"version": "22"
 		}
 	},
-	"postStartCommand": "npm install",
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -39,6 +38,7 @@
 		}
 	},
 	// Comando ejecutado la primera vez que se crea el contenedor
+	"postCreateCommand": "npm install",
 	"containerUser": "vscode",
 	"remoteUser": "vscode",
 	"updateRemoteUserUID": true

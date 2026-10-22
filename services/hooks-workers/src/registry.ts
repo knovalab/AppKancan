@@ -1,5 +1,7 @@
 import dummyTask from './handlers/dummy.ts';
-import type { HookHandler } from './types.ts';
+import onTimeRecordCreatedHandler from './handlers/on-time-record-created.ts';
+import syncStoreTimeRecordsHandler from './handlers/sync-store-time-records.ts';
+import type { HookHandler } from './types/index.ts';
 
 /**
  * Explicit Static Registry of Worker Hooks.
@@ -7,6 +9,8 @@ import type { HookHandler } from './types.ts';
  */
 export const handlers: Record<string, HookHandler> = {
 	[dummyTask.name]: dummyTask,
+	[syncStoreTimeRecordsHandler.name]: syncStoreTimeRecordsHandler,
+	[onTimeRecordCreatedHandler.name]: onTimeRecordCreatedHandler,
 };
 
 /**

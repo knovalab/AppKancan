@@ -6,7 +6,7 @@ import type {
 	LogLevel,
 	WorkerContext,
 	WorkerLogger,
-} from './types.ts';
+} from './types/index.ts';
 
 // Bounded in-memory job tracker (stores the last MAX_HISTORY jobs)
 const MAX_HISTORY = 100;
@@ -83,7 +83,7 @@ async function processJob(jobId: string): Promise<void> {
 
 	const appendLog = (level: LogLevel, a: unknown, b?: unknown) => {
 		let message = '';
-		let data: unknown = undefined;
+		let data: unknown;
 
 		if (typeof a === 'string') {
 			message = a;

@@ -14,7 +14,7 @@ import 'dotenv/config';
 import { directus } from './directus.ts';
 import { baseLogger } from './logger.ts';
 import { getHandler, listHandlers } from './registry.ts';
-import type { WorkerContext, WorkerLogger } from './types.ts';
+import type { WorkerContext, WorkerLogger } from './types/index.ts';
 
 async function main(): Promise<void> {
 	const args = process.argv.slice(2);
@@ -101,6 +101,7 @@ async function main(): Promise<void> {
 		);
 	} catch (err: unknown) {
 		const durationMs = Date.now() - startTime;
+		console.log('Error during hook execution:', err);
 		const errorMsg = err instanceof Error ? err.message : String(err);
 		cliLogger.error(
 			{ durationMs, error: errorMsg },
