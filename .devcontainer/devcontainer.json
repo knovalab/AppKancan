@@ -14,7 +14,9 @@
 	"postStartCommand": "npm install",
 	"customizations": {
 		"vscode": {
-			"extensions": ["biomejs.biome"],
+			"extensions": [
+				"biomejs.biome"
+			],
 			"settings": {
 				"editor.formatOnSave": true,
 				"[typescript]": {
@@ -37,6 +39,7 @@
 		}
 	},
 	// Comando ejecutado la primera vez que se crea el contenedor
-	"remoteUser": "root",
+	"containerUser": "vscode",
+	"remoteUser": "vscode",
 	"updateRemoteUserUID": true
 }

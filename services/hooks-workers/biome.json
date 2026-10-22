@@ -1,0 +1,22 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+	"extends": ["../../biome.json"],
+	"files": {
+		"ignoreUnknown": false
+	},
+	"vcs": {
+		"root": ".."
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"suspicious": {
+				"noConsole": "warn",
+				"noDebugger": "off"
+			},
+			"style": {
+				"useConst": "error"
+			}
+		}
+	}
+}
