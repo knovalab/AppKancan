@@ -4,14 +4,14 @@ const request = vi.fn();
 vi.mock('@/services/directus/directus', () => ({ default: { request: (q: unknown) => request(q) } }));
 vi.mock('@/auth/services/directusInterceptor', () => ({ withAutoRefresh: (fn: () => unknown) => fn() }));
 vi.mock('@directus/sdk', () => ({
-	createItem: (c: string, d: unknown) => ({ op: 'create', c, d }),
+	createItems: (c: string, d: unknown[]) => ({ op: 'createMany', c, d }),
 	readItems: (c: string, q: unknown) => ({ op: 'read', c, q }),
 	updateItem: (c: string, id: number, d: unknown) => ({ op: 'update', c, id, d }),
 	updateItems: (c: string, ids: number[], d: unknown) => ({ op: 'updateMany', c, ids, d }),
 }));
 
 import {
-	crearHoraExtra,
+	crearHorasExtras,
 	filtroHorasExtras,
 	revisarHorasExtras,
 } from '@/apps/horarios/api/directus/horasExtras';
@@ -50,23 +50,32 @@ describe('filtroHorasExtras', () => {
 	});
 });
 
-describe('crearHoraExtra', () => {
+describe('crearHorasExtras', () => {
+	const base = { store_id: 26, work_date: '2026-10-19', minutes: 60, created_by: 'uuid-lider' };
+
 	it('siempre crea en pendiente', async () => {
-		await crearHoraExtra({ employee_id: 5, store_id: 26, work_date: '2026-10-19', minutes: 60, created_by: 'uuid-lider' });
+		await crearHorasExtras([{ ...base, employee_id: 5 }]);
 		expect(request.mock.calls[0][0]).toMatchObject({
-			op: 'create',
+			op: 'createMany',
 			c: 'com_over_time',
-			d: { employee_id: 5, store_id: 26, minutes: 60, status: 'pendiente' },
+			d: [{ employee_id: 5, store_id: 26, minutes: 60, status: 'pendiente' }],
 		});
 	});
 
-	it('envía el uuid de quien crea y no llama a Directus sin él', async () => {
-		await crearHoraExtra({ employee_id: 5, store_id: 26, work_date: '2026-10-19', minutes: 60, created_by: 'uuid-lider' });
-		expect(request.mock.calls[0][0].d.created_by).toBe('uuid-lider');
-		request.mockClear();
-		await expect(
-			crearHoraExtra({ employee_id: 5, store_id: 26, work_date: '2026-10-19', minutes: 60, created_by: ' ' }),
-		).rejects.toThrow(/usuario/);
+	it('varios empleados en una sola petición, con el uuid de quien crea', async () => {
+		await crearHorasExtras([
+			{ ...base, employee_id: 5 },
+			{ ...base, employee_id: 6, observations: 'Inventario' },
+		]);
+		expect(request).toHaveBeenCalledTimes(1);
+		const { d } = request.mock.calls[0][0];
+		expect(d.map((x: { employee_id: number }) => x.employee_id)).toEqual([5, 6]);
+		expect(d.every((x: { created_by: string }) => x.created_by === 'uuid-lider')).toBe(true);
+	});
+
+	it('no llama a Directus sin autor ni con la lista vacía', async () => {
+		await expect(crearHorasExtras([{ ...base, employee_id: 5, created_by: ' ' }])).rejects.toThrow(/usuario/);
+		expect(await crearHorasExtras([])).toEqual([]);
 		expect(request).not.toHaveBeenCalled();
 	});
 });

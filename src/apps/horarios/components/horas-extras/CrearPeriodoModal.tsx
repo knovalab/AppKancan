@@ -12,6 +12,7 @@ import {
 	Typography,
 } from '@mui/material';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import dayjs from 'dayjs';
 import { useState } from 'react';
 import { crearPeriodo } from '../../api/directus/periodos';
 import {
@@ -127,27 +128,6 @@ export function CrearPeriodoModal({
 						}
 						fullWidth
 					/>
-					<Box>
-						<Typography variant="body2" sx={{ mb: 1, color: '#475569' }}>
-							Duración rápida
-						</Typography>
-						<ToggleButtonGroup
-							exclusive
-							size="small"
-							value={rapido}
-							onChange={(_, n: number | null) => {
-								if (n != null && FECHA.test(inicio))
-									setFin(finPorDias(inicio, n));
-							}}
-							aria-label="Duración rápida"
-						>
-							{DIAS_RAPIDOS.map((n) => (
-								<ToggleButton key={n} value={n} sx={{ px: 2 }}>
-									{n} días
-								</ToggleButton>
-							))}
-						</ToggleButtonGroup>
-					</Box>
 					<TextField
 						label="Fin"
 						type="date"
@@ -164,6 +144,50 @@ export function CrearPeriodoModal({
 						}
 						fullWidth
 					/>
+					<Box>
+						<Typography
+							variant="body2"
+							sx={{ mb: 1, mt: -1, color: '#475569' }}
+						>
+							Fin sugerido
+						</Typography>
+						<ToggleButtonGroup
+							exclusive
+							size="small"
+							value={rapido}
+							onChange={(_, n: number | null) => {
+								if (n != null && FECHA.test(inicio))
+									setFin(finPorDias(inicio, n));
+							}}
+							aria-label="Fin sugerido"
+							sx={{ flexWrap: 'wrap' }}
+						>
+							{DIAS_RAPIDOS.map((n) => {
+								const sugerido = FECHA.test(inicio)
+									? finPorDias(inicio, n)
+									: null;
+								return (
+									<ToggleButton
+										key={n}
+										value={n}
+										disabled={!sugerido}
+										aria-label={
+											sugerido
+												? dayjs(sugerido).format('DD/MM/YYYY')
+												: `${n} días`
+										}
+										sx={{
+											px: 1.5,
+											py: 0.5,
+											textTransform: 'none',
+										}}
+									>
+										{sugerido ? dayjs(sugerido).format('ddd DD/MM') : '--'}
+									</ToggleButton>
+								);
+							})}
+						</ToggleButtonGroup>
+					</Box>
 				</Box>
 			</DialogContent>
 			<DialogActions sx={{ px: 3, py: 2 }}>

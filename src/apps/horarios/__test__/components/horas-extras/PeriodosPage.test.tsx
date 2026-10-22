@@ -110,12 +110,14 @@ describe('PeriodosPage', () => {
 		expect(inicio).toBeDisabled();
 
 		fireEvent.change(within(dialogo).getByLabelText('Nombre (opcional)'), { target: { value: '  Octubre 2  ' } });
-		fireEvent.click(within(dialogo).getByRole('button', { name: '5 días' }));
-		expect(within(dialogo).getByLabelText('Fin')).toHaveValue('2026-10-30');
-		expect(within(dialogo).getByText('5 días', { selector: 'p' })).toBeInTheDocument();
+		// Sugerencias de fin (11 a 15 días desde el inicio 26/10), solo con la fecha, debajo de Fin.
+		expect(within(dialogo).getByRole('button', { name: '05/11/2026' })).toBeInTheDocument();
+		fireEvent.click(within(dialogo).getByRole('button', { name: '08/11/2026' }));
+		expect(within(dialogo).getByLabelText('Fin')).toHaveValue('2026-11-08');
+		expect(within(dialogo).getByText('14 días', { selector: 'p' })).toBeInTheDocument();
 
 		fireEvent.click(within(dialogo).getByRole('button', { name: 'Crear periodo' }));
-		await waitFor(() => expect(crearPeriodo).toHaveBeenCalledWith({ name: 'Octubre 2', start_date: '2026-10-26', end_date: '2026-10-30' }));
+		await waitFor(() => expect(crearPeriodo).toHaveBeenCalledWith({ name: 'Octubre 2', start_date: '2026-10-26', end_date: '2026-11-08' }));
 		expect(showSnackbar).toHaveBeenCalledWith('Periodo creado', 'success');
 	});
 

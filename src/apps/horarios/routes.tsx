@@ -35,6 +35,9 @@ const HorasExtrasHistorial = lazy(
 const HorasExtrasAprobacion = lazy(
 	() => import('./pages/horas-extras/AprobacionPage'),
 );
+const HorasExtrasCrear = lazy(
+	() => import('./pages/horas-extras/CrearHorasExtrasPage'),
+);
 const HorasExtrasPeriodos = lazy(
 	() => import('./pages/horas-extras/PeriodosPage'),
 );
@@ -85,6 +88,15 @@ const rutasHorarios: RouteObject[] = [
 			seccion('horas-extras', <HorasExtrasSeccion />, [
 				{ index: true, element: <IndexSubseccion seccion="horas-extras" /> },
 				subseccion('horas-extras', 'registradas', <HorasExtrasRegistradas />),
+				// Sub‑página de Registradas: misma regla de acceso y misma pestaña activa.
+				{
+					path: 'registradas/nueva',
+					element: (
+						<RequireSubseccion seccion="horas-extras" path="registradas">
+							<HorasExtrasCrear />
+						</RequireSubseccion>
+					),
+				},
 				subseccion('horas-extras', 'historial', <HorasExtrasHistorial />),
 				subseccion('horas-extras', 'aprobacion', <HorasExtrasAprobacion />),
 				subseccion('horas-extras', 'periodos', <HorasExtrasPeriodos />),

@@ -1,4 +1,5 @@
-import AddIcon from '@mui/icons-material/Add';
+import GroupAddIcon from '@mui/icons-material/GroupAdd';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import {
 	Alert,
 	Box,
@@ -19,8 +20,8 @@ import { HorasExtrasTabla } from '../../components/horas-extras/HorasExtrasTabla
 import { RegistrarHoraExtraModal } from '../../components/horas-extras/RegistrarHoraExtraModal';
 import {
 	ESTADOS_HORA_EXTRA,
-	ETIQUETA_ESTADO_HORA_EXTRA,
 	type EstadoHoraExtra,
+	ETIQUETA_ESTADO_HORA_EXTRA,
 	formatoMinutos,
 } from '../../domain/horasExtras';
 import { horariosKeys } from '../../hooks/registro/keys';
@@ -34,10 +35,11 @@ type FiltroEstado = EstadoHoraExtra | 'todos';
 
 /**
  * Sub‑pestaña "Registradas" (/horarios/horas-extras/registradas) del líder de zona:
- * horas extras de las tiendas elegidas en el header y el botón "Registrar hora extra".
+ * horas extras de las tiendas elegidas en el header, con dos formas de registrar:
+ * masiva (sub‑página con grilla personas × días) e individual (modal de una persona).
  */
 export default function RegistradasPage() {
-	const { tienda, acceso } = useHorariosLayout();
+	const { tienda, acceso, irA } = useHorariosLayout();
 	const [estado, setEstado] = useState<FiltroEstado>('todos');
 	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -123,15 +125,23 @@ export default function RegistradasPage() {
 						</Select>
 					</FormControl>
 					<Button
-						variant="contained"
-						startIcon={<AddIcon />}
+						variant="outlined"
+						startIcon={<PersonAddIcon />}
 						disabled={tiendasLider.length === 0}
 						onClick={() => {
 							setAperturas((n) => n + 1);
 							setAbierto(true);
 						}}
 					>
-						Registrar hora extra
+						Registrar individual
+					</Button>
+					<Button
+						variant="contained"
+						startIcon={<GroupAddIcon />}
+						disabled={tiendasLider.length === 0}
+						onClick={() => irA('horas-extras/registradas/nueva')}
+					>
+						Registrar horas (masiva)
 					</Button>
 				</Box>
 			</Box>

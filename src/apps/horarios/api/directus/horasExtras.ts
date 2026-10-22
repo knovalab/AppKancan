@@ -1,4 +1,4 @@
-import { createItem, readItems, updateItem, updateItems } from '@directus/sdk';
+import { createItems, readItems, updateItem, updateItems } from '@directus/sdk';
 import { withAutoRefresh } from '@/auth/services/directusInterceptor';
 import directus from '@/services/directus/directus';
 import {
@@ -99,29 +99,38 @@ export async function listarHorasExtras(
 	}
 }
 
-/** Crea una hora extra del líder: entra siempre en `pendiente`. */
-export async function crearHoraExtra(data: CreateOverTimeDto) {
+/**
+ * Crea las horas extras del líder (una por empleado) en **una** petición: Directus
+ * las guarda en una transacción, así que se crean todas o ninguna. Entran en `pendiente`.
+ */
+export async function crearHorasExtras(datos: CreateOverTimeDto[]) {
+	if (datos.length === 0) return [];
 	// Sin autor no hay trazabilidad: no se envía nada.
-	if (!data.created_by?.trim())
-		throw new Error('No se pudo identificar al usuario que registra la hora extra.');
+	if (datos.some((d) => !d.created_by?.trim()))
+		throw new Error(
+			'No se pudo identificar al usuario que registra la hora extra.',
+		);
 	try {
 		return await withAutoRefresh(() =>
 			directus.request(
-				createItem('com_over_time', {
-					employee_id: Number(data.employee_id),
-					store_id: Number(data.store_id),
-					work_date: data.work_date,
-					minutes: data.minutes,
-					observations: data.observations ?? '',
-					created_by: data.created_by,
-				}),
+				createItems(
+					'com_over_time',
+					datos.map((d) => ({
+						employee_id: Number(d.employee_id),
+						store_id: Number(d.store_id),
+						work_date: d.work_date,
+						minutes: d.minutes,
+						observations: d.observations ?? '',
+						created_by: d.created_by,
+					})),
+				),
 			),
 		);
 	} catch (error) {
 		throw errorDeApi(
 			error,
-			'Error guardando hora extra',
-			'Error al crear la hora extra',
+			'Error guardando horas extras',
+			'Error al crear las horas extras',
 		);
 	}
 }

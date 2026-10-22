@@ -17,8 +17,8 @@ export const ETIQUETA_ESTADO_PERIODO: Record<EstadoPeriodo, string> = {
 /** Largo máximo del nombre (opcional) de un periodo. */
 export const MAX_CARACTERES_NOMBRE_PERIODO = 60;
 
-/** Accesos rápidos de duración al crear un periodo. */
-export const DIAS_RAPIDOS = [5, 10, 15] as const;
+/** Duraciones sugeridas al crear un periodo: se muestran como fecha de fin, con los días de ayuda. */
+export const DIAS_RAPIDOS = [11, 12, 13, 14, 15] as const;
 
 export interface RangoPeriodo {
 	id: number;

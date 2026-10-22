@@ -253,3 +253,24 @@ Los valores viven en un único catálogo (`domain/horasExtras/estados.ts`). **No
 
 **Fuera de este cambio:** quién **revisó** (`updated_by`, Q3 de §9) aún no tiene columna en el Historial.
 
+---
+
+## 11. Registro masivo (2026-10-21)
+
+> **Actualizado 2026-10-22:** el registro es ahora una **sub-página con grilla personas × días** (`/horarios/horas-extras/registradas/nueva`, máx. 5 días, rellenar fila/columna, observación por persona). Ver [`HORAS_EXTRAS_REGISTRO_MASIVO_OPCIONES.md`](HORAS_EXTRAS_REGISTRO_MASIVO_OPCIONES.md) §7. Lo de abajo es histórico.
+
+El líder ya no registra de a una persona: el modal **Registrar horas extras** crea la misma hora extra a **N empleados** a la vez (ej.: 1 h a todos los de una tienda).
+
+| Paso | Detalle |
+|---|---|
+| Tienda | "Tienda donde trabajaron" (por defecto, la del header o la primera del líder). Cambiarla limpia la selección |
+| Empleados | Lista con casillas de los empleados de esa tienda, **buscador** (nombre o documento, sin importar tildes), **Seleccionar todos (n)** (los visibles con el filtro) y **Quitar todos**. Contador "N seleccionados de M" |
+| Rotación | Casilla "Incluir empleados de mis otras tiendas": muestra al resto de sus empleados con el chip "Otra tienda" (sustituye a la elección de tienda por persona, P4) |
+| Datos comunes | Fecha, horas (bloques de 30 min) y observación: iguales para todos |
+| Duplicados | Una sola consulta del día para todas las tiendas del líder; cada empleado con hora extra activa ese día lleva el chip "Ya tiene 1 h (Pendiente)" y se avisa cuántos seleccionados la tienen. **No bloquea** |
+| Resumen | "Se registrarán N horas extras de X: Y en total" y botón **Registrar (N)** |
+| Guardado | `crearHorasExtras(datos[])` → **una** petición `createItems`; Directus la guarda en una transacción (todas o ninguna). Cada fila lleva `created_by` = uuid del líder |
+
+- `crearHoraExtra` (una) se **reemplazó** por `crearHorasExtras` (lista). El test en rojo de Q1 (§9) se movió a la nueva función.
+- Permisos en Directus: los mismos de *Crear* del líder (§5 y §10); `createItems` los valida fila por fila.
+

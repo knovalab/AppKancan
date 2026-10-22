@@ -19,7 +19,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useAuth } from '@/auth/hooks/useAuth';
-import { crearHoraExtra } from '../../api/directus/horasExtras';
+import { crearHorasExtras } from '../../api/directus/horasExtras';
 import {
 	buscarDuplicado,
 	type ErroresHoraExtra,
@@ -32,6 +32,7 @@ import { MAX_CARACTERES_OBSERVACION } from '../../domain/registro';
 import { horariosKeys } from '../../hooks/registro/keys';
 import { useAvisos } from '../../hooks/useAvisos';
 import { useHorasExtras } from '../../hooks/useHorasExtras';
+import type { CreateOverTimeDto } from '../../interfaces/api/overTime';
 import type { Tienda } from '../../interfaces/tiendas';
 import { mensajeDeError } from '../../utils/errores';
 import { formatNombrePropio } from '../../utils/format';
@@ -49,6 +50,12 @@ export interface RegistrarHoraExtraModalProps {
 const etiquetaEmpleado = (e: EmpleadoAsistencia) =>
 	`${formatNombrePropio(e.nombre)} · ${e.documento}`;
 
+/**
+ * Registro **individual**: una persona y un día. Busca entre todos los empleados
+ * del líder; la tienda es la del empleado y puede cambiarse (rotación). Avisa si
+ * ya tiene una hora extra activa ese día (no bloquea). Para varias personas o
+ * días está la sub‑página masiva.
+ */
 export function RegistrarHoraExtraModal({
 	open,
 	empleados,
@@ -86,7 +93,7 @@ export function RegistrarHoraExtraModal({
 	const duplicado = buscarDuplicado(delDia);
 
 	const guardar = useMutation({
-		mutationFn: crearHoraExtra,
+		mutationFn: (dto: CreateOverTimeDto) => crearHorasExtras([dto]),
 		onSuccess: () => {
 			void queryClient.invalidateQueries({
 				queryKey: horariosKeys.horasExtras.todos,
@@ -141,7 +148,7 @@ export function RegistrarHoraExtraModal({
 			maxWidth="sm"
 		>
 			<DialogTitle sx={{ fontWeight: 700, color: '#004680' }}>
-				Registrar hora extra
+				Registrar hora extra individual
 				<Typography variant="body2" sx={{ color: '#64748b' }}>
 					Queda pendiente de aprobación del comercial
 				</Typography>

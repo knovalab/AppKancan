@@ -39,7 +39,7 @@ export interface OverTimeDto {
 	period_id?: Relacion<{ id: number; start_date?: string; end_date?: string }>;
 }
 
-/** Entrada de `crearHoraExtra`: siempre entra en `pendiente`. */
+/** Una hora extra de `crearHorasExtras` (una por empleado): siempre entra en `pendiente`. */
 export interface CreateOverTimeDto {
 	employee_id: number;
 	store_id: number;

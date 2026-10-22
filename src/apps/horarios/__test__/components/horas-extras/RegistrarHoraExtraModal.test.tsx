@@ -3,11 +3,11 @@ import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createQueryWrapper } from '../../utils/test-utils';
 
-const crearHoraExtra = vi.fn();
+const crearHorasExtras = vi.fn();
 const listarHorasExtras = vi.fn();
 const showSnackbar = vi.fn();
 vi.mock('@/apps/horarios/api/directus/horasExtras', () => ({
-	crearHoraExtra: (d: unknown) => crearHoraExtra(d),
+	crearHorasExtras: (d: unknown) => crearHorasExtras(d),
 	listarHorasExtras: (f: unknown) => listarHorasExtras(f),
 }));
 vi.mock('@/auth/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'uuid-lider' } }) }));
@@ -46,15 +46,15 @@ const elegirEmpleado = async () => {
 beforeEach(() => {
 	vi.clearAllMocks();
 	listarHorasExtras.mockResolvedValue([]);
-	crearHoraExtra.mockResolvedValue({ id: 1 });
+	crearHorasExtras.mockResolvedValue([{ id: 1 }]);
 });
 
-describe('RegistrarHoraExtraModal', () => {
+describe('RegistrarHoraExtraModal (individual)', () => {
 	it('exige elegir un empleado', async () => {
 		montar();
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar' }));
 		expect(await screen.findByText('Busca y elige un empleado')).toBeInTheDocument();
-		expect(crearHoraExtra).not.toHaveBeenCalled();
+		expect(crearHorasExtras).not.toHaveBeenCalled();
 	});
 
 	it('no guarda sin horas ni con bloques que no son de media hora', async () => {
@@ -65,7 +65,7 @@ describe('RegistrarHoraExtraModal', () => {
 		fireEvent.change(screen.getByLabelText('Horas extras'), { target: { value: '1.25' } });
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar' }));
 		expect(await screen.findByText('Las horas extras van en bloques de media hora')).toBeInTheDocument();
-		expect(crearHoraExtra).not.toHaveBeenCalled();
+		expect(crearHorasExtras).not.toHaveBeenCalled();
 	});
 
 	it('guarda con la tienda del empleado por defecto y cierra', async () => {
@@ -76,14 +76,14 @@ describe('RegistrarHoraExtraModal', () => {
 		fireEvent.change(screen.getByLabelText('Observación'), { target: { value: ' Inventario ' } });
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar' }));
 		await waitFor(() => expect(onClose).toHaveBeenCalled());
-		expect(crearHoraExtra).toHaveBeenCalledWith({
+		expect(crearHorasExtras).toHaveBeenCalledWith([{
 			employee_id: 7,
 			store_id: 26,
 			work_date: '2026-10-20',
 			minutes: 90,
 			observations: 'Inventario',
 			created_by: 'uuid-lider',
-		});
+		}]);
 		expect(showSnackbar).toHaveBeenCalledWith(expect.stringMatching(/pendiente/), 'success');
 	});
 
