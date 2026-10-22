@@ -100,6 +100,9 @@ const syncStoreTimeRecordsHandler: HookHandler<
 		// 3. Batch fetch: All existing store daily records for this workDay (1 query instead of N)
 		const storeRecordsFilter: Record<string, unknown> = {
 			work_day: { _eq: workDay },
+			log_type: {
+				_eq: 'Comenzar Jornada',
+			},
 		};
 		if (payload.store_id) {
 			storeRecordsFilter._or = [
@@ -145,18 +148,12 @@ const syncStoreTimeRecordsHandler: HookHandler<
 			// In-memory lookup of employee time records for this store
 			const storeTimeRecords = timeRecordsByStore.get(storeId) || [];
 
-			// Filter for opening logs ('Comenzar Jornada' or 'Iniciar Jornada')
-			const openingRecords = storeTimeRecords.filter((rec) => {
-				const logType = rec.log_type?.toLowerCase()?.trim();
-				return logType === 'comenzar jornada' || logType === 'iniciar jornada';
-			});
-
 			// Sort by record_time ascending to get earliest start
-			openingRecords.sort((a, b) =>
+			storeTimeRecords.sort((a, b) =>
 				(a.record_time || '').localeCompare(b.record_time || ''),
 			);
 
-			const earliest = openingRecords[0] ?? null;
+			const earliest = storeTimeRecords[0] ?? null;
 			const existing = existingRecordByStore.get(storeId) ?? null;
 
 			if (earliest) {

@@ -2,6 +2,7 @@ import {
 	dummyTask,
 	onTimeRecordCreatedHandler,
 	onTimeRecordUpdatedHandler,
+	syncStoreCloseTimeRecordsHandler,
 	syncStoreTimeRecordsHandler,
 } from './handlers/index.ts';
 
@@ -14,6 +15,7 @@ import type { HookHandler } from './types/index.ts';
 export const handlers: Record<string, HookHandler> = {
 	[dummyTask.name]: dummyTask,
 	[syncStoreTimeRecordsHandler.name]: syncStoreTimeRecordsHandler,
+	[syncStoreCloseTimeRecordsHandler.name]: syncStoreCloseTimeRecordsHandler,
 	[onTimeRecordCreatedHandler.name]: onTimeRecordCreatedHandler,
 	[onTimeRecordUpdatedHandler.name]: onTimeRecordUpdatedHandler,
 };

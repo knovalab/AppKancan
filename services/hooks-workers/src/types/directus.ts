@@ -19,13 +19,13 @@ export interface TimeRecordStore {
 
 export interface TimeRecords {
 	id: number;
-	store_id: string | null;
+	store_id: string | Store | null;
 	employee_id: string | null;
 	log_type:
 		| 'Comenzar Jornada'
 		| 'Terminar Jornada'
 		| 'Iniciar Almuerzo'
-		| 'Terminar Almuerzo';
+		| 'Finalizar Almuerzo';
 	record_time: string | null; // HH:mm
 	record_date: string | null; // YYYY-MM-DD
 }
