@@ -117,7 +117,7 @@ export const SECCIONES: readonly Seccion[] = [
 		titulo: 'Reporte de Asistencia',
 		subtitulo: 'Exporta informes y visualiza registros detallados',
 		icon: FileDownloadIcon,
-		roles: ['report', 'areaManager'],
+		roles: ['report', 'areaManager', 'comercial', 'nomina'],
 		tienda: 'una-o-todas',
 		selectorEnHeader: false,
 		subsecciones: [
