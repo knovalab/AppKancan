@@ -101,3 +101,139 @@ export const periodosVencidos = <P extends RangoPeriodo>(
 	periodos.filter(
 		(p) => p.status === ESTADO_PERIODO.preliquidado && p.end_date < hoy,
 	);
+
+/** Días de la semana en el orden del reporte (lunes primero). */
+export const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+export interface DiaPersona extends Totales {
+	/** YYYY-MM-DD */
+	fecha: string;
+}
+
+export interface PersonaZona extends Totales {
+	empleadoId: number;
+	dias: DiaPersona[];
+}
+
+export interface TiendaZona extends Totales {
+	storeId: number;
+	personas: PersonaZona[];
+	/** % de los minutos de la zona. */
+	porcentaje: number;
+	/** Minutos por persona de plantilla; `null` si no hay plantilla. */
+	minutosPorPersona: number | null;
+	/** Variación vs. el rango anterior (0,12 = +12 %); `null` si antes no hubo horas. */
+	variacion: number | null;
+}
+
+export interface ReporteZona {
+	total: Totales & { personas: number; minutosPorPersona: number | null };
+	tiendas: TiendaZona[];
+	/** Minutos por día de la semana, lunes a domingo. */
+	porDiaSemana: number[];
+	/** Personas con más minutos en la zona (todas sus tiendas). */
+	topPersonas: (Totales & { empleadoId: number; tiendas: number[] })[];
+}
+
+/**
+ * Reporte de una zona (R2 + R4) a partir de un agregado por tienda × empleado × día.
+ * `plantilla`: empleados activos por tienda, para comparar tiendas grandes y chicas.
+ * `previas`: minutos por tienda del rango anterior, para la variación.
+ */
+export function reporteZona(
+	filas: readonly {
+		storeId: number | null;
+		empleadoId: number | null;
+		fecha: string | null;
+		registros: number;
+		minutos: number;
+	}[],
+	previas: ReadonlyMap<number, number>,
+	plantilla: ReadonlyMap<number, number>,
+	topN = 10,
+): ReporteZona {
+	const tiendas = new Map<number, Map<number, PersonaZona>>();
+	const porDiaSemana = [0, 0, 0, 0, 0, 0, 0];
+	const personasZona = new Map<
+		number,
+		Totales & { empleadoId: number; tiendas: number[] }
+	>();
+	for (const f of filas) {
+		if (f.storeId == null || f.empleadoId == null || !f.fecha) continue;
+		const personas = tiendas.get(f.storeId) ?? new Map<number, PersonaZona>();
+		tiendas.set(f.storeId, personas);
+		const p = personas.get(f.empleadoId) ?? {
+			empleadoId: f.empleadoId,
+			registros: 0,
+			minutos: 0,
+			dias: [],
+		};
+		personas.set(f.empleadoId, p);
+		sumar(p, f.registros, f.minutos);
+		const dia = p.dias.find((d) => d.fecha === f.fecha);
+		if (dia) sumar(dia, f.registros, f.minutos);
+		else
+			p.dias.push({
+				fecha: f.fecha,
+				registros: f.registros,
+				minutos: f.minutos,
+			});
+		// getDay(): 0 = domingo → lunes primero. Mediodía para no cruzar de día por zona horaria.
+		porDiaSemana[(new Date(`${f.fecha}T12:00:00`).getDay() + 6) % 7] +=
+			f.minutos;
+		const z = personasZona.get(f.empleadoId) ?? {
+			empleadoId: f.empleadoId,
+			registros: 0,
+			minutos: 0,
+			tiendas: [],
+		};
+		sumar(z, f.registros, f.minutos);
+		if (!z.tiendas.includes(f.storeId)) z.tiendas.push(f.storeId);
+		personasZona.set(f.empleadoId, z);
+	}
+
+	const totalMinutos = filas.reduce((s, f) => s + (f.minutos || 0), 0);
+	const porMinutos = <T extends Totales>(a: T, b: T) => b.minutos - a.minutos;
+	const resultado: TiendaZona[] = [...tiendas].map(([storeId, personas]) => {
+		const lista = [...personas.values()].sort(porMinutos);
+		for (const p of lista)
+			p.dias.sort((a, b) => a.fecha.localeCompare(b.fecha));
+		const t = cero();
+		for (const p of lista) sumar(t, p.registros, p.minutos);
+		const cupo = plantilla.get(storeId) ?? 0;
+		const antes = previas.get(storeId) ?? 0;
+		return {
+			storeId,
+			...t,
+			personas: lista,
+			porcentaje: totalMinutos ? t.minutos / totalMinutos : 0,
+			minutosPorPersona: cupo ? t.minutos / cupo : null,
+			variacion: antes ? (t.minutos - antes) / antes : null,
+		};
+	});
+	const cupoZona = [...tiendas.keys()].reduce(
+		(s, id) => s + (plantilla.get(id) ?? 0),
+		0,
+	);
+	return {
+		total: {
+			registros: resultado.reduce((s, t) => s + t.registros, 0),
+			minutos: totalMinutos,
+			personas: personasZona.size,
+			minutosPorPersona: cupoZona ? totalMinutos / cupoZona : null,
+		},
+		tiendas: resultado.sort(porMinutos),
+		porDiaSemana,
+		topPersonas: [...personasZona.values()].sort(porMinutos).slice(0, topN),
+	};
+}
+
+/** Rango anterior de la misma duración, justo antes de `desde` (para la variación). */
+export function rangoAnterior(desde: string, hasta: string) {
+	const dia = 24 * 60 * 60 * 1000;
+	const d = new Date(`${desde}T12:00:00Z`).getTime();
+	const h = new Date(`${hasta}T12:00:00Z`).getTime();
+	const largo = Math.round((h - d) / dia) + 1;
+	const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
+	return { desde: iso(d - largo * dia), hasta: iso(d - dia) };
+}

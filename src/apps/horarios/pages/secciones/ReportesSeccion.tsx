@@ -7,14 +7,11 @@ import { useHorariosLayout } from '../../hooks/useHorariosLayout';
 import type { Rol } from '../../navigation/secciones';
 import ReportePage from '../ReportePage';
 
-const ReporteHorasExtrasTab = lazy(
-	() => import('../reporte/ReporteHorasExtrasTab'),
+const ReporteHorasExtrasVista = lazy(
+	() => import('../reporte/ReporteHorasExtrasVista'),
 );
 
-/**
- * Quién ve cada vista de Reportes. Gerencia = comercial. Sin `report`: todo jefe de
- * zona lo tiene (`esReport`) y su reporte de horas extras llega en otra fase (R2).
- */
+/** Quién ve cada vista de Reportes. Gerencia = comercial; el jefe de zona ve su zona. */
 const VISTAS = [
 	{
 		id: 'asistencia',
@@ -26,7 +23,7 @@ const VISTAS = [
 		id: 'horas-extras',
 		label: 'Horas extras',
 		icon: <MoreTimeIcon />,
-		roles: ['comercial', 'nomina'],
+		roles: ['comercial', 'nomina', 'areaManager'],
 	},
 ] as const satisfies readonly {
 	id: string;
@@ -87,7 +84,7 @@ export default function ReportesSeccion() {
 			)}
 			{vista === 'horas-extras' ? (
 				<Suspense fallback={null}>
-					<ReporteHorasExtrasTab />
+					<ReporteHorasExtrasVista />
 				</Suspense>
 			) : (
 				<ReportePage

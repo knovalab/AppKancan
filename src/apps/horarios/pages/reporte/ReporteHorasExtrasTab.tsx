@@ -53,7 +53,7 @@ function Tarjeta({
 				p: 2,
 				borderRadius: 2,
 				border: '1px solid #e2e8f0',
-				bgcolor: 'background.paper',
+				bgcolor: '#f8fafc',
 			}}
 		>
 			<Typography variant="body2" sx={{ color: '#64748b' }}>
@@ -84,10 +84,21 @@ function Tarjeta({
 export default function ReporteHorasExtrasTab() {
 	const { showSnackbar } = useAvisos();
 	const [empresa, setEmpresa] = useState(TODAS_EMPRESAS);
+	const [tiendaId, setTiendaId] = useState<number | ''>('');
 	const [periodoId, setPeriodoId] = useState<number | ''>('');
 	const [exportando, setExportando] = useState(false);
-	const { empresas, resumen, actual, vencidos, pendientes, isLoading, error } =
-		useReporteTiempoReal(empresa);
+	const {
+		empresas,
+		tiendasEmpresa,
+		resumen,
+		actual,
+		vencidos,
+		pendientes,
+		isLoading,
+		error,
+	} = useReporteTiempoReal(empresa, tiendaId === '' ? null : tiendaId);
+	const nombreTienda =
+		tiendasEmpresa.find((t) => Number(t.id) === tiendaId)?.name ?? '';
 
 	const elegido =
 		resumen.find((r) => r.periodo.id === periodoId) ??
@@ -97,7 +108,7 @@ export default function ReporteHorasExtrasTab() {
 	const exportar = async () => {
 		setExportando(true);
 		try {
-			await exportarReporteTiempoRealExcel(resumen, empresa);
+			await exportarReporteTiempoRealExcel(resumen, empresa, nombreTienda);
 		} catch (err) {
 			showSnackbar(
 				mensajeDeError(err, 'Error al exportar el reporte'),
@@ -146,12 +157,31 @@ export default function ReporteHorasExtrasTab() {
 							labelId="rhe-empresa"
 							label="Empresa"
 							value={empresa}
-							onChange={(e) => setEmpresa(e.target.value)}
+							onChange={(e) => {
+								setEmpresa(e.target.value);
+								setTiendaId('');
+							}}
 						>
 							<MenuItem value={TODAS_EMPRESAS}>Todas</MenuItem>
 							{empresas.map((e) => (
 								<MenuItem key={e} value={e}>
 									{e}
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+					<FormControl size="small" sx={{ minWidth: 200 }}>
+						<InputLabel id="rhe-tienda">Tienda</InputLabel>
+						<Select
+							labelId="rhe-tienda"
+							label="Tienda"
+							value={tiendaId}
+							onChange={(e) => setTiendaId(Number(e.target.value) || '')}
+						>
+							<MenuItem value="">Todas las tiendas</MenuItem>
+							{tiendasEmpresa.map((t) => (
+								<MenuItem key={t.id} value={Number(t.id)}>
+									{t.name}
 								</MenuItem>
 							))}
 						</Select>
@@ -251,7 +281,9 @@ export default function ReporteHorasExtrasTab() {
 			)}
 
 			{resumen.length > 0 && (
-				<TableContainer sx={{ borderRadius: 2, border: '1px solid #e2e8f0' }}>
+				<TableContainer
+					sx={{ borderRadius: 2, border: '1px solid #e2e8f0', bgcolor: '#fff' }}
+				>
 					<Table size="small" aria-label="Horas extras por periodo">
 						<TableHead>
 							<TableRow>

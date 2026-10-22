@@ -15,7 +15,7 @@ vi.mock('@/apps/horarios/hooks/useHorariosLayout', () => ({
 	}),
 }));
 vi.mock('@/apps/horarios/pages/ReportePage', () => ({ default: () => <div>REPORTE ASISTENCIA</div> }));
-vi.mock('@/apps/horarios/pages/reporte/ReporteHorasExtrasTab', () => ({ default: () => <div>REPORTE HORAS EXTRAS</div> }));
+vi.mock('@/apps/horarios/pages/reporte/ReporteHorasExtrasVista', () => ({ default: () => <div>REPORTE HORAS EXTRAS</div> }));
 
 import ReportesSeccion from '@/apps/horarios/pages/secciones/ReportesSeccion';
 
@@ -35,10 +35,10 @@ describe('Reportes: vistas por rol', () => {
 		expect(screen.queryByRole('tab')).not.toBeInTheDocument();
 	});
 
-	it('jefe de zona (con report): solo Asistencia, como antes', () => {
+	it('jefe de zona: Asistencia (por defecto) y Horas extras de su zona', () => {
 		montar(['areaManager', 'report']);
 		expect(screen.getByText('REPORTE ASISTENCIA')).toBeInTheDocument();
-		expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+		expect(screen.getByRole('tab', { name: 'Horas extras' })).toBeInTheDocument();
 	});
 
 	it('report + comercial: las dos vistas; ?vista= elige', async () => {

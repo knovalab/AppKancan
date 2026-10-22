@@ -3,6 +3,8 @@ import {
 	periodoActual,
 	periodosVencidos,
 	type RangoPeriodo,
+	rangoAnterior,
+	reporteZona,
 	resumenPorPeriodo,
 } from '@/apps/horarios/domain/horasExtras';
 
@@ -56,5 +58,45 @@ describe('periodoActual y periodosVencidos', () => {
 	it('vencidos: preliquidados cuyo fin ya pasó', () => {
 		expect(periodosVencidos(periodos, '2026-10-20')).toEqual([]);
 		expect(periodosVencidos(periodos, '2026-10-26').map((x) => x.id)).toEqual([2]);
+	});
+});
+
+describe('reporteZona (R2 + R4)', () => {
+	// 20/10/2026 es martes; 25/10/2026, domingo.
+	const filas = [
+		{ storeId: 26, empleadoId: 7, fecha: '2026-10-20', registros: 1, minutos: 60 },
+		{ storeId: 26, empleadoId: 7, fecha: '2026-10-25', registros: 1, minutos: 120 },
+		{ storeId: 26, empleadoId: 8, fecha: '2026-10-20', registros: 1, minutos: 30 },
+		{ storeId: 30, empleadoId: 7, fecha: '2026-10-21', registros: 2, minutos: 90 }, // rotación
+		{ storeId: 30, empleadoId: 9, fecha: '2026-10-21', registros: 1, minutos: 60 },
+	];
+	const r = reporteZona(filas, new Map([[26, 140], [30, 0]]), new Map([[26, 10], [30, 5]]));
+
+	it('totales de la zona: horas, registros, personas distintas y por persona de plantilla', () => {
+		expect(r.total).toEqual({ registros: 6, minutos: 360, personas: 3, minutosPorPersona: 360 / 15 });
+	});
+
+	it('ranking de tiendas con %, por persona y variación vs. el rango anterior', () => {
+		const [t26, t30] = r.tiendas;
+		expect(t26).toMatchObject({ storeId: 26, minutos: 210, registros: 3, minutosPorPersona: 21, variacion: 0.5 });
+		expect(t26.porcentaje).toBeCloseTo(210 / 360);
+		expect(t30).toMatchObject({ storeId: 30, minutos: 150, variacion: null }); // antes 0: sin base
+	});
+
+	it('detalle: personas por tienda (más horas primero) y sus días ordenados', () => {
+		const [ana, beto] = r.tiendas[0].personas;
+		expect(ana).toMatchObject({ empleadoId: 7, minutos: 180 });
+		expect(ana.dias.map((d) => `${d.fecha}:${d.minutos}`)).toEqual(['2026-10-20:60', '2026-10-25:120']);
+		expect(beto).toMatchObject({ empleadoId: 8, minutos: 30 });
+	});
+
+	it('día de la semana (lunes primero) y top personas de toda la zona', () => {
+		expect(r.porDiaSemana).toEqual([0, 90, 150, 0, 0, 0, 120]);
+		expect(r.topPersonas[0]).toEqual({ empleadoId: 7, registros: 4, minutos: 270, tiendas: [26, 30] });
+	});
+
+	it('rango anterior de la misma duración', () => {
+		expect(rangoAnterior('2026-10-01', '2026-10-31')).toEqual({ desde: '2026-08-31', hasta: '2026-09-30' });
+		expect(rangoAnterior('2026-10-20', '2026-10-20')).toEqual({ desde: '2026-10-19', hasta: '2026-10-19' });
 	});
 });

@@ -16,13 +16,14 @@ vi.mock('@/apps/horarios/api/directus/periodos', () => ({
 	totalesVinculados: async () => new Map(),
 }));
 vi.mock('@/apps/horarios/api/directus/read', () => ({
+	STORE_PRUEBAS: 90,
 	getStores: async () => [
 		{ id: 26, name: 'Ipiales', company: 'Empresa A' },
 		{ id: 30, name: 'Pasto', company: 'Empresa B' },
 	],
 }));
 vi.mock('@/apps/horarios/utils/exportarReporteHorasExtras', () => ({
-	exportarReporteTiempoRealExcel: (r: unknown, e: unknown) => exportar(r, e),
+	exportarReporteTiempoRealExcel: (r: unknown, e: unknown, t: unknown) => exportar(r, e, t),
 }));
 vi.mock('@/apps/horarios/hooks/useAvisos', () => ({ useAvisos: () => ({ showSnackbar: vi.fn() }) }));
 vi.mock('@/apps/horarios/utils/timeSync', () => ({ getRealColombiaTime: () => dayjs('2026-10-28T10:00:00') }));
@@ -92,5 +93,21 @@ describe('Reportes · Horas extras en tiempo real', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Exportar a Excel' }));
 		await waitFor(() => expect(exportar).toHaveBeenCalledTimes(1));
 		expect(exportar.mock.calls[0][1]).toBe('Empresa B');
+	});
+
+	it('filtro de tienda: opciones según la empresa y totales solo de esa tienda', async () => {
+		await montar();
+		fireEvent.mouseDown(screen.getByLabelText('Empresa'));
+		fireEvent.click(screen.getByRole('option', { name: 'Empresa A' }));
+		fireEvent.mouseDown(screen.getByLabelText('Tienda'));
+		expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['Todas las tiendas', 'Ipiales']);
+		fireEvent.click(screen.getByRole('option', { name: 'Ipiales' }));
+		await waitFor(() => expect(tarjeta('Pendientes de aprobación')).toContain('1 h'));
+		const fila = within(screen.getByRole('table', { name: 'Horas extras por periodo' })).getByRole('row', { name: /Oct 1/ });
+		expect(within(fila).getAllByRole('cell')[5].textContent).toBe('2 h');
+
+		fireEvent.click(screen.getByRole('button', { name: 'Exportar a Excel' }));
+		await waitFor(() => expect(exportar).toHaveBeenCalledTimes(1));
+		expect(exportar.mock.calls[0].slice(1)).toEqual(['Empresa A', 'Ipiales']);
 	});
 });

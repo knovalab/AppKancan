@@ -13,7 +13,7 @@ import {
 	filtroAgregado,
 	listarZonas,
 	nombreZona,
-	ROL_JEFE_ZONA,
+	JEFES_ZONA,
 } from '@/apps/horarios/api/directus/reportesHorasExtras';
 
 beforeEach(() => request.mockReset());
@@ -30,6 +30,8 @@ describe('filtroAgregado', () => {
 			],
 		});
 		expect(filtroAgregado({ estados: ['pendiente'], conPeriodo: false })._and).toContainEqual({ period_id: { _null: true } });
+		// Zona: solo la tienda trabajada (no la del empleado).
+		expect(filtroAgregado({ estados: ['aprobada'], tiendas: [26, 30] })._and).toContainEqual({ store_id: { _in: [26, 30] } });
 	});
 });
 
@@ -39,7 +41,7 @@ describe('agregadoHorasExtras', () => {
 			{ store_id: 26, work_date: '2026-10-05T00:00:00', period_id: '4', count: { id: '3' }, sum: { minutes: '180' } },
 		]);
 		const r = await agregadoHorasExtras({ estados: ['aprobada'] }, ['period_id', 'store_id', 'work_date']);
-		expect(r).toEqual([{ storeId: 26, fecha: '2026-10-05', periodoId: 4, estado: null, registros: 3, minutos: 180 }]);
+		expect(r).toEqual([{ storeId: 26, empleadoId: null, fecha: '2026-10-05', periodoId: 4, estado: null, registros: 3, minutos: 180 }]);
 		expect(request.mock.calls[0][0]).toMatchObject({
 			op: 'aggregate',
 			c: 'com_over_time',
@@ -55,17 +57,22 @@ describe('zonas (jefes de zona)', () => {
 		expect(nombreZona('Ana Pérez')).toBe('Ana Pérez');
 	});
 
-	it('agrupa tiendas por jefe con el rol de jefe de zona, sin la tienda de pruebas', async () => {
+	it('zonas = los usuarios de JEFES_ZONA (los 4 de la captura) con sus tiendas, sin la de pruebas', async () => {
+		expect(JEFES_ZONA).toHaveLength(4);
+		const [cafetera, narino] = JEFES_ZONA;
 		request.mockResolvedValueOnce([
-			{ store_id: 26, user_id: { id: 'u1', first_name: 'Jefe Zona', last_name: 'Narino' } },
-			{ store_id: { id: 30 }, user_id: { id: 'u1', first_name: 'Jefe Zona', last_name: 'Narino' } },
-			{ store_id: 90, user_id: { id: 'u1', first_name: 'Jefe Zona', last_name: 'Narino' } },
-			{ store_id: 40, user_id: { id: 'u2', first_name: 'Jefe Zona', last_name: 'Cafetera' } },
+			{ store_id: 26, user_id: { id: narino, first_name: 'Jefe Zona', last_name: 'Narino' } },
+			{ store_id: { id: 30 }, user_id: { id: narino, first_name: 'Jefe Zona', last_name: 'Narino' } },
+			{ store_id: 90, user_id: { id: narino, first_name: 'Jefe Zona', last_name: 'Narino' } },
+			// Sin permiso para leer el nombre: "Zona N" según su posición.
+			{ store_id: 40, user_id: { id: cafetera } },
 		]);
 		expect(await listarZonas()).toEqual([
-			{ id: 'u2', nombre: 'Cafetera', tiendas: [40] },
-			{ id: 'u1', nombre: 'Narino', tiendas: [26, 30] },
+			{ id: narino, nombre: 'Narino', tiendas: [26, 30] },
+			{ id: cafetera, nombre: 'Zona 1', tiendas: [40] },
 		]);
-		expect(request.mock.calls[0][0].q.filter._and).toContainEqual({ user_id: { role: { _eq: ROL_JEFE_ZONA } } });
+		const filtro = request.mock.calls[0][0].q.filter._and;
+		expect(filtro).toContainEqual({ user_id: { _in: JEFES_ZONA } });
+		expect(filtro).toContainEqual({ status: { _eq: 'Activo' } });
 	});
 });
