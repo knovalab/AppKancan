@@ -6,3 +6,10 @@ services:
     ports:
       - "3020:3020"
     restart: unless-stopped
+    networks:
+          - shared_network
+
+networks:
+  shared_network:
+    external: true
+    name: coolify
