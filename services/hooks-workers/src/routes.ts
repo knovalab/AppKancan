@@ -90,7 +90,12 @@ routes.post('/:name', async (c) => {
 	try {
 		payload = await c.req.json();
 	} catch {
-		payload = {};
+		try {
+			const text = await c.req.text();
+			payload = text ? JSON.parse(text) : {};
+		} catch {
+			payload = {};
+		}
 	}
 
 	try {

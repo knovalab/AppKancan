@@ -9,7 +9,7 @@ import { buildTimestamp, extractStoreId, getTodayDateStr } from './utils.ts';
  * and calculates the operative time.
  */
 export async function handleTerminarJornada(
-	record: Partial<TimeRecords> & { [key: string]: unknown },
+	record: Partial<TimeRecords> | Record<string, any>,
 	context: WorkerContext,
 ): Promise<HandleTimeRecordResult> {
 	const { directus, logger } = context;

@@ -5,21 +5,14 @@ import type {
 } from '../types/index.ts';
 import { handleComenzarJornada } from './time-records/comenzar-jornada.ts';
 import { handleTerminarJornada } from './time-records/terminar-jornada.ts';
+import { extractCreateKey } from './time-records/utils.ts';
 
+/**
+ * Payload interface strictly for time record creation.
+ * Expects { key: number | string }
+ */
 export interface OnTimeRecordCreatedPayload {
-	id?: number | string;
-	key?: number | string;
-	store_id?: string | { id: string } | null;
-	employee_id?: string | number | null;
-	log_type?: string;
-	record_time?: string | null;
-	record_date?: string | null;
-	event?: {
-		collection?: string;
-		key?: number | string;
-	};
-	payload?: Partial<TimeRecords> & { [key: string]: unknown };
-	[key: string]: unknown;
+	key: number | string;
 }
 
 export interface OnTimeRecordCreatedResult {
@@ -44,13 +37,13 @@ const onTimeRecordCreatedHandler: HookHandler<
 > = {
 	name: 'on-time-record-created',
 	description:
-		'Dispatcher for time record webhook events: fetches record by key and routes to Comenzar Jornada or Terminar Jornada sub-handlers',
+		'Triggered when a time record is created in Directus: expects { key: number }, fetches record, and synchronizes store opening or closing',
 	options: {
 		timeoutMs: 30000,
 	},
 
 	async run(
-		rawPayload: OnTimeRecordCreatedPayload = {},
+		rawPayload: OnTimeRecordCreatedPayload,
 		context: WorkerContext,
 	): Promise<OnTimeRecordCreatedResult> {
 		const { directus, logger } = context;
@@ -60,62 +53,61 @@ const onTimeRecordCreatedHandler: HookHandler<
 			'Received on-time-record-created webhook',
 		);
 
-		// 1. Resolve item data from direct payload, nested payload, or database query
-		let record: Record<string, any> = {
-			...rawPayload,
-			...(rawPayload.payload || {}),
-		};
+		const recordKey = extractCreateKey(rawPayload);
 
-		const recordKey =
-			record.id ?? rawPayload.key ?? rawPayload.event?.key ?? null;
+		if (!recordKey) {
+			logger.warn({ payload: rawPayload }, 'Missing key in payload');
+			return {
+				status: 'ignored',
+				reason: 'Missing key in payload',
+			};
+		}
 
-		// 2. Fetch complete record by key if fields are missing
-		if (
-			recordKey &&
-			(!record.store_id || !record.record_time || !record.log_type)
-		) {
-			logger.debug(
-				{ recordKey },
-				'Fetching complete record details from com_time_records',
-			);
+		logger.debug(
+			{ recordKey },
+			'Fetching complete record details from com_time_records',
+		);
 
-			const fields = [
-				'id',
-				'store_id',
-				'employee_id',
-				'log_type',
-				'record_time',
-				'record_date',
-			];
+		const fields = [
+			'id',
+			'store_id',
+			'employee_id',
+			'log_type',
+			'record_time',
+			'record_date',
+		];
 
-			let fetched: TimeRecords | null = null;
+		let record: TimeRecords | null = null;
+		try {
 			if (typeof directus.getTimeRecordById === 'function') {
-				fetched = await directus.getTimeRecordById(recordKey, fields);
+				record = await directus.getTimeRecordById(recordKey, fields);
 			} else {
 				const items = await directus.getTimeRecords({
 					filter: { id: { _eq: recordKey } },
 					limit: 1,
 					fields,
 				});
-				fetched = items?.[0] ?? null;
+				record = items?.[0] ?? null;
 			}
-
-			if (fetched) {
-				record = { ...fetched, ...record };
-				logger.debug(
-					{ recordKey, logType: record.log_type, storeId: record.store_id },
-					'Successfully fetched time record from Directus',
-				);
-			} else {
-				logger.warn({ recordKey }, 'Time record not found in Directus for key');
-				return {
-					status: 'ignored',
-					reason: `Record with id "${recordKey}" not found in com_time_records`,
-				};
-			}
+		} catch (fetchErr: unknown) {
+			const errMsg =
+				fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+			logger.warn(
+				{ recordKey, error: errMsg },
+				'Error fetching time record from Directus',
+			);
+			record = null;
 		}
 
-		// 3. Normalize and evaluate log_type
+		if (!record) {
+			logger.warn({ recordKey }, 'Time record not found in Directus for key');
+			return {
+				status: 'ignored',
+				reason: `Record with id "${recordKey}" not found in com_time_records`,
+			};
+		}
+
+		// Normalize and evaluate log_type
 		const rawLogType = String(record.log_type || '').trim();
 		const logType = rawLogType.toLowerCase();
 

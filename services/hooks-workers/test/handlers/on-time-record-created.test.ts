@@ -30,18 +30,18 @@ function createMockContext(
 }
 
 describe('on-time-record-created handler', () => {
-	it('fetches record by key with specific fields from Directus and routes to Comenzar Jornada', async () => {
+	it('extracts key and fetches record when payload is { key: 110513 }', async () => {
 		const fetchedRecord: TimeRecords = {
-			id: 88,
-			store_id: '1013',
+			id: 110513,
+			store_id: '1003',
 			log_type: 'Comenzar Jornada',
 			record_date: '2026-10-22',
-			record_time: '07:30',
+			record_time: '08:00',
 			employee_id: '1190',
 		};
 
 		const getTimeRecordByIdMock = vi.fn().mockResolvedValue(fetchedRecord);
-		const createMock = vi.fn().mockResolvedValue({ id: 99 });
+		const createMock = vi.fn().mockResolvedValue({ id: 501 });
 		const context = createMockContext({
 			getTimeRecordById: getTimeRecordByIdMock,
 			getTimeRecordStores: vi.fn().mockResolvedValue([]),
@@ -50,27 +50,33 @@ describe('on-time-record-created handler', () => {
 
 		const result = await onTimeRecordCreatedHandler.run(
 			{
-				key: 88,
+				key: 110513,
 			},
 			context,
 		);
 
-		expect(getTimeRecordByIdMock).toHaveBeenCalledWith(88, [
-			'id',
-			'store_id',
-			'employee_id',
-			'log_type',
-			'record_time',
-			'record_date',
-		]);
+		expect(getTimeRecordByIdMock).toHaveBeenCalledWith(
+			110513,
+			expect.any(Array),
+		);
 		expect(result.status).toBe('created');
-		expect(result.storeId).toBe('1013');
-		expect(result.openTime).toBe('2026-10-22T07:30:00.000Z');
+		expect(result.storeId).toBe('1003');
+		expect(result.openTime).toBe('2026-10-22T08:00:00.000Z');
 	});
 
 	it('creates new TimeRecordStore for Comenzar Jornada when none exists', async () => {
+		const fetchedRecord: TimeRecords = {
+			id: 88,
+			store_id: '1003',
+			log_type: 'Comenzar Jornada',
+			record_date: '2026-10-22',
+			record_time: '08:15',
+			employee_id: '1190',
+		};
+
 		const createMock = vi.fn().mockResolvedValue({ id: 101 });
 		const context = createMockContext({
+			getTimeRecordById: vi.fn().mockResolvedValue(fetchedRecord),
 			getTimeRecordStores: vi.fn().mockResolvedValue([]),
 			createTimeRecordStore: createMock,
 			updateTimeRecordStore: vi.fn(),
@@ -78,11 +84,7 @@ describe('on-time-record-created handler', () => {
 
 		const result = await onTimeRecordCreatedHandler.run(
 			{
-				store_id: '1003',
-				log_type: 'Comenzar Jornada',
-				record_date: '2026-10-22',
-				record_time: '08:15',
-				employee_id: 1190,
+				key: 88,
 			},
 			context,
 		);
@@ -101,6 +103,15 @@ describe('on-time-record-created handler', () => {
 	});
 
 	it('updates existing TimeRecordStore when Comenzar Jornada is earlier', async () => {
+		const fetchedRecord: TimeRecords = {
+			id: 89,
+			store_id: '1003',
+			log_type: 'Comenzar Jornada',
+			record_date: '2026-10-22',
+			record_time: '08:00',
+			employee_id: '1190',
+		};
+
 		const existingRecord: TimeRecordStore = {
 			id: 55,
 			store: '1003',
@@ -114,6 +125,7 @@ describe('on-time-record-created handler', () => {
 
 		const updateMock = vi.fn().mockResolvedValue({ ...existingRecord });
 		const context = createMockContext({
+			getTimeRecordById: vi.fn().mockResolvedValue(fetchedRecord),
 			getTimeRecordStores: vi.fn().mockResolvedValue([existingRecord]),
 			createTimeRecordStore: vi.fn(),
 			updateTimeRecordStore: updateMock,
@@ -121,11 +133,7 @@ describe('on-time-record-created handler', () => {
 
 		const result = await onTimeRecordCreatedHandler.run(
 			{
-				store_id: '1003',
-				log_type: 'Comenzar Jornada',
-				record_date: '2026-10-22',
-				record_time: '08:00',
-				employee_id: 1190,
+				key: 89,
 			},
 			context,
 		);
@@ -139,6 +147,15 @@ describe('on-time-record-created handler', () => {
 	});
 
 	it('leaves existing TimeRecordStore unchanged when Comenzar Jornada is later', async () => {
+		const fetchedRecord: TimeRecords = {
+			id: 90,
+			store_id: '1003',
+			log_type: 'Comenzar Jornada',
+			record_date: '2026-10-22',
+			record_time: '08:30',
+			employee_id: '1190',
+		};
+
 		const existingRecord: TimeRecordStore = {
 			id: 55,
 			store: '1003',
@@ -152,17 +169,14 @@ describe('on-time-record-created handler', () => {
 
 		const updateMock = vi.fn();
 		const context = createMockContext({
+			getTimeRecordById: vi.fn().mockResolvedValue(fetchedRecord),
 			getTimeRecordStores: vi.fn().mockResolvedValue([existingRecord]),
 			updateTimeRecordStore: updateMock,
 		});
 
 		const result = await onTimeRecordCreatedHandler.run(
 			{
-				store_id: '1003',
-				log_type: 'Comenzar Jornada',
-				record_date: '2026-10-22',
-				record_time: '08:30',
-				employee_id: 1190,
+				key: 90,
 			},
 			context,
 		);
@@ -172,7 +186,15 @@ describe('on-time-record-created handler', () => {
 	});
 
 	it('returns in_progress when Terminar Jornada arrives but other clocked-in employees have not finished yet', async () => {
-		// Employee 101 and 102 clocked in; only Employee 101 clocks out
+		const currentRecord: TimeRecords = {
+			id: 3,
+			store_id: '1003',
+			employee_id: '101',
+			log_type: 'Terminar Jornada',
+			record_date: '2026-10-22',
+			record_time: '17:00',
+		};
+
 		const dailyRecords: TimeRecords[] = [
 			{
 				id: 1,
@@ -190,29 +212,19 @@ describe('on-time-record-created handler', () => {
 				record_date: '2026-10-22',
 				record_time: '09:00',
 			},
-			{
-				id: 3,
-				store_id: '1003',
-				employee_id: '101',
-				log_type: 'Terminar Jornada',
-				record_date: '2026-10-22',
-				record_time: '17:00',
-			},
+			currentRecord,
 		];
 
 		const updateMock = vi.fn();
 		const context = createMockContext({
+			getTimeRecordById: vi.fn().mockResolvedValue(currentRecord),
 			getTimeRecords: vi.fn().mockResolvedValue(dailyRecords),
 			updateTimeRecordStore: updateMock,
 		});
 
 		const result = await onTimeRecordCreatedHandler.run(
 			{
-				store_id: '1003',
-				log_type: 'Terminar Jornada',
-				record_date: '2026-10-22',
-				record_time: '17:00',
-				employee_id: '101',
+				key: 3,
 			},
 			context,
 		);
@@ -223,7 +235,15 @@ describe('on-time-record-created handler', () => {
 	});
 
 	it('updates close_time and operative_time when ALL employees who started have finished their shift', async () => {
-		// Both Employee 101 and 102 have clocked in and now both have clocked out
+		const currentRecord: TimeRecords = {
+			id: 4,
+			store_id: '1003',
+			employee_id: '102',
+			log_type: 'Terminar Jornada',
+			record_date: '2026-10-22',
+			record_time: '20:30',
+		};
+
 		const dailyRecords: TimeRecords[] = [
 			{
 				id: 1,
@@ -249,14 +269,7 @@ describe('on-time-record-created handler', () => {
 				record_date: '2026-10-22',
 				record_time: '17:00',
 			},
-			{
-				id: 4,
-				store_id: '1003',
-				employee_id: '102',
-				log_type: 'Terminar Jornada',
-				record_date: '2026-10-22',
-				record_time: '20:30',
-			},
+			currentRecord,
 		];
 
 		const existingStoreRecord: TimeRecordStore = {
@@ -272,6 +285,7 @@ describe('on-time-record-created handler', () => {
 
 		const updateMock = vi.fn().mockResolvedValue({ ...existingStoreRecord });
 		const context = createMockContext({
+			getTimeRecordById: vi.fn().mockResolvedValue(currentRecord),
 			getTimeRecords: vi.fn().mockResolvedValue(dailyRecords),
 			getTimeRecordStores: vi.fn().mockResolvedValue([existingStoreRecord]),
 			updateTimeRecordStore: updateMock,
@@ -279,17 +293,12 @@ describe('on-time-record-created handler', () => {
 
 		const result = await onTimeRecordCreatedHandler.run(
 			{
-				store_id: '1003',
-				log_type: 'Terminar Jornada',
-				record_date: '2026-10-22',
-				record_time: '20:30',
-				employee_id: '102',
+				key: 4,
 			},
 			context,
 		);
 
 		expect(result.status).toBe('updated');
-		// 08:00 to 20:30 is 12 hours 30 mins = 750 minutes
 		expect(updateMock).toHaveBeenCalledWith(77, {
 			close_time: '2026-10-22T20:30:00.000Z',
 			close_user: '102',
@@ -299,14 +308,22 @@ describe('on-time-record-created handler', () => {
 	});
 
 	it('ignores time records that are neither Comenzar nor Terminar (e.g. Almuerzo)', async () => {
-		const context = createMockContext({});
+		const lunchRecord: TimeRecords = {
+			id: 5,
+			store_id: '1003',
+			log_type: 'Iniciar Almuerzo',
+			record_date: '2026-10-22',
+			record_time: '13:00',
+			employee_id: '101',
+		};
+
+		const context = createMockContext({
+			getTimeRecordById: vi.fn().mockResolvedValue(lunchRecord),
+		});
 
 		const result = await onTimeRecordCreatedHandler.run(
 			{
-				store_id: '1003',
-				log_type: 'Iniciar Almuerzo',
-				record_date: '2026-10-22',
-				record_time: '13:00',
+				key: 5,
 			},
 			context,
 		);

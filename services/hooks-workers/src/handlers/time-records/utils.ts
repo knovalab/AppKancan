@@ -33,3 +33,29 @@ export function extractStoreId(storeRaw: unknown): string | null {
 	}
 	return String(storeRaw);
 }
+
+/**
+ * Extracts key for create payload: { key: number | string }
+ */
+export function extractCreateKey(payload: any): number | string | null {
+	if (!payload) return null;
+	if (typeof payload === 'object') {
+		return payload.key ?? payload.id ?? null;
+	}
+	return payload;
+}
+
+/**
+ * Extracts key for update payload: { keys: number[] } or { key: number[] }
+ */
+export function extractUpdateKey(payload: any): number | string | null {
+	if (!payload) return null;
+	if (typeof payload === 'object') {
+		if (Array.isArray(payload.keys) && payload.keys.length > 0)
+			return payload.keys[0];
+		if (Array.isArray(payload.key) && payload.key.length > 0)
+			return payload.key[0];
+		return payload.key ?? payload.keys ?? payload.id ?? null;
+	}
+	return payload;
+}
