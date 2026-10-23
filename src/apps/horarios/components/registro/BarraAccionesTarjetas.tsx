@@ -30,6 +30,8 @@ interface BarraAccionesTarjetasProps {
 	onExpandirTodas: () => void;
 	onContraerTodas: () => void;
 	onExpandirPorEstado: (filtro: FiltroColapso) => void;
+	/** Vista limpia (perfil tienda): solo chips; sin botones en móvil ni textos auxiliares. */
+	compacta?: boolean;
 }
 
 export function BarraAccionesTarjetas({
@@ -41,8 +43,13 @@ export function BarraAccionesTarjetas({
 	onExpandirTodas,
 	onContraerTodas,
 	onExpandirPorEstado,
+	compacta = false,
 }: BarraAccionesTarjetasProps) {
 	if (totalEmpleados === 0) return null;
+
+	const ocultarEnMovil = compacta
+		? { xs: 'none', sm: 'inline-flex' }
+		: undefined;
 
 	return (
 		<Paper
@@ -77,6 +84,7 @@ export function BarraAccionesTarjetas({
 					disabled={todasColapsadas}
 					startIcon={<UnfoldLessIcon fontSize="small" />}
 					sx={{
+						display: ocultarEnMovil,
 						textTransform: 'none',
 						fontWeight: 600,
 						fontSize: '0.78rem',
@@ -103,6 +111,7 @@ export function BarraAccionesTarjetas({
 					disabled={todasExpandidas}
 					startIcon={<UnfoldMoreIcon fontSize="small" />}
 					sx={{
+						display: ocultarEnMovil,
 						textTransform: 'none',
 						fontWeight: 600,
 						fontSize: '0.78rem',
@@ -146,7 +155,7 @@ export function BarraAccionesTarjetas({
 						sx={{
 							fontWeight: 600,
 							color: '#64748b',
-							display: { xs: 'none', sm: 'inline-block' },
+							display: compacta ? 'none' : { xs: 'none', sm: 'inline-block' },
 							mr: 0.25,
 						}}
 					>
@@ -245,7 +254,7 @@ export function BarraAccionesTarjetas({
 			{/* Resumen de estado de tarjetas */}
 			<Box
 				sx={{
-					display: 'flex',
+					display: compacta ? 'none' : 'flex',
 					alignItems: 'center',
 					justifyContent: { xs: 'flex-start', md: 'flex-end' },
 					gap: 1,

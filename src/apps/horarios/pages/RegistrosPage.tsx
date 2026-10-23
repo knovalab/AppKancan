@@ -33,6 +33,8 @@ import { useHorariosLayout } from '../hooks/useHorariosLayout';
  */
 export default function RegistrosPage() {
 	const { tienda, acceso } = useHorariosLayout();
+	// Perfil tienda: vista limpia sin Exportar/Total ni textos auxiliares de la barra.
+	const vistaTienda = acceso.rolPrincipal === 'tienda';
 	const { startTour } = useHorariosTour();
 	const { activeTutorial, endTutorial } = useTutorial();
 	const [modoDemo, setModoDemo] = useState(false);
@@ -197,38 +199,40 @@ export default function RegistrosPage() {
 			</HeaderActions>
 
 			{/* Final de la fila de pestañas */}
-			<HeaderActions slot="tabs">
-				<Button
-					className="tour-export-eventos"
-					onClick={() => setExportEventosOpen(true)}
-					variant="contained"
-					disableElevation
-					startIcon={<FileDownloadIcon />}
-					sx={{
-						bgcolor: '#004680',
-						textTransform: 'none',
-						fontWeight: 700,
-						borderRadius: 2,
-						height: 32,
-						'&:hover': { bgcolor: '#003a6b' },
-					}}
-				>
-					Exportar
-				</Button>
-				<Chip
-					label={`Total Empleados: ${empleados.length}`}
-					sx={{
-						bgcolor: '#eaf2fb',
-						color: '#004680',
-						fontWeight: 700,
-						fontSize: '0.8rem',
-						borderRadius: '8px',
-						border: '1px solid #d6e6f7',
-						height: 32,
-						px: 0.5,
-					}}
-				/>
-			</HeaderActions>
+			{!vistaTienda && (
+				<HeaderActions slot="tabs">
+					<Button
+						className="tour-export-eventos"
+						onClick={() => setExportEventosOpen(true)}
+						variant="contained"
+						disableElevation
+						startIcon={<FileDownloadIcon />}
+						sx={{
+							bgcolor: '#004680',
+							textTransform: 'none',
+							fontWeight: 700,
+							borderRadius: 2,
+							height: 32,
+							'&:hover': { bgcolor: '#003a6b' },
+						}}
+					>
+						Exportar
+					</Button>
+					<Chip
+						label={`Total Empleados: ${empleados.length}`}
+						sx={{
+							bgcolor: '#eaf2fb',
+							color: '#004680',
+							fontWeight: 700,
+							fontSize: '0.8rem',
+							borderRadius: '8px',
+							border: '1px solid #d6e6f7',
+							height: 32,
+							px: 0.5,
+						}}
+					/>
+				</HeaderActions>
+			)}
 
 			{error && (
 				<Alert severity="warning" sx={{ mb: 2, mx: { xs: 0.5, sm: 0 } }}>
@@ -250,6 +254,7 @@ export default function RegistrosPage() {
 						onExpandirTodas={colapso.expandirTodas}
 						onContraerTodas={colapso.contraerTodas}
 						onExpandirPorEstado={colapso.expandirPorEstado}
+						compacta={vistaTienda}
 					/>
 					{empleados.length === 0 && !modoDemo ? (
 						<Typography variant="body1" sx={{ color: '#64748b', mt: 4 }}>

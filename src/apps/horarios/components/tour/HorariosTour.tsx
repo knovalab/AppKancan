@@ -1,11 +1,18 @@
 import type React from 'react';
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from 'react';
 import Joyride, {
 	ACTIONS,
 	type CallBackProps,
 	EVENTS,
 	STATUS,
 } from 'react-joyride';
+import { useHorariosLayout } from '../../hooks/useHorariosLayout';
 import {
 	FakeVerificationModal,
 	verificationModalTargets,
@@ -29,6 +36,13 @@ import {
 import { useHorariosTour } from './HorariosTourContext';
 import { CustomTooltip } from './TourTooltip';
 import { STEPS_BY_PHASE } from './tourSteps';
+
+// Botones que el perfil tienda no ve en Registros (HorariosHeader / RegistrosPage).
+const OCULTOS_VISTA_TIENDA = new Set([
+	'.tour-export-eventos',
+	...exportModalTargets,
+	'.tour-refresh',
+]);
 
 type OverlayKind =
 	| 'verificacion'
@@ -65,7 +79,14 @@ export const HorariosTour: React.FC<HorariosTourProps> = ({ children }) => {
 	const [joyrideKey, setJoyrideKey] = useState(0);
 	const [pendingStepIndex, setPendingStepIndex] = useState<number | null>(null);
 
-	const currentSteps = STEPS_BY_PHASE[tourPhase] || [];
+	const { acceso } = useHorariosLayout();
+	const vistaTienda = acceso.rolPrincipal === 'tienda';
+	const currentSteps = useMemo(() => {
+		const steps = STEPS_BY_PHASE[tourPhase] || [];
+		return vistaTienda
+			? steps.filter((s) => !OCULTOS_VISTA_TIENDA.has(s.target as string))
+			: steps;
+	}, [tourPhase, vistaTienda]);
 
 	useEffect(() => {
 		if (

@@ -26,7 +26,10 @@ import TutorialButton from './tour/TutorialButton';
  * y botones en este orden: Normas · [acciones de la página, p. ej. Demo] · Tutorial · Actualizar.
  */
 export function HorariosHeader() {
-	const { seccion, tienda } = useHorariosLayout();
+	const { seccion, tienda, acceso } = useHorariosLayout();
+	// Perfil tienda en Registros: sin Normas/Tutorial/Actualizar (vista limpia).
+	const vistaLimpia =
+		acceso.rolPrincipal === 'tienda' && seccion?.path === 'registros';
 	const isMobile = useMediaQuery((theme: Theme) =>
 		theme.breakpoints.down('sm'),
 	);
@@ -121,7 +124,7 @@ export function HorariosHeader() {
 
 					<Box
 						sx={{
-							display: 'flex',
+							display: vistaLimpia ? 'none' : 'flex',
 							flexWrap: 'wrap',
 							alignItems: 'center',
 							gap: 0.5,
