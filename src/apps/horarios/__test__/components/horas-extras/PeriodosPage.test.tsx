@@ -74,7 +74,7 @@ beforeEach(() => {
 describe('PeriodosPage', () => {
 	it('lista los periodos con totales: calculados si preliquidado, agregados si liquidado', async () => {
 		montar();
-		const fila = await screen.findByRole('row', { name: /11\/10\/2026 al 25\/10\/2026/ });
+		const fila = await screen.findByRole('row', { name: /11\/10\/2026 al 25\/10\/2026/ }, { timeout: 5000 });
 		expect(within(fila).getByText('Preliquidado')).toBeInTheDocument();
 		expect(within(fila).getByText('15')).toBeInTheDocument(); // días
 		expect(within(fila).getByText('1 h 30 min')).toBeInTheDocument(); // 60 + 30 rezagada

@@ -12,8 +12,7 @@ import {
 	agregadoHorasExtras,
 	filtroAgregado,
 	listarZonas,
-	nombreZona,
-	JEFES_ZONA,
+	zonasDeTiendas,
 } from '@/apps/horarios/api/directus/reportesHorasExtras';
 
 beforeEach(() => request.mockReset());
@@ -50,29 +49,26 @@ describe('agregadoHorasExtras', () => {
 	});
 });
 
-describe('zonas (jefes de zona)', () => {
-	it('nombre de la zona sin el prefijo "Jefe Zona"', () => {
-		expect(nombreZona('Jefe Zona Cafetera')).toBe('Cafetera');
-		expect(nombreZona('Jefe de zona Sur')).toBe('Sur');
-		expect(nombreZona('Ana Pérez')).toBe('Ana Pérez');
+describe('zonas (core_stores.zone)', () => {
+	it('agrupa tiendas por zona; sin zona o la de pruebas quedan fuera', () => {
+		expect(
+			zonasDeTiendas([
+				{ id: 26, zone: 'Narino' },
+				{ id: '30', zone: ' Narino ' },
+				{ id: 40, zone: 'Cafetera' },
+				{ id: 50, zone: null },
+				{ id: 60, zone: '' },
+				{ id: 90, zone: 'Narino' },
+			]),
+		).toEqual([
+			{ id: 'Cafetera', nombre: 'Cafetera', tiendas: [40] },
+			{ id: 'Narino', nombre: 'Narino', tiendas: [26, 30] },
+		]);
 	});
 
-	it('zonas = los usuarios de JEFES_ZONA (los 4 de la captura) con sus tiendas, sin la de pruebas', async () => {
-		expect(JEFES_ZONA).toHaveLength(4);
-		const [cafetera, narino] = JEFES_ZONA;
-		request.mockResolvedValueOnce([
-			{ store_id: 26, user_id: { id: narino, first_name: 'Jefe Zona', last_name: 'Narino' } },
-			{ store_id: { id: 30 }, user_id: { id: narino, first_name: 'Jefe Zona', last_name: 'Narino' } },
-			{ store_id: 90, user_id: { id: narino, first_name: 'Jefe Zona', last_name: 'Narino' } },
-			// Sin permiso para leer el nombre: "Zona N" según su posición.
-			{ store_id: 40, user_id: { id: cafetera } },
-		]);
-		expect(await listarZonas()).toEqual([
-			{ id: narino, nombre: 'Narino', tiendas: [26, 30] },
-			{ id: cafetera, nombre: 'Zona 1', tiendas: [40] },
-		]);
-		const filtro = request.mock.calls[0][0].q.filter._and;
-		expect(filtro).toContainEqual({ user_id: { _in: JEFES_ZONA } });
-		expect(filtro).toContainEqual({ status: { _eq: 'Activo' } });
+	it('lee id y zone de core_stores', async () => {
+		request.mockResolvedValueOnce([{ id: 26, zone: 'Sur' }]);
+		expect(await listarZonas()).toEqual([{ id: 'Sur', nombre: 'Sur', tiendas: [26] }]);
+		expect(request.mock.calls[0][0]).toMatchObject({ op: 'read', c: 'core_stores', q: { fields: ['id', 'zone'] } });
 	});
 });

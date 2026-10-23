@@ -96,97 +96,54 @@ export async function agregadoHorasExtras(
 	}
 }
 
-/**
- * Las zonas son estos usuarios (los perfiles "Jefe Zona …") y sus tiendas en
- * `core_user_stores`. Configurable por entorno (ids separados por coma) porque
- * los ids cambian entre instancias de Directus.
- */
-export const JEFES_ZONA: string[] = (
-	import.meta.env.VITE_HORARIOS_JEFES_ZONA ??
-	[
-		'39534e5e-ee6b-4600-9891-0bb192bacc13', // Jefe Zona Cafetera
-		'4c5419ed-a2f2-43e4-96a7-dcfe56016e60', // Jefe Zona Narino
-		'fa67d633-1c93-4903-a0d4-7d7b5741e5f4', // Jefe Zona Sur
-		'c8e035ed-2763-418e-bc00-1889a91d6684', // Jefe Zona Norte
-	].join(',')
-)
-	.split(',')
-	.map((id: string) => id.trim())
-	.filter(Boolean);
-
 export interface Zona {
-	/** UUID del jefe de zona. */
+	/** El valor de `core_stores.zone` (también es el nombre). */
 	id: string;
-	/** "Cafetera" (de "Jefe Zona Cafetera"). */
 	nombre: string;
 	tiendas: number[];
 }
 
-const PREFIJO_ZONA = /^\s*jefe\s+(de\s+)?zona\s+/i;
-
-/** "Jefe Zona Cafetera" → "Cafetera". Sin el prefijo, el nombre tal cual. */
-export const nombreZona = (nombreJefe: string) =>
-	nombreJefe.replace(PREFIJO_ZONA, '').trim() || nombreJefe;
+/**
+ * Agrupa las tiendas por su `zone`. Sin zona o la tienda de pruebas: fuera.
+ * Orden alfabético; tiendas en el orden recibido.
+ */
+export function zonasDeTiendas(
+	tiendas: readonly { id: number | string; zone?: string | null }[],
+): Zona[] {
+	const zonas = new Map<string, Zona>();
+	for (const t of tiendas) {
+		const nombre = t.zone?.trim();
+		const id = Number(t.id);
+		if (!nombre || id === STORE_PRUEBAS) continue;
+		const z = zonas.get(nombre) ?? { id: nombre, nombre, tiendas: [] };
+		z.tiendas.push(id);
+		zonas.set(nombre, z);
+	}
+	return [...zonas.values()].sort((a, b) =>
+		a.nombre.localeCompare(b.nombre, 'es'),
+	);
+}
 
 /**
- * Zonas = los usuarios de `JEFES_ZONA` y sus tiendas activas en `core_user_stores`.
- * Requiere que quien consulta pueda leer esas filas (por defecto cada usuario solo
- * ve las suyas): si no, devuelve menos zonas o ninguna.
+ * Zonas = valores de `core_stores.zone` con sus tiendas. Consulta aparte de
+ * `getStores`: si una política aún no puede leer `zone`, solo falla el reporte.
  */
 export async function listarZonas(): Promise<Zona[]> {
 	try {
-		const filas = (await withAutoRefresh(() =>
+		const tiendas = (await withAutoRefresh(() =>
 			directus.request(
-				readItems('core_user_stores', {
-					fields: [
-						'store_id',
-						'user_id.id',
-						'user_id.first_name',
-						'user_id.last_name',
-					],
-					filter: {
-						_and: [
-							{ status: { _eq: 'Activo' } },
-							{ user_id: { _in: JEFES_ZONA } },
-						],
-					},
+				readItems('core_stores', {
+					fields: ['id', 'zone'],
 					limit: -1,
 				}),
 			),
-		)) as {
-			store_id: unknown;
-			user_id: {
-				id: string;
-				first_name?: string | null;
-				last_name?: string | null;
-			} | null;
-		}[];
-		const zonas = new Map<string, Zona>();
-		for (const f of filas) {
-			const tienda = idRelacion(f.store_id);
-			if (!f.user_id || tienda == null || tienda === STORE_PRUEBAS) continue;
-			const completo = [f.user_id.first_name, f.user_id.last_name]
-				.filter(Boolean)
-				.join(' ');
-			const z = zonas.get(f.user_id.id) ?? {
-				id: f.user_id.id,
-				// Sin permiso para leer el nombre: la zona se nombra por su posición en JEFES_ZONA.
-				nombre: completo
-					? nombreZona(completo)
-					: `Zona ${JEFES_ZONA.indexOf(f.user_id.id) + 1}`,
-				tiendas: [],
-			};
-			if (!z.tiendas.includes(tienda)) z.tiendas.push(tienda);
-			zonas.set(z.id, z);
-		}
-		return [...zonas.values()].sort((a, b) =>
-			a.nombre.localeCompare(b.nombre, 'es'),
-		);
+		)) as { id: number | string; zone?: string | null }[];
+		return zonasDeTiendas(tiendas);
 	} catch (error) {
 		throw errorDeApi(
 			error,
 			'Error consultando zonas',
-			'Error al cargar las zonas (jefes de zona)',
+			'Error al cargar las zonas de las tiendas',
 		);
 	}
 }

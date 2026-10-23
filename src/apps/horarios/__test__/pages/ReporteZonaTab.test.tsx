@@ -7,7 +7,6 @@ const agregado = vi.fn();
 const exportar = vi.fn();
 const listarZonas = vi.fn();
 vi.mock('@/apps/horarios/api/directus/reportesHorasExtras', () => ({
-	JEFES_ZONA: ['u1', 'u2'],
 	agregadoHorasExtras: (f: unknown, g: string[]) => agregado(f, g),
 	listarZonas: () => listarZonas(),
 }));
@@ -50,8 +49,8 @@ const fila = (storeId: number, empleadoId: number, fecha: string, minutos: numbe
 beforeEach(() => {
 	vi.clearAllMocks();
 	listarZonas.mockResolvedValue([
-		{ id: 'u1', nombre: 'Cafetera', tiendas: [40] },
-		{ id: 'u2', nombre: 'Narino', tiendas: [26, 30] },
+		{ id: 'Cafetera', nombre: 'Cafetera', tiendas: [40] },
+		{ id: 'Narino', nombre: 'Narino', tiendas: [26, 30] },
 	]);
 	agregado.mockImplementation(async (_f: unknown, g: string[]) =>
 		g.includes('employee_id')
@@ -138,7 +137,7 @@ describe('Reportes · Horas extras por zona', () => {
 		await waitFor(() =>
 			expect(agregado).toHaveBeenCalledWith(expect.objectContaining({ tiendas: [30] }), ['store_id', 'employee_id', 'work_date']),
 		);
-		expect(screen.getByText(/por zona: Mi zona, tienda Pasto/)).toBeInTheDocument();
+		expect(screen.getByText(/por zona: Narino, tienda Pasto/)).toBeInTheDocument();
 	});
 
 	it('comercial: las tiendas del filtro son las de la zona elegida', async () => {
@@ -150,17 +149,15 @@ describe('Reportes · Horas extras por zona', () => {
 		expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['Todas las tiendas', 'Ipiales', 'Pasto']);
 	});
 
-	it('comercial: avisa si no se pudieron leer todas las zonas (permiso de core_user_stores)', async () => {
-		listarZonas.mockResolvedValue([{ id: 'u2', nombre: 'Narino', tiendas: [26, 30] }]);
+	it('comercial: avisa si ninguna tienda tiene zona', async () => {
+		listarZonas.mockResolvedValue([]);
 		montar(null);
-		expect(await screen.findByText(/Solo se cargaron 1 de 2 zonas/)).toBeInTheDocument();
+		expect(await screen.findByText(/Ninguna tienda tiene zona asignada/)).toBeInTheDocument();
 	});
 
-	it('jefe: no consulta zonas ni muestra el aviso', async () => {
+	it('jefe: el título lleva la zona de sus tiendas', async () => {
 		montar([26, 30]);
-		await screen.findByRole('table', { name: 'Horas extras por tienda' });
-		expect(listarZonas).not.toHaveBeenCalled();
-		expect(screen.queryByText(/Solo se cargaron/)).not.toBeInTheDocument();
+		expect(await screen.findByText(/por zona: Narino$/)).toBeInTheDocument();
 	});
 
 	it('jefe sin tiendas: aviso y sin consultas', async () => {

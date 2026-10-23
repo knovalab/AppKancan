@@ -27,7 +27,6 @@ import { BarChart } from '@mui/x-charts/BarChart';
 import dayjs, { type Dayjs } from 'dayjs';
 import { Fragment, useMemo, useState } from 'react';
 import { STORE_PRUEBAS } from '../../api/directus/read';
-import { JEFES_ZONA } from '../../api/directus/reportesHorasExtras';
 import DateRangeFilter from '../../components/reportes/DateRangeFilter';
 import {
 	DIAS_SEMANA,
@@ -131,7 +130,8 @@ export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 	const [abiertas, setAbiertas] = useState<ReadonlySet<number>>(new Set());
 	const [exportando, setExportando] = useState(false);
 
-	const zonasQ = useZonas(tiendasJefe == null);
+	// También para el jefe: da el nombre de la zona de sus tiendas.
+	const zonasQ = useZonas(tiendasJefe?.length !== 0);
 	const zonas = zonasQ.data ?? [];
 	const zona = zonas.find((z) => z.id === zonaId);
 	const tiendasZona = useMemo(
@@ -144,7 +144,10 @@ export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 		[tiendaId, tiendasZona],
 	);
 	const zonaTexto = tiendasJefe
-		? 'Mi zona'
+		? zonas
+				.filter((z) => z.tiendas.some((t) => tiendasJefe.includes(t)))
+				.map((z) => z.nombre)
+				.join(', ') || 'Mi zona'
 		: (zona?.nombre ?? 'Todas las zonas');
 
 	// Sin rango elegido ("Todo"): desde el inicio del año, para no pedir la historia entera.
@@ -390,16 +393,12 @@ export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 				</Box>
 			</Box>
 
-			{tiendasJefe == null &&
-				zonasQ.isSuccess &&
-				zonas.length < JEFES_ZONA.length && (
-					<Alert severity="warning" sx={{ mb: 2 }}>
-						Solo se cargaron {zonas.length} de {JEFES_ZONA.length} zonas. Las
-						zonas salen de las tiendas asignadas a cada jefe de zona
-						(core_user_stores): falta permiso para leerlas o algún jefe no tiene
-						tiendas activas.
-					</Alert>
-				)}
+			{tiendasJefe == null && zonasQ.isSuccess && zonas.length === 0 && (
+				<Alert severity="warning" sx={{ mb: 2 }}>
+					Ninguna tienda tiene zona asignada (campo zone de las tiendas): no hay
+					zonas para elegir.
+				</Alert>
+			)}
 			{(error || zonasQ.error) && (
 				<Alert severity="error" sx={{ mb: 2 }}>
 					{mensajeDeError(

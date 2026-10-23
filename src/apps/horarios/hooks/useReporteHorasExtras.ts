@@ -154,10 +154,10 @@ export function useReporteTiempoReal(
 	};
 }
 
-/** Zonas (jefes de zona y sus tiendas), para que comercial elija una. */
+/** Zonas de las tiendas (`core_stores.zone`) y sus tiendas. */
 export function useZonas(enabled: boolean) {
 	return useQuery({
-		queryKey: ['zonasJefes'],
+		queryKey: ['zonasTiendas'],
 		queryFn: listarZonas,
 		enabled,
 		staleTime: 30 * 60 * 1000,
