@@ -31,7 +31,7 @@ export interface SyncStoreCloseDetail {
 
 export interface SyncStoreCloseTimeRecordsResult {
 	date: string;
-	workDay: string;
+	workDate: string;
 	totalStores: number;
 	created: number;
 	updated: number;
@@ -41,13 +41,13 @@ export interface SyncStoreCloseTimeRecordsResult {
 
 function resolveDateParts(dateInput?: string): {
 	dateStr: string;
-	workDay: string;
+	workDate: string;
 } {
 	if (dateInput && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-		return { dateStr: dateInput, workDay: dateInput };
+		return { dateStr: dateInput, workDate: dateInput };
 	}
 	const dateStr = getTodayDateStr();
-	return { dateStr, workDay: dateStr };
+	return { dateStr, workDate: dateStr };
 }
 
 const syncStoreCloseTimeRecordsHandler: HookHandler<
@@ -67,10 +67,10 @@ const syncStoreCloseTimeRecordsHandler: HookHandler<
 		context: WorkerContext,
 	): Promise<SyncStoreCloseTimeRecordsResult> {
 		const { directus, logger } = context;
-		const { dateStr, workDay } = resolveDateParts(payload.date);
+		const { dateStr, workDate } = resolveDateParts(payload.date);
 
 		logger.info(
-			{ date: dateStr, workDay, storeId: payload.store_id },
+			{ date: dateStr, workDate, storeId: payload.store_id },
 			'Starting store closing time synchronization',
 		);
 
@@ -104,9 +104,9 @@ const syncStoreCloseTimeRecordsHandler: HookHandler<
 			limit: -1,
 		});
 
-		// 3. Batch fetch: All existing store daily records for this workDay (1 query instead of N)
+		// 3. Batch fetch: All existing store daily records for this workDate (1 query instead of N)
 		const storeRecordsFilter: Record<string, unknown> = {
-			work_day: { _eq: workDay },
+			work_date: { _eq: workDate },
 		};
 		if (payload.store_id) {
 			storeRecordsFilter._or = [
@@ -277,7 +277,7 @@ const syncStoreCloseTimeRecordsHandler: HookHandler<
 				// No TimeRecordStore exists yet -> create new record with all available data
 				const createdRecord = await directus.createTimeRecordStore({
 					store: storeId,
-					work_day: workDay,
+					work_date: workDate,
 					open_time: openTime,
 					open_user: openUser,
 					close_time: closeTime,
@@ -325,7 +325,7 @@ const syncStoreCloseTimeRecordsHandler: HookHandler<
 
 		return {
 			date: dateStr,
-			workDay,
+			workDate,
 			totalStores: stores.length,
 			created: createdCount,
 			updated: updatedCount,

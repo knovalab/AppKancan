@@ -89,7 +89,7 @@ export function ReporteTiendasTable({
 					) : (
 						records.map((reg, idx) => (
 							<ReporteTiendasTableRow
-								key={`${reg.store_id}_${reg.work_day_raw}`}
+								key={`${reg.store_id}_${reg.work_date_raw}`}
 								reg={reg}
 								idx={idx}
 							/>

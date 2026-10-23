@@ -63,7 +63,7 @@ describe('sync-store-time-records handler', () => {
 		const createTimeRecordStoreMock = vi.fn().mockResolvedValue({
 			id: 501,
 			store: 'store-1',
-			work_day: '2026-10-22',
+			work_date: '2026-10-22',
 			open_time: '2026-10-22T08:15:00.000Z',
 			open_user: 'emp-earliest',
 		});
@@ -87,7 +87,7 @@ describe('sync-store-time-records handler', () => {
 		expect(createTimeRecordStoreMock).toHaveBeenCalledWith(
 			expect.objectContaining({
 				store: 'store-1',
-				work_day: '2026-10-22',
+				work_date: '2026-10-22',
 				open_time: '2026-10-22T08:15:00.000Z',
 				open_user: 'emp-earliest',
 				close_time: null,
@@ -111,7 +111,7 @@ describe('sync-store-time-records handler', () => {
 		const existingStoreRecord: TimeRecordStore = {
 			id: 777,
 			store: 'store-2',
-			work_day: '2026-10-22',
+			work_date: '2026-10-22',
 			open_time: null,
 			open_user: null,
 			close_time: null,
@@ -151,7 +151,7 @@ describe('sync-store-time-records handler', () => {
 		const createTimeRecordStoreMock = vi.fn().mockResolvedValue({
 			id: 888,
 			store: 'store-empty',
-			work_day: '2026-10-22',
+			work_date: '2026-10-22',
 			open_time: null,
 			open_user: null,
 			close_time: null,
@@ -177,7 +177,7 @@ describe('sync-store-time-records handler', () => {
 		expect(createTimeRecordStoreMock).toHaveBeenCalledWith(
 			expect.objectContaining({
 				store: 'store-empty',
-				work_day: '2026-10-22',
+				work_date: '2026-10-22',
 				open_time: null,
 				close_time: null,
 				open_user: null,
@@ -190,7 +190,7 @@ describe('sync-store-time-records handler', () => {
 		const existingStoreRecord: TimeRecordStore = {
 			id: 999,
 			store: 'store-existing',
-			work_day: '2026-10-22',
+			work_date: '2026-10-22',
 			open_time: null,
 			open_user: null,
 			close_time: null,

@@ -94,7 +94,7 @@ describe('on-time-record-created handler', () => {
 		expect(createMock).toHaveBeenCalledWith(
 			expect.objectContaining({
 				store: '1003',
-				work_day: '2026-10-22',
+				work_date: '2026-10-22',
 				open_time: '2026-10-22T08:15:00.000Z',
 				open_user: '1190',
 			}),
@@ -114,7 +114,7 @@ describe('on-time-record-created handler', () => {
 		const existingRecord: TimeRecordStore = {
 			id: 55,
 			store: '1003',
-			work_day: '2026-10-22',
+			work_date: '2026-10-22',
 			open_time: '2026-10-22T09:00:00.000Z',
 			open_user: '1100',
 			close_time: null,
@@ -158,7 +158,7 @@ describe('on-time-record-created handler', () => {
 		const existingRecord: TimeRecordStore = {
 			id: 55,
 			store: '1003',
-			work_day: '2026-10-22',
+			work_date: '2026-10-22',
 			open_time: '2026-10-22T07:45:00.000Z',
 			open_user: '1100',
 			close_time: null,
@@ -274,7 +274,7 @@ describe('on-time-record-created handler', () => {
 		const existingStoreRecord: TimeRecordStore = {
 			id: 77,
 			store: '1003',
-			work_day: '2026-10-22',
+			work_date: '2026-10-22',
 			open_time: '2026-10-22T08:00:00.000Z',
 			open_user: '101',
 			close_time: null,

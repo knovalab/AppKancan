@@ -55,7 +55,7 @@ describe('Time Records Business Logic', () => {
 			expect(createMock).toHaveBeenCalledWith(
 				expect.objectContaining({
 					store: 'store-1',
-					work_day: '2026-10-22',
+					work_date: '2026-10-22',
 					open_user: 'emp-1',
 				}),
 			);
@@ -65,7 +65,7 @@ describe('Time Records Business Logic', () => {
 			const existing: TimeRecordStore = {
 				id: 50,
 				store: 'store-1',
-				work_day: '2026-10-22',
+				work_date: '2026-10-22',
 				open_time: '2026-10-22T09:00:00.000Z', // 09:00
 				open_user: 'emp-2',
 				close_time: null,
@@ -103,7 +103,7 @@ describe('Time Records Business Logic', () => {
 			const existing: TimeRecordStore = {
 				id: 50,
 				store: 'store-1',
-				work_day: '2026-10-22',
+				work_date: '2026-10-22',
 				open_time: '2026-10-22T07:00:00.000Z', // 07:00
 				open_user: 'emp-1',
 				close_time: null,
@@ -205,7 +205,7 @@ describe('Time Records Business Logic', () => {
 			const existingStoreRecord: TimeRecordStore = {
 				id: 88,
 				store: 'store-1',
-				work_day: '2026-10-22',
+				work_date: '2026-10-22',
 				open_time: '2026-10-22T08:00:00.000Z', // 08:00
 				open_user: 'emp-1',
 				close_time: null,

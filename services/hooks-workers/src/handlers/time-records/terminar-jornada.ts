@@ -27,10 +27,10 @@ export async function handleTerminarJornada(
 		};
 	}
 
-	const workDay = record.record_date || getTodayDateStr();
+	const workDate = record.record_date || getTodayDateStr();
 
 	logger.info(
-		{ storeId, workDay, recordId: record.id, employeeId: record.employee_id },
+		{ storeId, workDate, recordId: record.id, employeeId: record.employee_id },
 		'[Terminar Jornada] Checking if all clocked-in employees have finished their shift',
 	);
 
@@ -44,7 +44,7 @@ export async function handleTerminarJornada(
 						{ store_id: { id: { _eq: storeId } } },
 					],
 				},
-				{ record_date: { _eq: workDay } },
+				{ record_date: { _eq: workDate } },
 			],
 		},
 	});
@@ -95,7 +95,7 @@ export async function handleTerminarJornada(
 		logger.info(
 			{
 				storeId,
-				workDay,
+				workDate,
 				totalStarted: startedEmployees.size,
 				totalFinished: finishedEmployees.size,
 				pendingEmployees,
@@ -106,7 +106,7 @@ export async function handleTerminarJornada(
 		return {
 			action: 'in_progress',
 			storeId,
-			workDay,
+			workDate,
 			reason: `Waiting for ${pendingEmployees.length} employee(s) to finish: [${pendingEmployees.join(', ')}]`,
 		};
 	}
@@ -117,7 +117,7 @@ export async function handleTerminarJornada(
 	);
 
 	const latestFinish = finishLogs[0] ?? record;
-	const closeTime = buildTimestamp(workDay, latestFinish.record_time);
+	const closeTime = buildTimestamp(workDate, latestFinish.record_time);
 	const closeUser = latestFinish.employee_id
 		? String(latestFinish.employee_id)
 		: null;
@@ -125,14 +125,14 @@ export async function handleTerminarJornada(
 	logger.info(
 		{
 			storeId,
-			workDay,
+			workDate,
 			latestCloseTime: closeTime,
 			latestCloseUser: closeUser,
 		},
 		'[Terminar Jornada] All employees finished. Finalizing store closing time',
 	);
 
-	// 5. Query existing TimeRecordStore for this store and workDay
+	// 5. Query existing TimeRecordStore for this store and workDate
 	const existingStoreRecords = await directus.getTimeRecordStores({
 		filter: {
 			_and: [
@@ -142,7 +142,7 @@ export async function handleTerminarJornada(
 						{ store: { id: { _eq: storeId } } },
 					],
 				},
-				{ work_day: { _eq: workDay } },
+				{ work_date: { _eq: workDate } },
 			],
 		},
 	});
@@ -169,7 +169,7 @@ export async function handleTerminarJornada(
 		logger.info(
 			{
 				storeId,
-				workDay,
+				workDate,
 				closeTime,
 				closeUser,
 				operativeTime,
@@ -181,7 +181,7 @@ export async function handleTerminarJornada(
 		return {
 			action: 'updated',
 			storeId,
-			workDay,
+			workDate,
 			time: closeTime,
 			timeRecordStoreId: existing.id,
 			reason: 'All employees finished. Updated store closing time',
@@ -191,7 +191,7 @@ export async function handleTerminarJornada(
 	// If no TimeRecordStore exists yet, create it with closing time
 	const created = await directus.createTimeRecordStore({
 		store: storeId,
-		work_day: workDay,
+		work_date: workDate,
 		open_time: null,
 		open_user: null,
 		close_time: closeTime,
@@ -200,14 +200,14 @@ export async function handleTerminarJornada(
 	});
 
 	logger.info(
-		{ storeId, workDay, closeTime, closeUser, id: created?.id },
+		{ storeId, workDate, closeTime, closeUser, id: created?.id },
 		'[Terminar Jornada] Created new TimeRecordStore with closing time',
 	);
 
 	return {
 		action: 'created',
 		storeId,
-		workDay,
+		workDate,
 		time: closeTime,
 		timeRecordStoreId: created?.id,
 		reason: 'All employees finished. Created store closing record',

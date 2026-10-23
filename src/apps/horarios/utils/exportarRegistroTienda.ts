@@ -61,7 +61,7 @@ export const exportarRegistroTiendaExcel = async ({
 		const tableRows = registros.map((r) => [
 			r.store_id,
 			r.store_name,
-			r.work_day,
+			r.work_date,
 			r.open_time || '--',
 			r.close_time || '--',
 			r.operative_time,

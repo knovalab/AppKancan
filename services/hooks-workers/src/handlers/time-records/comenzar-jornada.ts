@@ -10,7 +10,7 @@ export interface HandleTimeRecordResult {
 		| 'ignored'
 		| 'in_progress';
 	storeId?: string;
-	workDay?: string;
+	workDate?: string;
 	time?: string | null;
 	timeRecordStoreId?: number;
 	reason?: string;
@@ -35,16 +35,16 @@ export async function handleComenzarJornada(
 		};
 	}
 
-	const workDay = record.record_date || getTodayDateStr();
-	const openTime = buildTimestamp(workDay, record.record_time);
+	const workDate = record.record_date || getTodayDateStr();
+	const openTime = buildTimestamp(workDate, record.record_time);
 	const openUser = record.employee_id ? String(record.employee_id) : null;
 
 	logger.info(
-		{ storeId, workDay, openTime, openUser },
+		{ storeId, workDate, openTime, openUser },
 		'[Comenzar Jornada] Processing opening record for store',
 	);
 
-	// Check if TimeRecordStore exists for this store and workDay
+	// Check if TimeRecordStore exists for this store and workDate
 	const existingStoreRecords = await directus.getTimeRecordStores({
 		filter: {
 			_and: [
@@ -54,7 +54,7 @@ export async function handleComenzarJornada(
 						{ store: { id: { _eq: storeId } } },
 					],
 				},
-				{ work_day: { _eq: workDay } },
+				{ work_date: { _eq: workDate } },
 			],
 		},
 	});
@@ -65,20 +65,20 @@ export async function handleComenzarJornada(
 	if (!existing) {
 		const created = await directus.createTimeRecordStore({
 			store: storeId,
-			work_day: workDay,
+			work_date: workDate,
 			open_time: openTime,
 			open_user: openUser,
 		});
 
 		logger.info(
-			{ storeId, workDay, openTime, id: created?.id },
+			{ storeId, workDate, openTime, id: created?.id },
 			'[Comenzar Jornada] Created new TimeRecordStore with opening time',
 		);
 
 		return {
 			action: 'created',
 			storeId,
-			workDay,
+			workDate,
 			time: openTime,
 			timeRecordStoreId: created?.id,
 		};
@@ -109,7 +109,7 @@ export async function handleComenzarJornada(
 		logger.info(
 			{
 				storeId,
-				workDay,
+				workDate,
 				previousOpenTime: existing.open_time,
 				newOpenTime: openTime,
 				id: existing.id,
@@ -120,7 +120,7 @@ export async function handleComenzarJornada(
 		return {
 			action: 'updated',
 			storeId,
-			workDay,
+			workDate,
 			time: openTime,
 			timeRecordStoreId: existing.id,
 		};
@@ -129,7 +129,7 @@ export async function handleComenzarJornada(
 	logger.info(
 		{
 			storeId,
-			workDay,
+			workDate,
 			existingOpenTime: existing.open_time,
 			incomingTime: openTime,
 		},
@@ -139,7 +139,7 @@ export async function handleComenzarJornada(
 	return {
 		action: 'unchanged',
 		storeId,
-		workDay,
+		workDate,
 		time: existing.open_time,
 		timeRecordStoreId: existing.id,
 		reason: 'Existing open_time is already earlier than incoming record',

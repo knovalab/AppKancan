@@ -12,7 +12,7 @@ export interface ProcessTimeRecordResult {
 		| 'in_progress';
 	logType?: string;
 	storeId?: string;
-	workDay?: string;
+	workDate?: string;
 	openTime?: string | null;
 	timeRecordStoreId?: number;
 	reason?: string;
@@ -90,7 +90,7 @@ export async function processTimeRecord(
 			status: result.action,
 			logType: rawLogType,
 			storeId: result.storeId,
-			workDay: result.workDay,
+			workDate: result.workDate,
 			openTime: result.time,
 			timeRecordStoreId: result.timeRecordStoreId,
 			reason: result.reason,
@@ -108,7 +108,7 @@ export async function processTimeRecord(
 			status: result.action,
 			logType: rawLogType,
 			storeId: result.storeId,
-			workDay: result.workDay,
+			workDate: result.workDate,
 			openTime: result.time,
 			timeRecordStoreId: result.timeRecordStoreId,
 			reason: result.reason,

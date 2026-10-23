@@ -64,7 +64,7 @@ describe('sync-store-close-time-records handler', () => {
 		const createTimeRecordStoreMock = vi.fn().mockResolvedValue({
 			id: 501,
 			store: 'store-1',
-			work_day: '2026-10-22',
+			work_date: '2026-10-22',
 			open_time: '2026-10-22T08:00:00.000Z',
 			close_time: '2026-10-22T20:30:00.000Z',
 			close_user: 'emp-late-finish',
@@ -90,7 +90,7 @@ describe('sync-store-close-time-records handler', () => {
 		expect(createTimeRecordStoreMock).toHaveBeenCalledWith(
 			expect.objectContaining({
 				store: 'store-1',
-				work_day: '2026-10-22',
+				work_date: '2026-10-22',
 				open_time: '2026-10-22T08:00:00.000Z',
 				close_time: '2026-10-22T20:30:00.000Z',
 				close_user: 'emp-late-finish',
@@ -115,7 +115,7 @@ describe('sync-store-close-time-records handler', () => {
 		const existingStoreRecord: TimeRecordStore = {
 			id: 777,
 			store: 'store-1',
-			work_day: '2026-10-22',
+			work_date: '2026-10-22',
 			open_time: '2026-10-22T09:00:00.000Z',
 			open_user: 'emp-opener',
 			close_time: '2026-10-22T18:00:00.000Z', // older closing
@@ -169,7 +169,7 @@ describe('sync-store-close-time-records handler', () => {
 		const existingStoreRecord: TimeRecordStore = {
 			id: 888,
 			store: 'store-1',
-			work_day: '2026-10-22',
+			work_date: '2026-10-22',
 			open_time: '2026-10-22T08:00:00.000Z',
 			open_user: 'emp-opener',
 			close_time: '2026-10-22T20:00:00.000Z',
@@ -213,7 +213,7 @@ describe('sync-store-close-time-records handler', () => {
 		const existingStoreRecord: TimeRecordStore = {
 			id: 999,
 			store: 'store-1',
-			work_day: '2026-10-22',
+			work_date: '2026-10-22',
 			open_time: '2026-10-22T08:00:00.000Z',
 			open_user: 'emp-start',
 			close_time: null,

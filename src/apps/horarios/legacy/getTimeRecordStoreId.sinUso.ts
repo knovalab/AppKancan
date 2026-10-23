@@ -12,7 +12,7 @@ import directus from '@/services/directus/directus';
  */
 export async function getTimeRecordStoreId(
 	storeId: number,
-	workDay: string,
+	workDate: string,
 ): Promise<number | null> {
 	try {
 		const items = (await withAutoRefresh(() =>
@@ -22,7 +22,7 @@ export async function getTimeRecordStoreId(
 					filter: {
 						_and: [
 							{ store_id: { _eq: storeId } },
-							{ work_day: { _eq: workDay } },
+							{ work_date: { _eq: workDate } },
 						],
 					},
 					limit: 1,

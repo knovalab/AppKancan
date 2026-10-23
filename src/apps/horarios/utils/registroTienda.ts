@@ -206,7 +206,7 @@ export const filterRegistrosTienda = (
 		return (
 			r.store_name.toLowerCase().includes(query) ||
 			String(r.store_id).includes(query) ||
-			r.work_day.includes(query) ||
+			r.work_date.includes(query) ||
 			(r.open_employee?.toLowerCase().includes(query) ?? false) ||
 			(r.close_employee?.toLowerCase().includes(query) ?? false)
 		);
@@ -229,10 +229,10 @@ export function mapearTimeRecordStoreDtoARegistroTienda(
 ): RegistroTienda {
 	const { storeId, storeName } = resolverInfoTienda(item.store, storesMap);
 
-	const workDayDate = dayjs(item.work_day);
-	const workDayFormatted = workDayDate.isValid()
-		? workDayDate.format('DD/MM/YYYY')
-		: item.work_day;
+	const workDateParsed = dayjs(item.work_date);
+	const workDateFormatted = workDateParsed.isValid()
+		? workDateParsed.format('DD/MM/YYYY')
+		: item.work_date;
 
 	const openTimeShort = extraerHoraCorta(item.open_time);
 	const closeTimeShort = extraerHoraCorta(item.close_time);
@@ -260,8 +260,8 @@ export function mapearTimeRecordStoreDtoARegistroTienda(
 	return {
 		store_id: storeId,
 		store_name: storeName,
-		work_day: workDayFormatted,
-		work_day_raw: item.work_day,
+		work_date: workDateFormatted,
+		work_date_raw: item.work_date,
 		open_time: item.open_time || null,
 		open_time_short: openTimeShort,
 		close_time: item.close_time || null,

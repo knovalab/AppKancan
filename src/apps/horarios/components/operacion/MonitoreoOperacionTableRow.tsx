@@ -61,10 +61,10 @@ export function MonitoreoOperacionTableRow({
 			{/* 2. Fecha */}
 			<TableCell sx={{ py: 1.5 }}>
 				<Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b' }}>
-					{reg.work_day}
+					{reg.work_date}
 				</Typography>
 				<Typography variant="caption" sx={{ color: '#94a3b8' }}>
-					{reg.work_day_raw}
+					{reg.work_date_raw}
 				</Typography>
 			</TableCell>
 

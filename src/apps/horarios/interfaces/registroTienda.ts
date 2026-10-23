@@ -8,9 +8,9 @@ export interface RegistroTienda {
 	/** Name of the store (e.g. "Tienda Centro") */
 	store_name: string;
 	/** Formatted work day (e.g. "15/10/2026") */
-	work_day: string;
+	work_date: string;
 	/** Raw ISO date string (YYYY-MM-DD) for sorting and filtering */
-	work_day_raw: string;
+	work_date_raw: string;
 	/** Opening datetime (e.g. "15/10/2026 07:45:00") or null if no opening registered */
 	open_time: string | null;
 	/** Opening time only (e.g. "07:45") */

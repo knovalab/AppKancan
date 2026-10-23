@@ -11,7 +11,7 @@ export interface TimeRecordStore {
 	open_user: string | null;
 	close_user?: string | null;
 	operative_time: number | null; // minutes
-	work_day: string | null; // YYYY-MM-DD
+	work_date: string | null; // YYYY-MM-DD
 	close_time: string | null; // AAAA-MM-DDTHH:mm:ss
 	open_time: string | null; // AAAA-MM-DDTHH:mm:ss
 	store: string | null;

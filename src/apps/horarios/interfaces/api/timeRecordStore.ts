@@ -9,7 +9,7 @@ export interface TimeRecordStoreDto {
 	/** Store reference (relational object or numeric id) */
 	store: Relacion<{ id: number; name: string }>;
 	/** Work day in ISO format YYYY-MM-DD */
-	work_day: string;
+	work_date: string;
 	/** Opening timestamp (datetime, e.g. "2026-10-15T07:45:00") or null if not yet opened */
 	open_time: string | null;
 	/** Closing timestamp (datetime, e.g. "2026-10-15T20:15:00" or null if still open) */

@@ -361,7 +361,7 @@ export async function fetchTimeRecordStore(
 			const rangoFechas: OperadoresDirectus = {};
 			if (fechaInicio) rangoFechas._gte = fechaInicio;
 			if (fechaFin) rangoFechas._lte = fechaFin;
-			filter.work_day = rangoFechas;
+			filter.work_date = rangoFechas;
 		}
 
 		return (await withAutoRefresh(() =>
@@ -379,7 +379,7 @@ export async function fetchTimeRecordStore(
 						'close_user.last_name',
 					],
 					filter,
-					sort: ['-work_day'],
+					sort: ['-work_date'],
 					limit: -1,
 				}),
 			),
