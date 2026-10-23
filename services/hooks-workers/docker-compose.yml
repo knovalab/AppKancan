@@ -7,9 +7,9 @@ services:
       - "3020:3020"
     restart: unless-stopped
     networks:
-          - shared_network
+          - directus-worker-network
 
 networks:
-  shared_network:
+  directus-worker-network:
     external: true
-    name: coolify
+    name: directus-worker-network
