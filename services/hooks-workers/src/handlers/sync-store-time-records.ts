@@ -84,6 +84,9 @@ const syncStoreTimeRecordsHandler: HookHandler<
 		// 2. Batch fetch: All time records for this date across stores (1 query instead of N)
 		const timeRecordsFilter: Record<string, unknown> = {
 			record_date: { _eq: dateStr },
+			log_type: {
+				_eq: 'Comenzar Jornada',
+			},
 		};
 		if (payload.store_id) {
 			timeRecordsFilter._or = [
@@ -100,9 +103,6 @@ const syncStoreTimeRecordsHandler: HookHandler<
 		// 3. Batch fetch: All existing store daily records for this workDay (1 query instead of N)
 		const storeRecordsFilter: Record<string, unknown> = {
 			work_day: { _eq: workDay },
-			log_type: {
-				_eq: 'Comenzar Jornada',
-			},
 		};
 		if (payload.store_id) {
 			storeRecordsFilter._or = [
