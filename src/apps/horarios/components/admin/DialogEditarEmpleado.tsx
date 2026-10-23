@@ -5,9 +5,10 @@ import {
   CircularProgress,
 } from '@mui/material';
 import BadgeIcon from '@mui/icons-material/Badge';
-import { Tienda, Cargo, EmpleadoAdmin } from '../../interfaces/horarios.interface';
 import { useParseNombreIA } from '../../hooks/useParseNombreIA';
 import { formatDocumentNumber, formatNombrePropio } from '../../utils/format';
+import type { Cargo, EmpleadoAdmin } from '../../interfaces/empleados';
+import type { Tienda } from '../../interfaces/tiendas';
 
 const AZUL = '#004680';
 

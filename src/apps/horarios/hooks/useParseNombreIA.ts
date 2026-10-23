@@ -14,12 +14,16 @@ export interface NombreSeparado {
 const MODELO_POR_DEFECTO = 'gemini-3.6-flash';
 const API_URL = import.meta.env.VITE_VENTAS_API_URL || '/api';
 
-function obtenerModelosIA(modelosIA: any): string[] {
+function obtenerModelosIA(modelosIA: unknown): string[] {
   if (!modelosIA) return [MODELO_POR_DEFECTO];
   try {
     const parsed = typeof modelosIA === 'string' ? JSON.parse(modelosIA) : modelosIA;
     if (Array.isArray(parsed)) {
-      const names = parsed.map((m: any) => m?.name).filter(Boolean);
+      const names = parsed
+        .map((m: unknown) =>
+          m && typeof m === 'object' ? (m as { name?: unknown }).name : undefined,
+        )
+        .filter((n): n is string => typeof n === 'string' && n.length > 0);
       if (names.length > 0) return names;
     }
   } catch {
@@ -62,7 +66,7 @@ function parsearJSON(texto: string): NombreSeparado {
   let jsonStr = texto.trim();
   const fence = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fence) jsonStr = fence[1].trim();
-  let obj: any;
+  let obj: Partial<Record<keyof NombreSeparado, string>>;
   try {
     obj = JSON.parse(jsonStr);
   } catch {
@@ -116,11 +120,12 @@ export const useParseNombreIA = () => {
           }
           const data = await resp.json();
           return parsearJSON(data.text || '');
-        } catch (err: any) {
-          if (err?.message?.includes("Sesión") || err?.message?.includes("autenticación")) {
-            throw err;
+        } catch (err) {
+          const error = err instanceof Error ? err : new Error(String(err));
+          if (error.message.includes("Sesión") || error.message.includes("autenticación")) {
+            throw error;
           }
-          ultimoError = err;
+          ultimoError = error;
         }
       }
       throw ultimoError || new Error('No se pudo separar el nombre con IA');

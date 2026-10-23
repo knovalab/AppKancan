@@ -19,6 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import 'dayjs/locale/es';
+import { LOG_TYPE } from '../domain/registro';
 
 dayjs.extend(isSameOrBefore);
 
@@ -27,16 +28,16 @@ import { getStoreClosedDays } from '../api/directus/readBulk';
 import DateRangeFilter from './reportes/DateRangeFilter';
 import { HistorialTimelineView } from './historial/HistorialTimelineView';
 import {
-    EmpleadoFila,
-    getNovedadIcon,
-    calcularMinutosDia,
-    formatearHoras,
+	getNovedadIcon,
+	calcularMinutosDia,
+	formatearHoras,
 } from './ModalDetalleTiendaUtils';
+import type { FilaEmpleadoDetalle } from '../interfaces/ui/monitoreo';
 
 interface HistorialHorasModalProps {
     open: boolean;
     onClose: () => void;
-    empleado: EmpleadoFila | null;
+    empleado: FilaEmpleadoDetalle | null;
     tiendaId: number;
     todasNovedades: any[];
     onDayClick?: (fecha: string, empleadoNombre: string) => void;
@@ -44,10 +45,10 @@ interface HistorialHorasModalProps {
 
 // Meta para los tipos de registro en el timeline
 export const REGISTRO_META: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
-    'Comenzar Jornada': { icon: <PlayIcon sx={{ fontSize: 18 }} />, color: '#16a34a', bg: '#dcfce7' },
-    'Iniciar Almuerzo': { icon: <CoffeeIcon sx={{ fontSize: 18 }} />, color: '#ea580c', bg: '#ffedd5' },
-    'Finalizar Almuerzo': { icon: <RestaurantIcon sx={{ fontSize: 18 }} />, color: '#ca8a04', bg: '#fef9c3' },
-    'Terminar Jornada': { icon: <LogoutIcon sx={{ fontSize: 18 }} />, color: '#004680', bg: '#eaf2fb' },
+    [LOG_TYPE.inicioJornada]: { icon: <PlayIcon sx={{ fontSize: 18 }} />, color: '#16a34a', bg: '#dcfce7' },
+    [LOG_TYPE.inicioAlmuerzo]: { icon: <CoffeeIcon sx={{ fontSize: 18 }} />, color: '#ea580c', bg: '#ffedd5' },
+    [LOG_TYPE.finAlmuerzo]: { icon: <RestaurantIcon sx={{ fontSize: 18 }} />, color: '#ca8a04', bg: '#fef9c3' },
+    [LOG_TYPE.finJornada]: { icon: <LogoutIcon sx={{ fontSize: 18 }} />, color: '#004680', bg: '#eaf2fb' },
 };
 
 export default function HistorialHorasModal({

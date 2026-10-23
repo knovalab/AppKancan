@@ -13,12 +13,14 @@ import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import 'dayjs/locale/es';
+import { LOG_TYPE } from '../domain/registro';
 
 dayjs.extend(isSameOrBefore);
 
-import { fetchTimeRecords, getStoreClosedDays, StoreClosedDay } from '../api/directus/read';
-import { EstadoDia } from './ModalDetalleTiendaUtils';
+import { fetchTimeRecords, getStoreClosedDays } from '../api/directus/read';
 import { useHolidays } from '../../reservas/hooks/useHolidays';
+import type { StoreClosedDayDto } from '../interfaces/api/stores';
+import type { EstadoDia } from '../interfaces/ui/monitoreo';
 
 interface CalendarioMensualTiendaProps {
     tiendaId: number;
@@ -74,7 +76,7 @@ export default function CalendarioMensualTienda({
                 )
             ]);
 
-            const closedMap: Record<string, StoreClosedDay> = {};
+            const closedMap: Record<string, StoreClosedDayDto> = {};
             diasCerrados.forEach((d) => {
                 closedMap[d.date] = d;
             });
@@ -124,8 +126,8 @@ export default function CalendarioMensualTienda({
                     const empRecs = records.filter(
                         (r: any) => Number(r.employee_id?.id || r.employee_id) === empId
                     );
-                    const tieneEntrada = empRecs.some((r: any) => r.log_type === 'Comenzar Jornada');
-                    const tieneSalida = empRecs.some((r: any) => r.log_type === 'Terminar Jornada');
+                    const tieneEntrada = empRecs.some((r: any) => r.log_type === LOG_TYPE.inicioJornada);
+                    const tieneSalida = empRecs.some((r: any) => r.log_type === LOG_TYPE.finJornada);
                     if (tieneEntrada && tieneSalida) {
                         hasComplete = true;
                     } else {

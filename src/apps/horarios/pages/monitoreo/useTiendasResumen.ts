@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import { LOG_TYPE } from '../../domain/registro';
 dayjs.extend(isSameOrBefore);
 
 import { getEmpleadosBulk, getTimeRecordsBulkRange, getNovedadesBulkRange, getStoreClosedDays } from '../../api/directus/read';
-import { Tienda } from '../../interfaces/horarios.interface';
 import { TiendaResumen } from './MonitoreoUtils';
+import type { Tienda } from '../../interfaces/tiendas';
 
 export function useTiendasResumen(tiendas: Tienda[], fechas: { inicio: Dayjs | null; fin: Dayjs | null }) {
   const [resumen, setResumen] = useState<TiendaResumen[]>([]);
@@ -99,8 +100,8 @@ export function useTiendasResumen(tiendas: Tienda[], fechas: { inicio: Dayjs | n
             let hasComplete = false;
             empleadosConRegistro.forEach(empId => {
               const empRegs = registrosDia.filter((r: any) => Number(r.employee_id?.id || r.employee_id) === empId);
-              const tieneEntrada = empRegs.some((r: any) => r.log_type === 'Comenzar Jornada');
-              const tieneSalida = empRegs.some((r: any) => r.log_type === 'Terminar Jornada');
+              const tieneEntrada = empRegs.some((r: any) => r.log_type === LOG_TYPE.inicioJornada);
+              const tieneSalida = empRegs.some((r: any) => r.log_type === LOG_TYPE.finJornada);
               if (tieneEntrada && tieneSalida) hasComplete = true;
               else hasIncomplete = true;
             });
@@ -118,7 +119,7 @@ export function useTiendasResumen(tiendas: Tienda[], fechas: { inicio: Dayjs | n
           let completados = 0;
           idsHoy.forEach(id => {
             const rEmp = recordsHoy.filter((r: any) => Number(r.employee_id?.id || r.employee_id) === id);
-            if (rEmp.some(r => r.log_type === 'Comenzar Jornada') && rEmp.some(r => r.log_type === 'Terminar Jornada')) completados++;
+            if (rEmp.some(r => r.log_type === LOG_TYPE.inicioJornada) && rEmp.some(r => r.log_type === LOG_TYPE.finJornada)) completados++;
           });
           return {
             id: tienda.id,

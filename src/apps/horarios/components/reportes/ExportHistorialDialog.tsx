@@ -12,11 +12,12 @@ import { useQuery } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import { getStores, fetchTimeRecordsExport, getReasonNamesForRecords } from '../../api/directus/read';
 import { exportarHistorialExcel } from '../../utils/exportarHistorial';
-import { Tienda } from '../../interfaces/horarios.interface';
 import DateRangeFilter from './DateRangeFilter';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../../hooks/useAvisos';
 import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
 import { useAuth } from '@/auth/hooks/useAuth';
+import type { Tienda } from '../../interfaces/tiendas';
+import { mensajeDeError } from '../../utils/errores';
 
 const AZUL = '#004680';
 
@@ -30,7 +31,7 @@ interface Props {
 }
 
 export default function ExportHistorialDialog({ open, onClose, fechaInicio, fechaFin, tiendaDefault, searchNombre }: Props) {
-  const { showSnackbar } = useGlobalSnackbar();
+  const { showSnackbar } = useAvisos();
   const { esAdmin: originalEsAdmin, esReport, esAreaManager } = useHorariosPolicies();
   const esAdmin = () => originalEsAdmin() || esReport();
   const isAreaMgr = esAreaManager ? esAreaManager() : false;
@@ -129,8 +130,8 @@ export default function ExportHistorialDialog({ open, onClose, fechaInicio, fech
       } else {
         showSnackbar(res.mensaje || 'No hay datos para exportar', 'error');
       }
-    } catch (err: any) {
-      showSnackbar(err?.message || 'Error al exportar el historial', 'error');
+    } catch (err) {
+      showSnackbar(mensajeDeError(err, 'Error al exportar el historial'), 'error');
     } finally {
       setExportando(false);
     }

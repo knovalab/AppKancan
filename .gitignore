@@ -84,3 +84,5 @@ GUIDE_TECNICA.md
 # Project Exclusions
 src/test/
 docs/Server_notificaciones.md
+src/apps/horarios/results/*
+

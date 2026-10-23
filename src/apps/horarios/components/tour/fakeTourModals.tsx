@@ -1,4 +1,5 @@
 import React from "react";
+import { EVENTO, MAX_CARACTERES_OBSERVACION } from "../../domain/registro";
 import { GenericTourModal, fakeFieldStyle, FakeCancelButton, FakePrimaryButton } from "./GenericTourModal";
 
 export const novedadModalTargets = [
@@ -171,7 +172,7 @@ export const FakeEventoModal: React.FC<{ open: boolean; activeField: string | nu
               fontSize: 16,
             })}
           >
-            <span style={{ color: "rgba(0, 0, 0, 0.87)" }}>Iniciar Pausa Activa</span>
+            <span style={{ color: "rgba(0, 0, 0, 0.87)" }}>{EVENTO.iniciarPausaActiva}</span>
             <svg style={{ width: 24, height: 24, fill: "rgba(0, 0, 0, 0.54)" }} viewBox="0 0 24 24">
               <path d="M7 10l5 5 5-5z" />
             </svg>
@@ -192,7 +193,7 @@ export const FakeEventoModal: React.FC<{ open: boolean; activeField: string | nu
             <span style={{ color: "rgba(0, 0, 0, 0.6)" }}>Observaciones</span>
           </div>
           <div style={{ textAlign: "right", fontSize: "0.75rem", color: "rgba(0, 0, 0, 0.6)", marginTop: 4, fontWeight: 500 }}>
-            0/300 caracteres
+            0/{MAX_CARACTERES_OBSERVACION} caracteres
           </div>
         </div>
       </div>

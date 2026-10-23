@@ -5,18 +5,19 @@ import {
   Typography, Divider, FormHelperText, CircularProgress,
 } from '@mui/material';
 import * as yup from 'yup';
-import { sileo } from 'sileo';
 import PersonIcon from '@mui/icons-material/Person';
 import BadgeIcon from '@mui/icons-material/Badge';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import WorkIcon from '@mui/icons-material/Work';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
-import { Tienda, Cargo, NuevoEmpleadoPayload } from '../../interfaces/horarios.interface';
 import { useParseNombreIA } from '../../hooks/useParseNombreIA';
-import { SILEO_STATE_FILL } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../../hooks/useAvisos';
+import { mensajeDeError } from '../../utils/errores';
 import { existeDocumentoEmpleado } from '../../api/directus/read';
 import { formatDocumentNumber, formatNombrePropio } from '../../utils/format';
+import type { Cargo, NuevoEmpleadoPayload } from '../../interfaces/empleados';
+import type { Tienda } from '../../interfaces/tiendas';
 
 interface Props {
   open: boolean;
@@ -121,6 +122,7 @@ function EmpleadoCreadoCard({ emp }: { emp: EmpleadoCreado }) {
 export default function DialogNuevoEmpleado({
   open, onClose, tiendas, cargos, tiposDocumento, guardando, onGuardar,
 }: Props) {
+  const { showSnackbar } = useAvisos();
   const [form, setForm] = useState(initialForm(tiposDocumento[0] ?? ''));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [nombreCompleto, setNombreCompleto] = useState('');
@@ -143,7 +145,7 @@ export default function DialogNuevoEmpleado({
     const nuevosErrores: Record<string, string> = {};
     try {
       await schema.validate(form, { abortEarly: false });
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof yup.ValidationError) {
         err.inner.forEach((i) => { if (i.path) nuevosErrores[i.path] = i.message; });
       }
@@ -169,39 +171,31 @@ export default function DialogNuevoEmpleado({
 
     onClose();
 
-    sileo.promise(
-      (async () => {
-        let partes;
-        try {
-          partes = await separarNombre(nombre);
-          if (!partes.first_name || !partes.last_name) partes = splitNombreLocal(nombre);
-        } catch {
-          partes = splitNombreLocal(nombre);
-        }
-        await onGuardar({
-          document_type: datosForm.document_type,
-          document_number: datosForm.document_number,
-          first_name: partes.first_name,
-          middle_name: partes.middle_name || undefined,
-          last_name: partes.last_name,
-          second_last_name: partes.second_last_name || undefined,
-          store_id: datosForm.store_id,
-          position_id: datosForm.position_id,
-          email: datosForm.email || undefined,
-          phone: datosForm.phone || undefined,
-        });
-      })(),
-      {
-        loading: { title: 'Creando empleado…', fill: SILEO_STATE_FILL.loading },
-        success: () => ({
-          title: 'Empleado creado',
-          description: <EmpleadoCreadoCard emp={empleadoInfo} />,
-          duration: 6000,
-          fill: SILEO_STATE_FILL.success,
-        }),
-        error: { title: 'Error al crear el empleado', fill: SILEO_STATE_FILL.error, duration: 6000 },
+    showSnackbar('Creando empleado…', 'info');
+    try {
+      let partes;
+      try {
+        partes = await separarNombre(nombre);
+        if (!partes.first_name || !partes.last_name) partes = splitNombreLocal(nombre);
+      } catch {
+        partes = splitNombreLocal(nombre);
       }
-    );
+      await onGuardar({
+        document_type: datosForm.document_type,
+        document_number: datosForm.document_number,
+        first_name: partes.first_name,
+        middle_name: partes.middle_name || undefined,
+        last_name: partes.last_name,
+        second_last_name: partes.second_last_name || undefined,
+        store_id: datosForm.store_id,
+        position_id: datosForm.position_id,
+        email: datosForm.email || undefined,
+        phone: datosForm.phone || undefined,
+      });
+      showSnackbar('Empleado creado', 'success', <EmpleadoCreadoCard emp={empleadoInfo} />);
+    } catch (err) {
+      showSnackbar(mensajeDeError(err, 'Error al crear el empleado'), 'error');
+    }
   };
 
   return (

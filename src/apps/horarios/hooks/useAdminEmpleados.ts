@@ -2,14 +2,17 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getStores, getCargos, buscarEmpleados, listarEmpleadosTienda } from '../api/directus/read';
 import { crearEmpleado, actualizarEmpleado } from '../api/directus/create';
-import { Tienda, Cargo, EmpleadoAdmin } from '../interfaces/horarios.interface';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from './useAvisos';
+import { horariosKeys } from './registro/keys';
+import type { Cargo, EmpleadoAdmin } from '../interfaces/empleados';
+import type { Tienda } from '../interfaces/tiendas';
+import { mensajeDeError } from '../utils/errores';
 
 export const TIPOS_DOCUMENTO: string[] = ['Cédula de Ciudadanía'];
 
 export const useAdminEmpleados = (tiendaSel: number | null, setTiendaSel: (id: number | null) => void) => {
   const queryClient = useQueryClient();
-  const { showSnackbar } = useGlobalSnackbar();
+  const { showSnackbar } = useAvisos();
 
   const { data: tiendas = [], isLoading: loadingTiendas } = useQuery<Tienda[]>({
     queryKey: ['adminTiendas'],
@@ -44,8 +47,8 @@ export const useAdminEmpleados = (tiendaSel: number | null, setTiendaSel: (id: n
     try {
       const result = await buscarEmpleados(q);
       setResultados(result);
-    } catch (err: any) {
-      showSnackbar(err?.message || 'Error al buscar', 'error');
+    } catch (err) {
+      showSnackbar(mensajeDeError(err, 'Error al buscar'), 'error');
       setResultados([]);
     } finally {
       setBuscando(false);
@@ -61,7 +64,7 @@ export const useAdminEmpleados = (tiendaSel: number | null, setTiendaSel: (id: n
   };
 
   const invalidarEmpleados = () => {
-    queryClient.invalidateQueries({ queryKey: ['empleados'] });
+    queryClient.invalidateQueries({ queryKey: horariosKeys.empleados.todos });
     queryClient.invalidateQueries({ queryKey: ['adminEmpleadosTienda'] });
     queryClient.invalidateQueries({ queryKey: ['adminTodosEmpleados'] });
   };
@@ -82,8 +85,8 @@ export const useAdminEmpleados = (tiendaSel: number | null, setTiendaSel: (id: n
       setResultados((prev) => prev.map((e) => (e.id === variables.id ? { ...e, ...variables.data } as EmpleadoAdmin : e)));
       showSnackbar('Empleado actualizado correctamente', 'success');
     },
-    onError: (err: any) => {
-      showSnackbar(err?.message || 'Error al actualizar el empleado', 'error');
+    onError: (err: unknown) => {
+      showSnackbar(mensajeDeError(err, 'Error al actualizar el empleado'), 'error');
     },
   });
 

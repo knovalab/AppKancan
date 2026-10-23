@@ -1,0 +1,45 @@
+{
+	"name": "AppKancan",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "app",
+	"workspaceFolder": "/workspace",
+	"features": {
+		"ghcr.io/devcontainers/features/git:1": {
+			"version": "os-provided"
+		},
+		"ghcr.io/devcontainers/features/node:2": {
+			"version": "22"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"biomejs.biome"
+			],
+			"settings": {
+				"editor.formatOnSave": true,
+				"[typescript]": {
+					"editor.defaultFormatter": "biomejs.biome"
+				},
+				"[typescriptreact]": {
+					"editor.defaultFormatter": "biomejs.biome"
+				},
+				"[javascript]": {
+					"editor.defaultFormatter": "biomejs.biome"
+				},
+				"[json]": {
+					"editor.defaultFormatter": "biomejs.biome"
+				},
+				"window.titleBarStyle": "custom",
+				"editor.codeActionsOnSave": {
+					"source.organizeImports.biome": "explicit"
+				}
+			}
+		}
+	},
+	// Comando ejecutado la primera vez que se crea el contenedor
+	"postCreateCommand": "npm install",
+	"containerUser": "vscode",
+	"remoteUser": "vscode",
+	"updateRemoteUserUID": true
+}

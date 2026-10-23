@@ -12,10 +12,12 @@ import { useQuery } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import { getStores, getStoreIdUsuarioActual, fetchEventReportsExport } from '../../api/directus/read';
 import { exportarEventosExcel } from '../../utils/exportarEventos';
-import { Tienda } from '../../interfaces/horarios.interface';
 import DateRangeFilter from './DateRangeFilter';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../../hooks/useAvisos';
 import { useHorariosPolicies } from '../../hooks/useHorariosPolicies';
+import { horariosKeys } from '../../hooks/registro/keys';
+import type { Tienda } from '../../interfaces/tiendas';
+import { mensajeDeError } from '../../utils/errores';
 
 const AZUL = '#004680';
 
@@ -28,7 +30,7 @@ interface Props {
 }
 
 export default function ExportEventosDialog({ open, onClose, storeId, fechaInicio, fechaFin }: Props) {
-  const { showSnackbar } = useGlobalSnackbar();
+  const { showSnackbar } = useAvisos();
   const { esAdmin: originalEsAdmin, esReport, esAreaManager } = useHorariosPolicies();
   const esAdmin = () => originalEsAdmin() || esReport();
   const isAreaMgr = esAreaManager ? esAreaManager() : false;
@@ -73,7 +75,7 @@ export default function ExportEventosDialog({ open, onClose, storeId, fechaInici
     : tiendas;
 
   const { data: storeUsuario = null } = useQuery<number | null>({
-    queryKey: ['horariosStoreId'],
+    queryKey: horariosKeys.storeUsuario,
     queryFn: getStoreIdUsuarioActual,
     staleTime: 30 * 60 * 1000,
     enabled: open && storeId == null,
@@ -117,8 +119,8 @@ export default function ExportEventosDialog({ open, onClose, storeId, fechaInici
       } else {
         showSnackbar(res.mensaje || 'No hay datos para exportar', 'error');
       }
-    } catch (err: any) {
-      showSnackbar(err?.message || 'Error al exportar los eventos', 'error');
+    } catch (err) {
+      showSnackbar(mensajeDeError(err, 'Error al exportar los eventos'), 'error');
     } finally {
       setExportando(false);
     }

@@ -10,17 +10,16 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/es';
 
-import { getNovedades, fetchTimeRecords, getRecordReasonId, getStoreClosedDays, StoreClosedDay } from '../api/directus/read';
+import { getNovedades, fetchTimeRecords, getRecordReasonId, getStoreClosedDays } from '../api/directus/read';
 import { createTimeRecord, updateTimeRecord, upsertRecordReason, setStoreClosedDayStatus } from '../api/directus/create';
 import { useHorarios } from '../hooks/useHorarios';
 import { useHorariosPolicies } from '../hooks/useHorariosPolicies';
-import { useGlobalSnackbar } from '@/shared/components/SnackbarsPosition/SnackbarContext';
+import { useAvisos } from '../hooks/useAvisos';
 
 import {
-  EmpleadoFila,
-  calcularMinutosDia,
-  formatearHoras,
-  calcularHorasSemana,
+	calcularMinutosDia,
+	formatearHoras,
+	calcularHorasSemana,
 } from './ModalDetalleTiendaUtils';
 
 import NovedadDetalleModal from './NovedadDetalleModal';
@@ -33,6 +32,11 @@ import EmpleadosTable from './detalle-tienda/EmpleadosTable';
 import ConfirmClosedDayDialogs from './detalle-tienda/ConfirmClosedDayDialogs';
 import { ModalDetalleTiendaHeader } from './detalle-tienda/ModalDetalleTiendaHeader';
 import CreateHourModal from './detalle-tienda/CreateHourModal';
+import { ESTADO, LOG_TYPE } from '../domain/registro';
+import { horariosKeys } from '../hooks/registro/keys';
+import type { StoreClosedDayDto } from '../interfaces/api/stores';
+import type { FilaEmpleadoDetalle } from '../interfaces/ui/monitoreo';
+import { mensajeDeError } from '../utils/errores';
 
 // ============================================================
 //  COMPONENTE PRINCIPAL
@@ -62,9 +66,9 @@ export default function ModalDetalleTienda({
     const [novedadModalOpen, setNovedadModalOpen] = useState(false);
     const [novedadSeleccionada, setNovedadSeleccionada] = useState<any>(null);
     const [historialOpen, setHistorialOpen] = useState(false);
-    const [empleadoHistorial, setEmpleadoHistorial] = useState<EmpleadoFila | null>(null);
+    const [empleadoHistorial, setEmpleadoHistorial] = useState<FilaEmpleadoDetalle | null>(null);
 
-    const { showSnackbar } = useGlobalSnackbar();
+    const { showSnackbar } = useAvisos();
     const puedeGestionarDiasCerrados = esAdmin() || esAreaManager();
 
     const [confirmClosedModalOpen, setConfirmClosedModalOpen] = useState(false);
@@ -129,9 +133,9 @@ export default function ModalDetalleTienda({
             setConfirmMasivoOpen(false);
             setModoSeleccion(false);
             setDiasSeleccionadosSet(new Set());
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error al guardar masivo:', err);
-            showSnackbar(err?.message || 'Error al guardar los días', 'error');
+            showSnackbar(mensajeDeError(err, 'Error al guardar los días'), 'error');
         } finally {
             setGuardandoMasivo(false);
         }
@@ -192,7 +196,7 @@ export default function ModalDetalleTienda({
         enabled: !!tiendaId,
         staleTime: 5 * 60 * 1000,
     });
-    const diaCerradoActual = diasCerrados.find((d: StoreClosedDay) => d.date === fechaSeleccionada);
+    const diaCerradoActual = diasCerrados.find((d: StoreClosedDayDto) => d.date === fechaSeleccionada);
     const esDiaCerrado = !!(diaCerradoActual && diaCerradoActual.status === true);
 
     const handleToggleDiaCerradoClick = () => {
@@ -220,9 +224,9 @@ export default function ModalDetalleTienda({
             }
             queryClient.invalidateQueries({ queryKey: ['diasCerradosTienda', tiendaId] });
             queryClient.invalidateQueries({ queryKey: ['calendarioAsistencia', tiendaId] });
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error al guardar día cerrado:', err);
-            showSnackbar(err?.message || 'Error al actualizar el estado del día', 'error');
+            showSnackbar(mensajeDeError(err, 'Error al actualizar el estado del día'), 'error');
         } finally {
             setGuardandoDiaCerrado(false);
             setConfirmClosedModalOpen(false);
@@ -294,16 +298,16 @@ export default function ModalDetalleTienda({
         }
     });
 
-    const filasEmpleados: EmpleadoFila[] = Array.from(empleadosMap.values()).map((emp) => {
-        const inicioJornada = getHora(emp.id, 'Comenzar Jornada');
-        const inicioAlmuerzo = getHora(emp.id, 'Iniciar Almuerzo');
-        const finAlmuerzo = getHora(emp.id, 'Finalizar Almuerzo');
-        const finJornada = getHora(emp.id, 'Terminar Jornada');
+    const filasEmpleados: FilaEmpleadoDetalle[] = Array.from(empleadosMap.values()).map((emp) => {
+        const inicioJornada = getHora(emp.id, LOG_TYPE.inicioJornada);
+        const inicioAlmuerzo = getHora(emp.id, LOG_TYPE.inicioAlmuerzo);
+        const finAlmuerzo = getHora(emp.id, LOG_TYPE.finAlmuerzo);
+        const finJornada = getHora(emp.id, LOG_TYPE.finJornada);
         let estado = 'Pendiente';
-        if (finJornada) estado = 'jornada_finalizada';
-        else if (finAlmuerzo) estado = 'regreso_almuerzo';
-        else if (inicioAlmuerzo) estado = 'en_almuerzo';
-        else if (inicioJornada) estado = 'jornada_iniciada';
+        if (finJornada) estado = ESTADO.jornadaFinalizada;
+        else if (finAlmuerzo) estado = ESTADO.regresoAlmuerzo;
+        else if (inicioAlmuerzo) estado = ESTADO.enAlmuerzo;
+        else if (inicioJornada) estado = ESTADO.jornadaIniciada;
         const novedad = getNovedadEmpleado(emp.id);
         const horasSemana = calcularHorasSemana(emp.id, weekRecords);
         const minutosDia = calcularMinutosDia(recordsDia, emp.id);
@@ -322,12 +326,12 @@ export default function ModalDetalleTienda({
     const empleadosPagina = empleadosFiltrados.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
     const fechaDisplay = dayjs(fechaSeleccionada).locale('es').format('dddd, D [de] MMMM [de] YYYY');
 
-    const handleNovedadClick = (fila: EmpleadoFila) => {
+    const handleNovedadClick = (fila: FilaEmpleadoDetalle) => {
         setNovedadSeleccionada({ tipo: fila.novedadTipo || 'Novedad', observacion: fila.novedadObservacion || 'Sin observación', empleadoNombre: fila.nombre });
         setNovedadModalOpen(true);
     };
 
-    const handleOpenHistorial = (fila: EmpleadoFila) => {
+    const handleOpenHistorial = (fila: FilaEmpleadoDetalle) => {
         setEmpleadoHistorial(fila);
         setHistorialOpen(true);
     };
@@ -369,10 +373,10 @@ export default function ModalDetalleTienda({
             finJornada: empleadoData.finJornada,
             observaciones: empleadoData,
             ids: {
-                inicioJornada: getRecordId(empleadoId, 'Comenzar Jornada'),
-                inicioAlmuerzo: getRecordId(empleadoId, 'Iniciar Almuerzo'),
-                finAlmuerzo: getRecordId(empleadoId, 'Finalizar Almuerzo'),
-                finJornada: getRecordId(empleadoId, 'Terminar Jornada'),
+                inicioJornada: getRecordId(empleadoId, LOG_TYPE.inicioJornada),
+                inicioAlmuerzo: getRecordId(empleadoId, LOG_TYPE.inicioAlmuerzo),
+                finAlmuerzo: getRecordId(empleadoId, LOG_TYPE.finAlmuerzo),
+                finJornada: getRecordId(empleadoId, LOG_TYPE.finJornada),
             },
             horasOriginales: {},
             horasEditadas: {},
@@ -417,7 +421,7 @@ export default function ModalDetalleTienda({
             }
 
             queryClient.invalidateQueries({ queryKey: ['recordsDiaModal', tiendaId, fechaSeleccionada] });
-            queryClient.invalidateQueries({ queryKey: ['timeRecords'] });
+            queryClient.invalidateQueries({ queryKey: horariosKeys.timeRecords.todos });
             handleCloseEditHour();
         } catch (error) {
             console.error('Error al editar hora:', error);
@@ -460,9 +464,9 @@ export default function ModalDetalleTienda({
             }
 
             queryClient.invalidateQueries({ queryKey: ['recordsDiaModal', tiendaId, fechaSeleccionada] });
-            queryClient.invalidateQueries({ queryKey: ['timeRecords'] });
+            queryClient.invalidateQueries({ queryKey: horariosKeys.timeRecords.todos });
             handleCloseCreateHour();
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error detallado al crear hora:', error);
             throw error;
         }

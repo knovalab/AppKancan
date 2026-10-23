@@ -8,7 +8,9 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import HistoryIcon from '@mui/icons-material/History';
 import EditIcon from '@mui/icons-material/Edit';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import { EmpleadoFila, getNovedadIcon } from '../ModalDetalleTiendaUtils';
+import { getNovedadIcon } from '../ModalDetalleTiendaUtils';
+import { ESTADO, LOG_TYPE } from '../../domain/registro';
+import type { FilaEmpleadoDetalle } from '../../interfaces/ui/monitoreo';
 
 interface EmpleadosTableProps {
   loading: boolean;
@@ -17,15 +19,15 @@ interface EmpleadosTableProps {
   page: number;
   setPage: (p: number) => void;
   rowsPerPage: number;
-  empleadosPagina: EmpleadoFila[];
-  empleadosFiltrados: EmpleadoFila[];
+  empleadosPagina: FilaEmpleadoDetalle[];
+  empleadosFiltrados: FilaEmpleadoDetalle[];
   fechaSeleccionada: string;
   esAdminUser: boolean;
   getRecordId: (empId: string | number, logType: string) => number | null;
   handleOpenEditHour: (empleadoId: string, empleadoNombre: string, evento: string, recordId: number) => void;
   handleOpenCreateHour: (empleadoId: string, empleadoNombre: string, evento: string) => void;
-  handleOpenHistorial: (fila: EmpleadoFila) => void;
-  handleNovedadClick: (fila: EmpleadoFila) => void;
+  handleOpenHistorial: (fila: FilaEmpleadoDetalle) => void;
+  handleNovedadClick: (fila: FilaEmpleadoDetalle) => void;
 }
 
 export default function EmpleadosTable({
@@ -86,10 +88,10 @@ export default function EmpleadosTable({
               ) : (
                 empleadosPagina.map((fila, idx) => {
                   const eventos = [
-                    { key: 'inicioJornada', label: 'Comenzar Jornada' },
-                    { key: 'inicioAlmuerzo', label: 'Iniciar Almuerzo' },
-                    { key: 'finAlmuerzo', label: 'Finalizar Almuerzo' },
-                    { key: 'finJornada', label: 'Terminar Jornada' },
+                    { key: 'inicioJornada', label: LOG_TYPE.inicioJornada },
+                    { key: 'inicioAlmuerzo', label: LOG_TYPE.inicioAlmuerzo },
+                    { key: 'finAlmuerzo', label: LOG_TYPE.finAlmuerzo },
+                    { key: 'finJornada', label: LOG_TYPE.finJornada },
                   ];
                   return (
                     <TableRow key={fila.id} hover sx={{ bgcolor: idx % 2 === 0 ? '#ffffff' : '#fafbfc' }}>
@@ -103,7 +105,7 @@ export default function EmpleadosTable({
                         </Box>
                       </TableCell>
                       {eventos.map(({ key, label }) => {
-                        const hora = fila[key as keyof EmpleadoFila] as string | null;
+                        const hora = fila[key as keyof FilaEmpleadoDetalle] as string | null;
                         const recordId = getRecordId(fila.id, label);
                         const isHoraExistente = !!hora;
 
@@ -169,7 +171,7 @@ export default function EmpleadosTable({
                             labelEstado = 'No Aplica';
                             colorEstado = '#0d47a1';
                             bgEstado = '#e3f2fd';
-                          } else if (fila.estado === 'jornada_finalizada') {
+                          } else if (fila.estado === ESTADO.jornadaFinalizada) {
                             labelEstado = 'Finalizado';
                             colorEstado = '#2e7d32';
                             bgEstado = '#e8f5e9';
