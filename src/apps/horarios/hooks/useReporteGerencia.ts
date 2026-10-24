@@ -126,9 +126,15 @@ export function useTiempoRealGerencia(empresa: string) {
 		return t;
 	}, [pendientesQ.data, incluirTienda]);
 
+	const zonaDe = useMemo(() => {
+		const porId = new Map(tiendas.map((t) => [t.id, t.zone?.trim() || null]));
+		return (id: number) => porId.get(id) ?? null;
+	}, [tiendas]);
+
 	return {
 		empresas,
 		resumen,
+		zonaDe,
 		actual: periodoActual(periodos, hoy),
 		pendientes,
 		isLoading:

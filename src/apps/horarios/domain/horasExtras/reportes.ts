@@ -269,6 +269,8 @@ export interface ZonaGerencia extends Totales {
 	/** `null` = tiendas sin zona. */
 	zona: string | null;
 	tiendas: number;
+	/** Minutos por día de la semana, lunes a domingo (mapa de calor). */
+	porDiaSemana: number[];
 	porcentaje: number;
 	variacion: number | null;
 }
@@ -306,17 +308,6 @@ export function reporteGerencia(
 	const porDiaSemana = [0, 0, 0, 0, 0, 0, 0];
 	const tiendas = new Map<number, Totales>();
 	const total = cero();
-	for (const f of filas) {
-		if (f.storeId == null) continue;
-		const t = tiendas.get(f.storeId) ?? cero();
-		tiendas.set(f.storeId, t);
-		sumar(t, f.registros, f.minutos);
-		sumar(total, f.registros, f.minutos);
-		if (f.fecha) porDiaSemana[diaSemana(f.fecha)] += f.minutos;
-	}
-	const parte = (m: number) => (total.minutos ? m / total.minutos : 0);
-	const porMinutos = <T extends Totales>(a: T, b: T) => b.minutos - a.minutos;
-
 	const zonas = new Map<string | null, ZonaGerencia & { antes: number }>();
 	const zona = (nombre: string | null) => {
 		const z = zonas.get(nombre) ?? {
@@ -325,11 +316,26 @@ export function reporteGerencia(
 			tiendas: 0,
 			porcentaje: 0,
 			variacion: null,
+			porDiaSemana: [0, 0, 0, 0, 0, 0, 0],
 			antes: 0,
 		};
 		zonas.set(nombre, z);
 		return z;
 	};
+	for (const f of filas) {
+		if (f.storeId == null) continue;
+		const t = tiendas.get(f.storeId) ?? cero();
+		tiendas.set(f.storeId, t);
+		sumar(t, f.registros, f.minutos);
+		sumar(total, f.registros, f.minutos);
+		if (f.fecha) {
+			porDiaSemana[diaSemana(f.fecha)] += f.minutos;
+			zona(zonaDe(f.storeId)).porDiaSemana[diaSemana(f.fecha)] += f.minutos;
+		}
+	}
+	const parte = (m: number) => (total.minutos ? m / total.minutos : 0);
+	const porMinutos = <T extends Totales>(a: T, b: T) => b.minutos - a.minutos;
+
 	const listaTiendas: TiendaGerencia[] = [...tiendas].map(([storeId, t]) => {
 		const nombreZona = zonaDe(storeId);
 		const z = zona(nombreZona);
@@ -362,6 +368,35 @@ export function reporteGerencia(
 		tiendas: listaTiendas.sort(porMinutos),
 		porDiaSemana,
 	};
+}
+
+export interface PuntoTendencia<P extends RangoPeriodo = RangoPeriodo> {
+	periodo: P;
+	minutos: number;
+	/** Minutos por zona (`null` = sin zona). */
+	porZona: Map<string | null, number>;
+}
+
+/**
+ * Tendencia de gerencia: total de cada periodo y su reparto por zona, del más
+ * antiguo al más reciente (los `ultimos` N).
+ */
+export function tendenciaPorPeriodo<P extends RangoPeriodo>(
+	resumen: readonly ResumenPeriodo<P>[],
+	zonaDe: (storeId: number) => string | null,
+	ultimos = 8,
+): PuntoTendencia<P>[] {
+	return [...resumen]
+		.sort((a, b) => a.periodo.start_date.localeCompare(b.periodo.start_date))
+		.slice(-ultimos)
+		.map((r) => {
+			const porZona = new Map<string | null, number>();
+			for (const t of r.tiendas) {
+				const z = t.storeId == null ? null : zonaDe(t.storeId);
+				porZona.set(z, (porZona.get(z) ?? 0) + t.total.minutos);
+			}
+			return { periodo: r.periodo, minutos: r.total.minutos, porZona };
+		});
 }
 
 /** Rango anterior de la misma duración, justo antes de `desde` (para la variación). */

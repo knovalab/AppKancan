@@ -7,6 +7,7 @@ import {
 	reporteZona,
 	reporteGerencia,
 	resumenPorPeriodo,
+	tendenciaPorPeriodo,
 } from '@/apps/horarios/domain/horasExtras';
 
 const p = (id: number, start_date: string, end_date: string, status: RangoPeriodo['status']): RangoPeriodo => ({
@@ -97,6 +98,11 @@ describe('reporteGerencia (sin personas)', () => {
 		expect(r.zonas[2].variacion).toBeNull();
 	});
 
+	it('mapa de calor: minutos por día de la semana de cada zona', () => {
+		expect(r.zonas.find((z) => z.zona === 'Narino')?.porDiaSemana).toEqual([0, 180, 0, 0, 0, 0, 0]);
+		expect(r.zonas.find((z) => z.zona === 'Sur')?.porDiaSemana).toEqual([0, 0, 60, 0, 0, 0, 0]);
+	});
+
 	it('tiendas con zona, % y variación; día de la semana', () => {
 		expect(r.tiendas[0]).toMatchObject({ storeId: 26, zona: 'Narino', minutos: 120, porcentaje: 0.4, variacion: 1 });
 		expect(r.tiendas.find((t) => t.storeId === 30)?.variacion).toBeNull();
@@ -153,5 +159,24 @@ describe('reporteZona (R2 + R4)', () => {
 	it('rango anterior de la misma duración', () => {
 		expect(rangoAnterior('2026-10-01', '2026-10-31')).toEqual({ desde: '2026-08-31', hasta: '2026-09-30' });
 		expect(rangoAnterior('2026-10-20', '2026-10-20')).toEqual({ desde: '2026-10-19', hasta: '2026-10-19' });
+	});
+});
+
+describe('tendenciaPorPeriodo', () => {
+	it('del más antiguo al más reciente, con el reparto por zona', () => {
+		const resumen = resumenPorPeriodo(
+			periodos,
+			[
+				{ periodoId: 1, storeId: 26, fecha: '2026-10-05', registros: 1, minutos: 60 },
+				{ periodoId: 1, storeId: 15, fecha: '2026-10-06', registros: 1, minutos: 30 },
+			],
+			[{ work_date: '2026-10-12', status: 'aprobada' as const, minutes: 45, store_id: 26 }],
+			tiendaDe,
+			() => true,
+		);
+		const t = tendenciaPorPeriodo(resumen, (id) => (id === 15 ? 'Sur' : 'Narino'));
+		expect(t.map((p) => [p.periodo.id, p.minutos])).toEqual([[1, 90], [2, 45]]);
+		expect([...t[0].porZona]).toEqual([['Narino', 60], ['Sur', 30]]);
+		expect(tendenciaPorPeriodo(resumen, () => null, 1).map((p) => p.periodo.id)).toEqual([2]);
 	});
 });

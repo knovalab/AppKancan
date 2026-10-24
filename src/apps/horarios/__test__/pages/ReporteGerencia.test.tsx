@@ -28,6 +28,11 @@ vi.mock('@mui/x-charts/BarChart', () => ({
 		</div>
 	),
 }));
+vi.mock('@mui/x-charts/LineChart', () => ({
+	LineChart: ({ series }: { series: { label: string; data: number[] }[] }) => (
+		<div data-testid="tendencia">{series.map((x) => `${x.label}=${x.data.join(',')}`).join(';')}</div>
+	),
+}));
 // El calendario consulta festivos en internet.
 vi.mock('@/apps/horarios/components/reportes/DateRangeFilter', () => ({ default: () => <div>CALENDARIO</div> }));
 vi.mock('@/apps/horarios/utils/timeSync', () => ({ getRealColombiaTime: () => dayjs('2026-10-28T10:00:00') }));
@@ -130,6 +135,22 @@ describe('Reportes de gerencia · escritorio', () => {
 		expect(agregadoHorasExtras).toHaveBeenCalledWith(expect.objectContaining({ tiendas: [26, 30] }), ['store_id', 'work_date']);
 	});
 
+	it('tendencia: horas por periodo (total y por zona) y mapa de calor día × zona', async () => {
+		await montar();
+		fireEvent.click(screen.getByRole('tab', { name: 'Tendencia' }));
+		// Del más antiguo al más reciente: Oct 1 (2 h 30 min) y Oct 2 (1 h 30 min), todo en Narino.
+		expect(await screen.findByTestId('tendencia')).toHaveTextContent('Total=2.5,1.5;Narino=2.5,1.5');
+		const calor = await screen.findByRole('table', { name: 'Horas por zona y día de la semana' });
+		const filas = within(calor)
+			.getAllByRole('row')
+			.slice(1)
+			.map((r) => within(r).getAllByRole('cell').map((c) => c.textContent));
+		expect(filas).toEqual([
+			['Narino', '--', '2 h', '1 h', '--', '--', '--', '--'],
+			['Sur', '--', '--', '1 h', '--', '--', '--', '--'],
+		]);
+	});
+
 	it('nunca agrupa por persona (la política de gerencia no lee employee_id)', async () => {
 		await montar();
 		await irAZona();
@@ -169,5 +190,14 @@ describe('Reportes de gerencia · teléfono', () => {
 		expect(screen.queryByRole('table')).toBeNull();
 		expect(screen.getByText('Ipiales')).toBeInTheDocument();
 		expect(screen.getByTestId('grafica').textContent).toMatch(/^horizontal:/);
+	});
+
+	it('tendencia: solo el total y el mapa como tarjetas con el día más cargado', async () => {
+		await montar();
+		fireEvent.click(screen.getByRole('tab', { name: 'Tendencia' }));
+		expect(await screen.findByTestId('tendencia')).toHaveTextContent(/^Total=2.5,1.5$/);
+		await screen.findByText('Narino');
+		expect(screen.queryByRole('table')).toBeNull();
+		expect(screen.getAllByText(/Día más cargado/)[0].textContent).toBe('Día más cargado: Mar · 2 h');
 	});
 });
