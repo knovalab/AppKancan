@@ -105,6 +105,16 @@ export function useReporteTiempoReal(
 		return (id: number | null) => id != null && ids.has(id);
 	}, [tiendasEmpresa, empresa, tienda]);
 
+	// Nombre y empresa de cada fila del detalle por tienda.
+	const tiendaDe = useMemo(() => {
+		const porId = new Map(tiendas.map((t) => [Number(t.id), t]));
+		return (id: number | null) =>
+			(id != null && porId.get(id)) || {
+				name: id == null ? 'Sin tienda' : `Tienda ${id}`,
+				company: '',
+			};
+	}, [tiendas]);
+
 	const periodos = periodosQ.data ?? SIN_PERIODOS;
 	const resumen = useMemo(
 		() =>
@@ -137,6 +147,7 @@ export function useReporteTiempoReal(
 		hoy,
 		empresas,
 		tiendasEmpresa,
+		tiendaDe,
 		resumen,
 		actual: periodoActual(periodos, hoy),
 		vencidos: periodosVencidos(periodos, hoy),

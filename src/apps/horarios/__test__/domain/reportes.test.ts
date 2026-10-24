@@ -41,6 +41,17 @@ describe('resumenPorPeriodo', () => {
 		expect(rAbierto.rezagadas).toEqual({ registros: 1, minutos: 90 });
 	});
 
+	it('detalle por tienda: suma lo mismo que el total y ordena por horas', () => {
+		const [rAbierto, rLiq] = resumenPorPeriodo(periodos, vinculadas, porPagar, tiendaDe, () => true);
+		expect(rLiq.tiendas).toEqual([
+			{ storeId: 26, delPeriodo: { registros: 2, minutos: 120 }, rezagadas: { registros: 1, minutos: 30 }, total: { registros: 3, minutos: 150 } },
+			{ storeId: 30, delPeriodo: { registros: 1, minutos: 60 }, rezagadas: { registros: 0, minutos: 0 }, total: { registros: 1, minutos: 60 } },
+		]);
+		expect(rAbierto.tiendas.map((t) => [t.storeId, t.total.minutos])).toEqual([[30, 90], [26, 60]]);
+		for (const r of [rAbierto, rLiq])
+			expect(r.tiendas.reduce((s, t) => s + t.total.minutos, 0)).toBe(r.total.minutos);
+	});
+
 	it('filtra por empresa (tiendas incluidas)', () => {
 		const soloA = (id: number | null) => id === 26;
 		const [rAbierto, rLiq] = resumenPorPeriodo(periodos, vinculadas, porPagar, tiendaDe, soloA);

@@ -17,6 +17,15 @@ export interface ResumenPeriodo<P extends RangoPeriodo = RangoPeriodo> {
 	/** Con fecha anterior al inicio (pagadas o por pagar en este periodo). */
 	rezagadas: Totales;
 	total: Totales;
+	/** Las mismas horas por tienda trabajada (más horas primero; sin tienda: `null`). */
+	tiendas: TotalesTienda[];
+}
+
+export interface TotalesTienda {
+	storeId: number | null;
+	delPeriodo: Totales;
+	rezagadas: Totales;
+	total: Totales;
 }
 
 const cero = (): Totales => ({ registros: 0, minutos: 0 });
@@ -54,17 +63,32 @@ export function resumenPorPeriodo<P extends RangoPeriodo>(
 	return periodos.map((periodo) => {
 		const delPeriodo = cero();
 		const rezagadas = cero();
+		const porTienda = new Map<number | null, TotalesTienda>();
+		const sumarEn = (
+			rezagada: boolean,
+			storeId: number | null,
+			registros: number,
+			minutos: number,
+		) => {
+			let t = porTienda.get(storeId);
+			if (!t) {
+				t = { storeId, delPeriodo: cero(), rezagadas: cero(), total: cero() };
+				porTienda.set(storeId, t);
+			}
+			sumar(rezagada ? rezagadas : delPeriodo, registros, minutos);
+			sumar(rezagada ? t.rezagadas : t.delPeriodo, registros, minutos);
+			sumar(t.total, registros, minutos);
+		};
 		if (periodo.status === ESTADO_PERIODO.liquidado) {
 			for (const v of vinculadas) {
 				if (v.periodoId !== periodo.id || !incluirTienda(v.storeId)) continue;
-				const destino =
-					v.fecha && v.fecha < periodo.start_date ? rezagadas : delPeriodo;
-				sumar(destino, v.registros, v.minutos);
+				const rezagada = !!v.fecha && v.fecha < periodo.start_date;
+				sumarEn(rezagada, v.storeId, v.registros, v.minutos);
 			}
 		} else {
 			const c = clasificarParaPeriodo(porPagarFiltradas, periodo, periodos);
-			for (const h of c.delPeriodo) sumar(delPeriodo, 1, h.minutes);
-			for (const h of c.rezagadas) sumar(rezagadas, 1, h.minutes);
+			for (const h of c.delPeriodo) sumarEn(false, tiendaDe(h), 1, h.minutes);
+			for (const h of c.rezagadas) sumarEn(true, tiendaDe(h), 1, h.minutes);
 		}
 		return {
 			periodo,
@@ -74,6 +98,9 @@ export function resumenPorPeriodo<P extends RangoPeriodo>(
 				registros: delPeriodo.registros + rezagadas.registros,
 				minutos: delPeriodo.minutos + rezagadas.minutos,
 			},
+			tiendas: [...porTienda.values()].sort(
+				(a, b) => b.total.minutos - a.total.minutos,
+			),
 		};
 	});
 }

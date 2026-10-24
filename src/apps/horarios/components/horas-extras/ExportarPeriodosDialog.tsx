@@ -1,5 +1,6 @@
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import {
+	Alert,
 	Box,
 	Button,
 	Checkbox,
@@ -20,7 +21,7 @@ import { useState } from 'react';
 import { listarHorasExtras } from '../../api/directus/horasExtras';
 import { getStores } from '../../api/directus/read';
 import {
-	clasificarParaPeriodo,
+	AVISO_SOLO_LIQUIDADOS,
 	ESTADO_PERIODO,
 } from '../../domain/horasExtras';
 import { horariosKeys } from '../../hooks/registro/keys';
@@ -45,8 +46,9 @@ export interface ExportarPeriodosDialogProps {
 const fecha = (f: string) => dayjs(f).format('DD/MM/YYYY');
 
 /**
- * Exporta a Excel uno o varios periodos: una hoja por empresa y, en cada hoja,
- * un bloque por periodo con su cabecera y el total por empleado y tienda.
+ * Exporta a Excel uno o varios periodos **liquidados**: una hoja por empresa y, en
+ * cada hoja, un bloque por periodo con su cabecera y el total por empleado y tienda.
+ * Los preliquidados se listan deshabilitados: sus números aún pueden cambiar.
  */
 export function ExportarPeriodosDialog({
 	open,
@@ -55,9 +57,12 @@ export function ExportarPeriodosDialog({
 }: ExportarPeriodosDialogProps) {
 	const queryClient = useQueryClient();
 	const { showSnackbar } = useAvisos();
-	// Por defecto, el más reciente.
+	const liquidados = periodos.filter(
+		(p) => p.status === ESTADO_PERIODO.liquidado,
+	);
+	// Por defecto, el liquidado más reciente.
 	const [seleccion, setSeleccion] = useState<ReadonlySet<number>>(
-		() => new Set(periodos[0] ? [periodos[0].id] : []),
+		() => new Set(liquidados[0] ? [liquidados[0].id] : []),
 	);
 	const [exportando, setExportando] = useState(false);
 	// Misma clave que useHorariosAcceso: sale de la caché.
@@ -77,7 +82,7 @@ export function ExportarPeriodosDialog({
 
 	const exportar = async () => {
 		// Orden cronológico en el archivo.
-		const elegidos = periodos
+		const elegidos = liquidados
 			.filter((p) => seleccion.has(p.id))
 			.sort((a, b) => a.start_date.localeCompare(b.start_date));
 		setExportando(true);
@@ -90,15 +95,7 @@ export function ExportarPeriodosDialog({
 						queryFn: () => listarHorasExtras(filtros),
 						staleTime: 60 * 1000,
 					});
-					if (periodo.status === ESTADO_PERIODO.liquidado)
-						return { periodo, horas };
-					// Preliquidado: lo que se vincularía hoy (del periodo + rezagadas).
-					const { delPeriodo, rezagadas } = clasificarParaPeriodo(
-						horas,
-						periodo,
-						periodos,
-					);
-					return { periodo, horas: [...delPeriodo, ...rezagadas] };
+					return { periodo, horas };
 				}),
 			);
 			await exportarPeriodosExcel(hojasExportacionPeriodos(datos, tiendas));
@@ -128,10 +125,16 @@ export function ExportarPeriodosDialog({
 			>
 				Exportar periodos a Excel
 				<Typography variant="body2" sx={{ color: '#64748b' }}>
-					Una hoja por empresa, con el total de horas por empleado y tienda.
+					Solo periodos liquidados. Una hoja por empresa, con el total de horas
+					por empleado y tienda.
 				</Typography>
 			</DialogTitle>
 			<DialogContent dividers>
+				{liquidados.length === 0 && (
+					<Alert severity="info" sx={{ mb: 1.5 }}>
+						Aún no hay periodos liquidados. {AVISO_SOLO_LIQUIDADOS}.
+					</Alert>
+				)}
 				<Box
 					sx={{
 						display: 'flex',
@@ -145,13 +148,13 @@ export function ExportarPeriodosDialog({
 						sx={{ fontWeight: 600 }}
 						aria-live="polite"
 					>
-						{seleccion.size} de {periodos.length} seleccionados
+						{seleccion.size} de {liquidados.length} liquidados seleccionados
 					</Typography>
 					<Box>
 						<Button
 							size="small"
-							onClick={() => setSeleccion(new Set(periodos.map((p) => p.id)))}
-							disabled={seleccion.size === periodos.length}
+							onClick={() => setSeleccion(new Set(liquidados.map((p) => p.id)))}
+							disabled={seleccion.size === liquidados.length}
 						>
 							Seleccionar todos
 						</Button>
@@ -177,11 +180,14 @@ export function ExportarPeriodosDialog({
 				>
 					{periodos.map((p) => {
 						const nombre = p.name || 'Sin nombre';
+						const liquidado = p.status === ESTADO_PERIODO.liquidado;
+						const rango = `Del ${fecha(p.start_date)} al ${fecha(p.end_date)}`;
 						return (
 							<ListItemButton
 								key={p.id}
 								onClick={() => alternar(p.id)}
 								selected={seleccion.has(p.id)}
+								disabled={!liquidado}
 							>
 								<ListItemIcon sx={{ minWidth: 36 }}>
 									<Checkbox
@@ -199,24 +205,15 @@ export function ExportarPeriodosDialog({
 								</ListItemIcon>
 								<ListItemText
 									primary={nombre}
-									secondary={`Del ${fecha(p.start_date)} al ${fecha(p.end_date)}`}
+									secondary={
+										liquidado ? rango : `${rango} · ${AVISO_SOLO_LIQUIDADOS}`
+									}
 								/>
 								<PeriodoEstadoChip estado={p.status} />
 							</ListItemButton>
 						);
 					})}
 				</List>
-				{periodos.some(
-					(p) => seleccion.has(p.id) && p.status !== ESTADO_PERIODO.liquidado,
-				) && (
-					<Typography
-						variant="caption"
-						sx={{ display: 'block', mt: 1, color: '#64748b' }}
-					>
-						Los periodos preliquidados se exportan como vista previa (lo que se
-						vincularía hoy).
-					</Typography>
-				)}
 			</DialogContent>
 			<DialogActions sx={{ px: 3, py: 2 }}>
 				<Button onClick={onClose} disabled={exportando}>
