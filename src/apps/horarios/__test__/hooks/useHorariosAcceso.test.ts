@@ -69,7 +69,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => false,
 			esAdmin: () => false,
 			esAreaManager: () => false,
-			esReport: () => false, esComercial: () => false, esNomina: () => false,
+			esReport: () => false, esComercial: () => false, esNomina: () => false, esGerencia: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -107,7 +107,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => true,
 			esAreaManager: () => false,
-			esReport: () => false, esComercial: () => false, esNomina: () => false,
+			esReport: () => false, esComercial: () => false, esNomina: () => false, esGerencia: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -138,7 +138,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => true,
 			esAreaManager: () => true, // User has both policies
-			esReport: () => false, esComercial: () => false, esNomina: () => false,
+			esReport: () => false, esComercial: () => false, esNomina: () => false, esGerencia: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -160,7 +160,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => true,
-			esReport: () => false, esComercial: () => false, esNomina: () => false,
+			esReport: () => false, esComercial: () => false, esNomina: () => false, esGerencia: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => true,
 		});
@@ -196,7 +196,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => true,
-			esReport: () => false, esComercial: () => false, esNomina: () => false,
+			esReport: () => false, esComercial: () => false, esNomina: () => false, esGerencia: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -224,7 +224,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => false,
-			esReport: () => true, esComercial: () => false, esNomina: () => false,
+			esReport: () => true, esComercial: () => false, esNomina: () => false, esGerencia: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -251,7 +251,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => false,
-			esReport: () => false, esComercial: () => true, esNomina: () => false,
+			esReport: () => false, esComercial: () => true, esNomina: () => false, esGerencia: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -273,7 +273,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => false,
-			esReport: () => false, esComercial: () => false, esNomina: () => true,
+			esReport: () => false, esComercial: () => false, esNomina: () => true, esGerencia: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -289,12 +289,34 @@ describe('useHorariosAcceso', () => {
 		expect(result.current.tiendasGlobales).toEqual(allStores);
 	});
 
+	it('gerencia: solo su rol (sin tienda), inicio en Reportes y sin cargar tiendas', async () => {
+		mockedUseHorariosPolicies.mockReturnValue({
+			hasPolicy: () => true,
+			esAdmin: () => false,
+			esAreaManager: () => false,
+			esReport: () => false, esComercial: () => false, esNomina: () => false, esGerencia: () => true,
+			tieneTemporal: () => false,
+			puedeVerDemo: () => false,
+		});
+
+		const { result } = renderHookWithQuery(() => useHorariosAcceso());
+		await waitFor(() => expect(result.current.cargando).toBe(false));
+
+		expect([...result.current.roles]).toEqual(['gerencia']);
+		expect(result.current.rolPrincipal).toBe('gerencia');
+		expect(result.current.inicio).toBe('reportes');
+		expect(result.current.tiendasPermitidas).toEqual([]);
+		expect(result.current.tiendasGlobales).toEqual([]);
+		// getStores pide campos (ultra_code) que la política de gerencia no tiene.
+		expect(mockedGetStores).not.toHaveBeenCalled();
+	});
+
 	it('comercial + areaManager: mantiene sus tiendas asignadas y suma el rol comercial', async () => {
 		mockedUseHorariosPolicies.mockReturnValue({
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => true,
-			esReport: () => true, esComercial: () => true, esNomina: () => false,
+			esReport: () => true, esComercial: () => true, esNomina: () => false, esGerencia: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});
@@ -314,7 +336,7 @@ describe('useHorariosAcceso', () => {
 			hasPolicy: () => true,
 			esAdmin: () => false,
 			esAreaManager: () => true,
-			esReport: () => true, esComercial: () => false, esNomina: () => false,
+			esReport: () => true, esComercial: () => false, esNomina: () => false, esGerencia: () => false,
 			tieneTemporal: () => false,
 			puedeVerDemo: () => false,
 		});

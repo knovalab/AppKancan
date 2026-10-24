@@ -5,6 +5,7 @@ import {
 	type RangoPeriodo,
 	rangoAnterior,
 	reporteZona,
+	reporteGerencia,
 	resumenPorPeriodo,
 } from '@/apps/horarios/domain/horasExtras';
 
@@ -57,6 +58,49 @@ describe('resumenPorPeriodo', () => {
 		const [rAbierto, rLiq] = resumenPorPeriodo(periodos, vinculadas, porPagar, tiendaDe, soloA);
 		expect(rLiq.total).toEqual({ registros: 3, minutos: 150 });
 		expect(rAbierto.total).toEqual({ registros: 1, minutos: 60 });
+	});
+});
+
+describe('resumenPorPeriodo con filas agregadas', () => {
+	it('preliquidado: cada fila suma sus registros', () => {
+		const agregadas = [{ work_date: '2026-10-12', status: 'aprobada' as const, period_id: null, minutes: 150, store_id: 26, registros: 3 }];
+		const [rAbierto] = resumenPorPeriodo(periodos, [], agregadas, tiendaDe, () => true);
+		expect(rAbierto.total).toEqual({ registros: 3, minutos: 150 });
+	});
+});
+
+describe('reporteGerencia (sin personas)', () => {
+	// 20/10/2026 es martes.
+	const filas = [
+		{ storeId: 26, fecha: '2026-10-20', registros: 2, minutos: 120 },
+		{ storeId: 30, fecha: '2026-10-20', registros: 1, minutos: 60 },
+		{ storeId: 15, fecha: '2026-10-21', registros: 1, minutos: 60 },
+		{ storeId: 99, fecha: '2026-10-21', registros: 1, minutos: 60 }, // sin zona
+	];
+	const zonas: Record<number, string> = { 26: 'Narino', 30: 'Narino', 15: 'Sur', 40: 'Sur' };
+	// La 40 tuvo horas antes y ahora no: cuenta en la variación de su zona.
+	const previas = new Map([[26, 60], [40, 120]]);
+	const r = reporteGerencia(filas, previas, (id) => zonas[id] ?? null);
+
+	it('total con variación frente al rango anterior', () => {
+		expect(r.total).toEqual({ registros: 5, minutos: 300, variacion: (300 - 180) / 180 });
+	});
+
+	it('zonas: horas, %, nº de tiendas y variación (incluye lo previo de tiendas sin horas ahora)', () => {
+		expect(r.zonas.map((z) => [z.zona, z.minutos, z.tiendas])).toEqual([
+			['Narino', 180, 2],
+			['Sur', 60, 1],
+			[null, 60, 1],
+		]);
+		expect(r.zonas[0]).toMatchObject({ porcentaje: 180 / 300, variacion: 2 });
+		expect(r.zonas[1].variacion).toBe(-0.5);
+		expect(r.zonas[2].variacion).toBeNull();
+	});
+
+	it('tiendas con zona, % y variación; día de la semana', () => {
+		expect(r.tiendas[0]).toMatchObject({ storeId: 26, zona: 'Narino', minutos: 120, porcentaje: 0.4, variacion: 1 });
+		expect(r.tiendas.find((t) => t.storeId === 30)?.variacion).toBeNull();
+		expect(r.porDiaSemana).toEqual([0, 180, 120, 0, 0, 0, 0]);
 	});
 });
 

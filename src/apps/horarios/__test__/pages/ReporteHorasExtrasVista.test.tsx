@@ -13,6 +13,8 @@ vi.mock('@/apps/horarios/pages/reporte/ReporteZonaTab', () => ({
 	default: ({ tiendasJefe }: { tiendasJefe: number[] | null }) => <div>ZONA {JSON.stringify(tiendasJefe)}</div>,
 }));
 
+vi.mock('@/apps/horarios/pages/reporte/gerencia/ReporteGerencia', () => ({ default: () => <div>GERENCIA</div> }));
+
 import ReporteHorasExtrasVista from '@/apps/horarios/pages/reporte/ReporteHorasExtrasVista';
 
 const montar = (r: Rol[]) => {
@@ -30,6 +32,16 @@ describe('Reportes · Horas extras: pestañas por rol', () => {
 		montar(['tienda', 'nomina']);
 		expect(screen.getByText('TIEMPO REAL')).toBeInTheDocument();
 		expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+	});
+	it('gerencia: su propio reporte (sin personas)', () => {
+		montar(['gerencia']);
+		expect(screen.getByText('GERENCIA')).toBeInTheDocument();
+		expect(screen.queryByText(/ZONA|TIEMPO REAL/)).not.toBeInTheDocument();
+	});
+	it('gerencia + comercial: manda comercial (ve más)', () => {
+		montar(['gerencia', 'comercial']);
+		expect(screen.queryByText('GERENCIA')).not.toBeInTheDocument();
+		expect(screen.getByRole('tab', { name: 'Tiempo real' })).toBeInTheDocument();
 	});
 	it('comercial: las dos; Por zona sin tiendas fijas (elige zona)', () => {
 		montar(['tienda', 'comercial']);

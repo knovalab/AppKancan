@@ -124,6 +124,40 @@ export function zonasDeTiendas(
 	);
 }
 
+export interface TiendaReporte {
+	id: number;
+	name: string;
+	company?: string | null;
+	zone?: string | null;
+}
+
+/**
+ * Tiendas con solo los campos de los reportes (sin `ultra_code`): las que puede
+ * leer gerencia (`time_log_gerencia`). Sin la tienda de pruebas.
+ */
+export async function listarTiendasReporte(): Promise<TiendaReporte[]> {
+	try {
+		const tiendas = (await withAutoRefresh(() =>
+			directus.request(
+				readItems('core_stores', {
+					fields: ['id', 'name', 'company', 'zone'],
+					sort: ['name'],
+					limit: -1,
+				}),
+			),
+		)) as TiendaReporte[];
+		return tiendas
+			.map((t) => ({ ...t, id: Number(t.id) }))
+			.filter((t) => t.id !== STORE_PRUEBAS);
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error consultando tiendas',
+			'Error al cargar las tiendas',
+		);
+	}
+}
+
 /**
  * Zonas = valores de `core_stores.zone` con sus tiendas. Consulta aparte de
  * `getStores`: si una política aún no puede leer `zone`, solo falla el reporte.
