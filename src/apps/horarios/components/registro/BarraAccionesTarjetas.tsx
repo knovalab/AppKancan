@@ -11,6 +11,8 @@ import {
 	Paper,
 	Tooltip,
 	Typography,
+	useMediaQuery,
+	useTheme,
 } from '@mui/material';
 import type { FiltroColapso } from '../../hooks/registro/useTarjetasColapsables';
 
@@ -30,7 +32,7 @@ interface BarraAccionesTarjetasProps {
 	onExpandirTodas: () => void;
 	onContraerTodas: () => void;
 	onExpandirPorEstado: (filtro: FiltroColapso) => void;
-	/** Vista limpia (perfil tienda): solo chips; sin botones en móvil ni textos auxiliares. */
+	/** Vista limpia (perfil tienda): botones solo con icono en móvil, sin textos auxiliares. */
 	compacta?: boolean;
 }
 
@@ -45,10 +47,31 @@ export function BarraAccionesTarjetas({
 	onExpandirPorEstado,
 	compacta = false,
 }: BarraAccionesTarjetasProps) {
+	const theme = useTheme();
+	const movil = useMediaQuery(theme.breakpoints.down('sm'));
 	if (totalEmpleados === 0) return null;
 
-	const ocultarEnMovil = compacta
-		? { xs: 'none', sm: 'inline-flex' }
+	// Compacta en móvil: chips solo con icono + número para que todo quepa en una fila
+	const corto = compacta && movil;
+	const etiquetas = {
+		activas: `En turno: ${conteos.activas}`,
+		pendientes: `Pendientes: ${conteos.pendientes}`,
+		finalizadas: `Finalizados: ${conteos.finalizadas}`,
+	};
+
+	// Compacta: en móvil el botón queda solo con el icono (el aria-label conserva el nombre)
+	const textoBoton = compacta
+		? { display: { xs: 'none', sm: 'inline' } }
+		: undefined;
+	const soloIconoEnMovil = compacta
+		? {
+				minWidth: { xs: 36, sm: 64 },
+				px: { xs: 0.75, sm: 1.2 },
+				'& .MuiButton-startIcon': {
+					ml: { xs: 0, sm: '-2px' }, // valores por defecto de MUI en size="small"
+					mr: { xs: 0, sm: '8px' },
+				},
+			}
 		: undefined;
 
 	return (
@@ -71,9 +94,9 @@ export function BarraAccionesTarjetas({
 			<Box
 				sx={{
 					display: 'flex',
-					flexWrap: 'wrap',
+					flexWrap: compacta ? { xs: 'nowrap', sm: 'wrap' } : 'wrap',
 					alignItems: 'center',
-					gap: 1,
+					gap: compacta ? { xs: 0.75, sm: 1 } : 1,
 				}}
 			>
 				{/* Botón Contraer todas */}
@@ -81,10 +104,10 @@ export function BarraAccionesTarjetas({
 					size="small"
 					variant="outlined"
 					onClick={onContraerTodas}
+					aria-label="Contraer todas"
 					disabled={todasColapsadas}
 					startIcon={<UnfoldLessIcon fontSize="small" />}
 					sx={{
-						display: ocultarEnMovil,
 						textTransform: 'none',
 						fontWeight: 600,
 						fontSize: '0.78rem',
@@ -94,13 +117,16 @@ export function BarraAccionesTarjetas({
 						py: 0.4,
 						px: 1.2,
 						height: 32,
+						...soloIconoEnMovil,
 						'&:hover': {
 							bgcolor: '#f1f5f9',
 							borderColor: '#94a3b8',
 						},
 					}}
 				>
-					Contraer todas
+					<Box component="span" sx={textoBoton}>
+						Contraer todas
+					</Box>
 				</Button>
 
 				{/* Botón Expandir todas */}
@@ -108,10 +134,10 @@ export function BarraAccionesTarjetas({
 					size="small"
 					variant="outlined"
 					onClick={onExpandirTodas}
+					aria-label="Expandir todas"
 					disabled={todasExpandidas}
 					startIcon={<UnfoldMoreIcon fontSize="small" />}
 					sx={{
-						display: ocultarEnMovil,
 						textTransform: 'none',
 						fontWeight: 600,
 						fontSize: '0.78rem',
@@ -121,13 +147,16 @@ export function BarraAccionesTarjetas({
 						py: 0.4,
 						px: 1.2,
 						height: 32,
+						...soloIconoEnMovil,
 						'&:hover': {
 							bgcolor: '#f0f7ff',
 							borderColor: '#004680',
 						},
 					}}
 				>
-					Expandir todas
+					<Box component="span" sx={textoBoton}>
+						Expandir todas
+					</Box>
 				</Button>
 
 				<Divider
@@ -142,9 +171,10 @@ export function BarraAccionesTarjetas({
 				/>
 
 				{/* Filtros rápidos inteligentes por estado */}
+				{/* Compacta en móvil: 'contents' pone los chips en la misma fila que los botones */}
 				<Box
 					sx={{
-						display: 'flex',
+						display: compacta ? { xs: 'contents', sm: 'flex' } : 'flex',
 						alignItems: 'center',
 						gap: 0.75,
 						flexWrap: 'wrap',
@@ -171,7 +201,8 @@ export function BarraAccionesTarjetas({
 								icon={
 									<PlayCircleOutlineIcon sx={{ fontSize: '1rem !important' }} />
 								}
-								label={`En turno: ${conteos.activas}`}
+								label={corto ? conteos.activas : etiquetas.activas}
+								aria-label={etiquetas.activas}
 								size="small"
 								onClick={() => onExpandirPorEstado('activas')}
 								sx={{
@@ -198,7 +229,8 @@ export function BarraAccionesTarjetas({
 								clickable={conteos.pendientes > 0}
 								disabled={conteos.pendientes === 0}
 								icon={<ScheduleIcon sx={{ fontSize: '1rem !important' }} />}
-								label={`Pendientes: ${conteos.pendientes}`}
+								label={corto ? conteos.pendientes : etiquetas.pendientes}
+								aria-label={etiquetas.pendientes}
 								size="small"
 								onClick={() => onExpandirPorEstado('pendientes')}
 								sx={{
@@ -229,7 +261,8 @@ export function BarraAccionesTarjetas({
 										sx={{ fontSize: '1rem !important' }}
 									/>
 								}
-								label={`Finalizados: ${conteos.finalizadas}`}
+								label={corto ? conteos.finalizadas : etiquetas.finalizadas}
+								aria-label={etiquetas.finalizadas}
 								size="small"
 								onClick={() => onExpandirPorEstado('finalizadas')}
 								sx={{
