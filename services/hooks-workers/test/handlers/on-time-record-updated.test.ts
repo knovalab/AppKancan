@@ -59,7 +59,7 @@ describe('on-time-record-updated handler', () => {
 		});
 		expect(result.status).toBe('created');
 		expect(result.storeId).toBe('1003');
-		expect(result.openTime).toBe('2026-10-22T08:00:00.000Z');
+		expect(result.openTime).toBe('2026-10-22T13:00:00.000Z');
 	});
 
 	it('extracts the first key when "keys" is an array with multiple elements', async () => {

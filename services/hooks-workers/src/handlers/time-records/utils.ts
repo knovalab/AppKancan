@@ -39,13 +39,22 @@ export function getTimeZoneOffsetMinutes(
 	}
 }
 
+export function formatOffsetString(offsetMinutes: number): string {
+	const sign = offsetMinutes >= 0 ? '+' : '-';
+	const abs = Math.abs(offsetMinutes);
+	const hours = String(Math.floor(abs / 60)).padStart(2, '0');
+	const minutes = String(abs % 60).padStart(2, '0');
+	return `${sign}${hours}:${minutes}`;
+}
+
 /**
- * Constructs a normalized ISO 8601 timestamp string from a date string (YYYY-MM-DD)
- * and time string (HH:mm or HH:mm:ss).
+ * Constructs a normalized ISO 8601 timestamp string (UTC) from a date string (YYYY-MM-DD)
+ * and time string (HH:mm or HH:mm:ss) in the given timezone (default: America/Bogota).
  */
 export function buildTimestamp(
 	dateStr: string,
 	timeStr: string | null | undefined,
+	timeZone: string = DEFAULT_TIMEZONE,
 ): string | null {
 	if (!timeStr) return null;
 
@@ -55,14 +64,12 @@ export function buildTimestamp(
 		return Number.isNaN(d.getTime()) ? null : d.toISOString();
 	}
 
-	const fullTime =
-		trimmed.length === 5
-			? `${trimmed}:00.000Z`
-			: trimmed.includes('.')
-				? `${trimmed}Z`
-				: `${trimmed}.000Z`;
+	const approxDate = new Date(`${dateStr}T12:00:00Z`);
+	const offsetMinutes = getTimeZoneOffsetMinutes(approxDate, timeZone);
+	const offsetStr = formatOffsetString(offsetMinutes);
 
-	const d = new Date(`${dateStr}T${fullTime}`);
+	const timeWithSeconds = trimmed.length === 5 ? `${trimmed}:00` : trimmed;
+	const d = new Date(`${dateStr}T${timeWithSeconds}${offsetStr}`);
 	return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 

@@ -60,7 +60,7 @@ describe('on-time-record-created handler', () => {
 		});
 		expect(result.status).toBe('created');
 		expect(result.storeId).toBe('1003');
-		expect(result.openTime).toBe('2026-10-22T08:00:00.000Z');
+		expect(result.openTime).toBe('2026-10-22T13:00:00.000Z');
 	});
 
 	it('creates new TimeRecordStore for Comenzar Jornada when none exists', async () => {
@@ -90,12 +90,12 @@ describe('on-time-record-created handler', () => {
 
 		expect(result.status).toBe('created');
 		expect(result.storeId).toBe('1003');
-		expect(result.openTime).toBe('2026-10-22T08:15:00.000Z');
+		expect(result.openTime).toBe('2026-10-22T13:15:00.000Z');
 		expect(createMock).toHaveBeenCalledWith(
 			expect.objectContaining({
 				store: '1003',
 				work_date: '2026-10-22',
-				open_time: '2026-10-22T08:15:00.000Z',
+				open_time: '2026-10-22T13:15:00.000Z',
 				open_user: '1190',
 			}),
 		);
@@ -115,7 +115,7 @@ describe('on-time-record-created handler', () => {
 			id: 55,
 			store: '1003',
 			work_date: '2026-10-22',
-			open_time: '2026-10-22T09:00:00.000Z',
+			open_time: '2026-10-22T14:00:00.000Z',
 			open_user: '1100',
 			close_time: null,
 			close_user: null,
@@ -138,9 +138,9 @@ describe('on-time-record-created handler', () => {
 		);
 
 		expect(result.status).toBe('updated');
-		expect(result.openTime).toBe('2026-10-22T08:00:00.000Z');
+		expect(result.openTime).toBe('2026-10-22T13:00:00.000Z');
 		expect(updateMock).toHaveBeenCalledWith(55, {
-			open_time: '2026-10-22T08:00:00.000Z',
+			open_time: '2026-10-22T13:00:00.000Z',
 			open_user: '1190',
 		});
 	});
@@ -159,7 +159,7 @@ describe('on-time-record-created handler', () => {
 			id: 55,
 			store: '1003',
 			work_date: '2026-10-22',
-			open_time: '2026-10-22T07:45:00.000Z',
+			open_time: '2026-10-22T12:45:00.000Z',
 			open_user: '1100',
 			close_time: null,
 			close_user: null,
@@ -275,7 +275,7 @@ describe('on-time-record-created handler', () => {
 			id: 77,
 			store: '1003',
 			work_date: '2026-10-22',
-			open_time: '2026-10-22T08:00:00.000Z',
+			open_time: '2026-10-22T13:00:00.000Z',
 			open_user: '101',
 			close_time: null,
 			close_user: null,
@@ -299,7 +299,7 @@ describe('on-time-record-created handler', () => {
 
 		expect(result.status).toBe('updated');
 		expect(updateMock).toHaveBeenCalledWith(77, {
-			close_time: '2026-10-22T20:30:00.000Z',
+			close_time: '2026-10-23T01:30:00.000Z',
 			close_user: '102',
 			operative_time: 750,
 		});

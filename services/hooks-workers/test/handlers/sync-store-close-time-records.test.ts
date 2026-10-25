@@ -65,8 +65,8 @@ describe('sync-store-close-time-records handler', () => {
 			id: 501,
 			store: 'store-1',
 			work_date: '2026-10-22',
-			open_time: '2026-10-22T08:00:00.000Z',
-			close_time: '2026-10-22T20:30:00.000Z',
+			open_time: '2026-10-22T13:00:00.000Z',
+			close_time: '2026-10-23T01:30:00.000Z',
 			close_user: 'emp-late-finish',
 			operative_time: 750, // 12 hours 30 min = 750 min
 		});
@@ -91,8 +91,8 @@ describe('sync-store-close-time-records handler', () => {
 			expect.objectContaining({
 				store: 'store-1',
 				work_date: '2026-10-22',
-				open_time: '2026-10-22T08:00:00.000Z',
-				close_time: '2026-10-22T20:30:00.000Z',
+				open_time: '2026-10-22T13:00:00.000Z',
+				close_time: '2026-10-23T01:30:00.000Z',
 				close_user: 'emp-late-finish',
 				operative_time: 750,
 			}),
@@ -116,16 +116,16 @@ describe('sync-store-close-time-records handler', () => {
 			id: 777,
 			store: 'store-1',
 			work_date: '2026-10-22',
-			open_time: '2026-10-22T09:00:00.000Z',
+			open_time: '2026-10-22T14:00:00.000Z',
 			open_user: 'emp-opener',
-			close_time: '2026-10-22T18:00:00.000Z', // older closing
+			close_time: '2026-10-22T23:00:00.000Z', // older closing
 			close_user: 'emp-opener',
 			operative_time: 540,
 		};
 
 		const updateTimeRecordStoreMock = vi.fn().mockResolvedValue({
 			...existingStoreRecord,
-			close_time: '2026-10-22T21:00:00.000Z',
+			close_time: '2026-10-23T02:00:00.000Z',
 			close_user: 'emp-late',
 			operative_time: 720, // 12 hours = 720 min
 		});
@@ -147,7 +147,7 @@ describe('sync-store-close-time-records handler', () => {
 		expect(result.updated).toBe(1);
 		expect(result.unchanged).toBe(0);
 		expect(updateTimeRecordStoreMock).toHaveBeenCalledWith(777, {
-			close_time: '2026-10-22T21:00:00.000Z',
+			close_time: '2026-10-23T02:00:00.000Z',
 			close_user: 'emp-late',
 			operative_time: 720,
 		});
@@ -170,9 +170,9 @@ describe('sync-store-close-time-records handler', () => {
 			id: 888,
 			store: 'store-1',
 			work_date: '2026-10-22',
-			open_time: '2026-10-22T08:00:00.000Z',
+			open_time: '2026-10-22T13:00:00.000Z',
 			open_user: 'emp-opener',
-			close_time: '2026-10-22T20:00:00.000Z',
+			close_time: '2026-10-23T01:00:00.000Z',
 			close_user: 'emp-closing',
 			operative_time: 720,
 		};
@@ -214,7 +214,7 @@ describe('sync-store-close-time-records handler', () => {
 			id: 999,
 			store: 'store-1',
 			work_date: '2026-10-22',
-			open_time: '2026-10-22T08:00:00.000Z',
+			open_time: '2026-10-22T13:00:00.000Z', // 08:00
 			open_user: 'emp-start',
 			close_time: null,
 			close_user: null,

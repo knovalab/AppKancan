@@ -64,7 +64,7 @@ describe('sync-store-time-records handler', () => {
 			id: 501,
 			store: 'store-1',
 			work_date: '2026-10-22',
-			open_time: '2026-10-22T08:15:00.000Z',
+			open_time: '2026-10-22T13:15:00.000Z',
 			open_user: 'emp-earliest',
 		});
 
@@ -88,7 +88,7 @@ describe('sync-store-time-records handler', () => {
 			expect.objectContaining({
 				store: 'store-1',
 				work_date: '2026-10-22',
-				open_time: '2026-10-22T08:15:00.000Z',
+				open_time: '2026-10-22T13:15:00.000Z',
 				open_user: 'emp-earliest',
 				close_time: null,
 			}),
@@ -121,7 +121,7 @@ describe('sync-store-time-records handler', () => {
 
 		const updateTimeRecordStoreMock = vi.fn().mockResolvedValue({
 			...existingStoreRecord,
-			open_time: '2026-10-22T07:45:00.000Z',
+			open_time: '2026-10-22T12:45:00.000Z',
 			open_user: 'emp-opener',
 		});
 
@@ -141,7 +141,7 @@ describe('sync-store-time-records handler', () => {
 		expect(result.created).toBe(0);
 		expect(result.updated).toBe(1);
 		expect(updateTimeRecordStoreMock).toHaveBeenCalledWith(777, {
-			open_time: '2026-10-22T07:45:00.000Z',
+			open_time: '2026-10-22T12:45:00.000Z',
 			open_user: 'emp-opener',
 		});
 	});

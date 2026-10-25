@@ -66,7 +66,7 @@ describe('Time Records Business Logic', () => {
 				id: 50,
 				store: 'store-1',
 				work_date: '2026-10-22',
-				open_time: '2026-10-22T09:00:00.000Z', // 09:00
+				open_time: '2026-10-22T14:00:00.000Z', // 09:00
 				open_user: 'emp-2',
 				close_time: null,
 				close_user: null,
@@ -206,7 +206,7 @@ describe('Time Records Business Logic', () => {
 				id: 88,
 				store: 'store-1',
 				work_date: '2026-10-22',
-				open_time: '2026-10-22T08:00:00.000Z', // 08:00
+				open_time: '2026-10-22T13:00:00.000Z', // 08:00
 				open_user: 'emp-1',
 				close_time: null,
 				close_user: null,
