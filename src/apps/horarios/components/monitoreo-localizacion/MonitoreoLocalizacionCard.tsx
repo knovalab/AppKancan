@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { LocalizacionRecordItem } from '../../hooks/useMonitoreoLocalizacion';
+import { formatDistancia } from '../../domain/ubicacion';
 import { formatDocumentNumber } from '../../utils/format';
 import { MonitoreoLocalizacionModal } from './MonitoreoLocalizacionModal';
 import { getLogTypeColor } from './MonitoreoMultiMarkerMap';
@@ -43,7 +44,16 @@ export function MonitoreoLocalizacionCard({
 	onFocusOnMap,
 }: MonitoreoLocalizacionCardProps) {
 	const [modalOpen, setModalOpen] = useState(false);
-	const { record, lat, lon, accuracy } = item;
+	const { record, lat, lon, accuracy, distanciaTienda } = item;
+	// shortcut: umbrales fijos (≤100 m cerca, ≤500 m revisar), ajustar si las tiendas de centro comercial dan falsos lejos
+	const distanciaColor =
+		distanciaTienda == null
+			? null
+			: distanciaTienda <= 100
+				? { bg: '#ecfdf5', fg: '#047857', border: '#a7f3d0' }
+				: distanciaTienda <= 500
+					? { bg: '#fffbeb', fg: '#b45309', border: '#fde68a' }
+					: { bg: '#fef2f2', fg: '#b91c1c', border: '#fecaca' };
 
 	const emp = record.employee_id;
 	const nombreCompleto =
@@ -232,6 +242,29 @@ export function MonitoreoLocalizacionCard({
 								borderColor: accuracy > 100 ? '#fde68a' : '#e2e8f0',
 							}}
 						/>
+					)}
+
+					{distanciaTienda != null && distanciaColor && (
+						<Tooltip
+							title="Distancia entre la marcación y la ubicación de la tienda"
+							arrow
+						>
+							<Chip
+								icon={<Building2 size={11} color={distanciaColor.fg} />}
+								label={`A ${formatDistancia(distanciaTienda)} de la tienda`}
+								size="small"
+								sx={{
+									bgcolor: distanciaColor.bg,
+									color: distanciaColor.fg,
+									fontWeight: 700,
+									fontSize: '0.72rem',
+									height: 22,
+									border: '1px solid',
+									borderColor: distanciaColor.border,
+									'& .MuiChip-icon': { ml: 0.5, mr: -0.25 },
+								}}
+							/>
+						</Tooltip>
 					)}
 				</Box>
 

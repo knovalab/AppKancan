@@ -37,3 +37,22 @@ export function coordenadasDe(registro: {
 		longitud: registro.longitude ?? registro.location?.coordinates?.[0] ?? null,
 	};
 }
+
+/** Distancia en metros entre dos coordenadas (Haversine). */
+export function distanciaMetros(a: Coordenadas, b: Coordenadas): number {
+	const rad = Math.PI / 180;
+	const dLat = (b.latitud - a.latitud) * rad;
+	const dLon = (b.longitud - a.longitud) * rad;
+	const h =
+		Math.sin(dLat / 2) ** 2 +
+		Math.cos(a.latitud * rad) *
+			Math.cos(b.latitud * rad) *
+			Math.sin(dLon / 2) ** 2;
+	return 2 * 6371000 * Math.asin(Math.sqrt(h));
+}
+
+/** "85 m" bajo 1 km, "1.2 km" desde ahí. */
+export const formatDistancia = (metros: number): string =>
+	metros < 1000
+		? `${Math.round(metros)} m`
+		: `${(metros / 1000).toFixed(1)} km`;

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { aPunto, coordenadasDe } from '@/apps/horarios/domain/ubicacion';
+import {
+	aPunto,
+	coordenadasDe,
+	distanciaMetros,
+	formatDistancia,
+} from '@/apps/horarios/domain/ubicacion';
 
 describe('domain/ubicacion', () => {
 	it('aPunto guarda en orden GeoJSON [longitud, latitud]', () => {
@@ -41,5 +46,19 @@ describe('domain/ubicacion', () => {
 			latitud: 6.25,
 			longitud: -75.56,
 		});
+	});
+
+	it('distanciaMetros calcula la distancia entre dos puntos', () => {
+		const tienda = { latitud: 3.453431, longitud: -76.532657 };
+		expect(distanciaMetros(tienda, tienda)).toBe(0);
+		// 0.001° de latitud ≈ 111 m
+		expect(
+			distanciaMetros(tienda, { ...tienda, latitud: tienda.latitud + 0.001 }),
+		).toBeCloseTo(111.2, 0);
+	});
+
+	it('formatDistancia usa m bajo 1 km y km desde ahí', () => {
+		expect(formatDistancia(84.6)).toBe('85 m');
+		expect(formatDistancia(1234)).toBe('1.2 km');
 	});
 });

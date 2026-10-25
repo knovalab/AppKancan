@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { Maximize2 } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import type { LocalizacionRecordItem } from '../../hooks/useMonitoreoLocalizacion';
+import { formatDistancia } from '../../domain/ubicacion';
 import { formatDocumentNumber } from '../../utils/format';
 
 export interface MonitoreoMultiMarkerMapProps {
@@ -110,6 +111,50 @@ function createCustomPin(initials: string, color: string): L.DivIcon {
 	});
 }
 
+/** Punto de la tienda [lat, lon]; la sección agrupa por tienda, así que basta el primer registro. */
+function tiendaLatLng(
+	items: LocalizacionRecordItem[],
+): [number, number] | null {
+	const store = items[0]?.record.store_id;
+	const coords =
+		typeof store === 'object' ? store?.location?.coordinates : null;
+	return coords ? [coords[1], coords[0]] : null;
+}
+
+/** Encuadra marcaciones + tienda. */
+function encuadrar(map: L.Map, items: LocalizacionRecordItem[]) {
+	const tienda = tiendaLatLng(items);
+	const puntos: [number, number][] = items.map((it) => [it.lat, it.lon]);
+	if (tienda) puntos.push(tienda);
+
+	if (puntos.length === 1) {
+		map.setView(puntos[0], 16);
+	} else {
+		map.fitBounds(L.latLngBounds(puntos), { padding: [45, 45], maxZoom: 17 });
+	}
+}
+
+const storePin = L.divIcon({
+	className: 'multi-marker-store-pin',
+	html: `
+		<div title="Tienda" style="
+			width: 30px;
+			height: 30px;
+			background-color: #0f172a;
+			border: 2px solid #ffffff;
+			border-radius: 6px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+			font-size: 15px;
+		">🏬</div>
+	`,
+	iconSize: [30, 30],
+	iconAnchor: [15, 15],
+	popupAnchor: [0, -16],
+});
+
 export function MonitoreoMultiMarkerMap({
 	items,
 	logType,
@@ -126,13 +171,7 @@ export function MonitoreoMultiMarkerMap({
 	const fitAllMarkers = useCallback(() => {
 		const map = mapInstanceRef.current;
 		if (!map || items.length === 0) return;
-
-		if (items.length === 1) {
-			map.setView([items[0].lat, items[0].lon], 16);
-		} else {
-			const bounds = L.latLngBounds(items.map((it) => [it.lat, it.lon]));
-			map.fitBounds(bounds, { padding: [45, 45], maxZoom: 17 });
-		}
+		encuadrar(map, items);
 	}, [items]);
 
 	// Initialize and update Leaflet map and markers
@@ -165,6 +204,17 @@ export function MonitoreoMultiMarkerMap({
 
 		const newMarkers = new Map<number, L.Marker>();
 
+		const tienda = tiendaLatLng(items);
+		if (tienda) {
+			const store = items[0].record.store_id;
+			const storeName = typeof store === 'object' ? store?.name : '';
+			L.marker(tienda, { icon: storePin, zIndexOffset: -100 })
+				.addTo(map)
+				.bindPopup(
+					`<div style="font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 700; color: #0f172a;">🏬 ${escapeHtml(storeName || 'Tienda')}</div>`,
+				);
+		}
+
 		// Plot each item on the map
 		for (const item of items) {
 			const emp = item.record.employee_id;
@@ -189,6 +239,16 @@ export function MonitoreoMultiMarkerMap({
 			const icon = createCustomPin(initials, pinColor);
 			const marker = L.marker([item.lat, item.lon], { icon }).addTo(map);
 
+			// Línea marcación → tienda para ver de un vistazo qué tan lejos estuvo
+			if (tienda) {
+				L.polyline([[item.lat, item.lon], tienda], {
+					color: pinColor,
+					weight: 1.5,
+					opacity: 0.6,
+					dashArray: '4, 6',
+				}).addTo(map);
+			}
+
 			const popupContent = `
 				<div style="font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; min-width: 200px; padding: 4px 2px;">
 					<div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 2px; line-height: 1.3;">
@@ -211,6 +271,11 @@ export function MonitoreoMultiMarkerMap({
 								: ''
 						}
 					</div>
+					${
+						item.distanciaTienda != null
+							? `<div style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px;">🏬 A ${formatDistancia(item.distanciaTienda)} de la tienda</div>`
+							: ''
+					}
 					<div style="font-size: 10px; color: #94a3b8; font-family: monospace; margin-bottom: 8px;">
 						${item.lat.toFixed(5)}, ${item.lon.toFixed(5)}
 					</div>
@@ -256,13 +321,8 @@ export function MonitoreoMultiMarkerMap({
 		markersMapRef.current = newMarkers;
 		mapInstanceRef.current = map;
 
-		// Fit bounds across all pins
-		if (items.length === 1) {
-			map.setView([items[0].lat, items[0].lon], 16);
-		} else if (items.length > 1) {
-			const bounds = L.latLngBounds(items.map((it) => [it.lat, it.lon]));
-			map.fitBounds(bounds, { padding: [45, 45], maxZoom: 17 });
-		}
+		// Fit bounds across all pins (and the store)
+		encuadrar(map, items);
 
 		// Responsive resize handling (e.g. accordion open/close, screen orientation change)
 		const resizeObserver = new ResizeObserver(() => {

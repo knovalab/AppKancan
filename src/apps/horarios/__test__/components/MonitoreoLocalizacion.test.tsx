@@ -60,6 +60,7 @@ describe('MonitoreoLocalizacionCard', () => {
 		lat: 4.60971,
 		lon: -74.08175,
 		accuracy: 12,
+		distanciaTienda: null,
 		record: {
 			id: 101,
 			record_date: '2026-10-18',
@@ -90,6 +91,16 @@ describe('MonitoreoLocalizacionCard', () => {
 		expect(screen.getByText('Tienda Centro')).toBeInTheDocument();
 	});
 
+	it('shows distance to store when the store has a location', () => {
+		render(
+			<MonitoreoLocalizacionCard
+				item={{ ...mockItem, distanciaTienda: 1234 }}
+			/>,
+		);
+
+		expect(screen.getByText('A 1.2 km de la tienda')).toBeInTheDocument();
+	});
+
 	it('calls onFocusOnMap when Centrar button or card is clicked', () => {
 		const onFocusOnMap = vi.fn();
 		render(
@@ -117,6 +128,7 @@ describe('MonitoreoLocalizacionSeccion', () => {
 			lat: 4.60971,
 			lon: -74.08175,
 			accuracy: 10,
+			distanciaTienda: null,
 			record: {
 				id: 1,
 				record_date: '2026-10-18',
@@ -134,6 +146,7 @@ describe('MonitoreoLocalizacionSeccion', () => {
 			lat: 4.6098,
 			lon: -74.0819,
 			accuracy: 15,
+			distanciaTienda: null,
 			record: {
 				id: 2,
 				record_date: '2026-10-18',
@@ -194,6 +207,7 @@ describe('MonitoreoLocalizacionTiendaAccordion lazy loading', () => {
 								lat: 4.60971,
 								lon: -74.08175,
 								accuracy: 10,
+								distanciaTienda: null,
 								record: {
 									id: 1,
 									record_date: '2026-10-18',

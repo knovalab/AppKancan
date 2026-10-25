@@ -16,7 +16,10 @@ export interface TimeRecordDto {
 		last_name: string;
 		second_last_name: string | null;
 	} | null;
-	store_id: { id: number; name: string } | string | null;
+	store_id:
+		| { id: number; name: string; location?: PuntoGeo | null }
+		| string
+		| null;
 	observations: string | null;
 	photo?: string | null;
 	location?: PuntoGeo | null;

@@ -298,6 +298,7 @@ export const fetchTimeRecords = async (
 					'employee_id.second_last_name',
 					'store_id.id',
 					'store_id.name',
+					'store_id.location',
 					'observations',
 					'photo',
 					'location',
