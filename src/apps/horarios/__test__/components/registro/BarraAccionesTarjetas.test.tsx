@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BarraAccionesTarjetas } from '../../../components/registro/BarraAccionesTarjetas';
 
 describe('BarraAccionesTarjetas', () => {
@@ -39,6 +39,23 @@ describe('BarraAccionesTarjetas', () => {
 		expect(screen.getByText('Pendientes: 1')).toBeInTheDocument();
 		expect(screen.getByText('Finalizados: 1')).toBeInTheDocument();
 		expect(screen.getByText('2 de 4 expandidas')).toBeInTheDocument();
+	});
+
+	it('en modo compacto (tienda) mantiene los botones accesibles por nombre', () => {
+		const onExpandirTodas = vi.fn();
+		render(
+			<BarraAccionesTarjetas
+				{...defaultProps}
+				compacta
+				onExpandirTodas={onExpandirTodas}
+			/>,
+		);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Expandir todas' }));
+		expect(onExpandirTodas).toHaveBeenCalledTimes(1);
+		expect(
+			screen.getByRole('button', { name: 'Contraer todas' }),
+		).toBeInTheDocument();
 	});
 
 	it('llama a onContraerTodas al pulsar el botón Contraer todas', () => {
@@ -125,3 +142,43 @@ describe('BarraAccionesTarjetas', () => {
 	});
 });
 
+describe('BarraAccionesTarjetas · teléfono en vista tienda', () => {
+	const original = window.matchMedia;
+	beforeEach(() => {
+		// Todas las consultas `down(...)` coinciden: ancho de teléfono.
+		window.matchMedia = vi.fn().mockImplementation((media: string) => ({
+			matches: true,
+			media,
+			onchange: null,
+			addListener: vi.fn(),
+			removeListener: vi.fn(),
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+			dispatchEvent: () => false,
+		}));
+	});
+	afterEach(() => {
+		window.matchMedia = original;
+	});
+
+	it('chips solo con el número, conservando el nombre accesible', () => {
+		render(
+			<BarraAccionesTarjetas
+				totalEmpleados={4}
+				totalExpandidas={2}
+				totalColapsadas={2}
+				todasExpandidas={false}
+				todasColapsadas={false}
+				conteos={{ activas: 2, pendientes: 1, finalizadas: 3 }}
+				onExpandirTodas={vi.fn()}
+				onContraerTodas={vi.fn()}
+				onExpandirPorEstado={vi.fn()}
+				compacta
+			/>,
+		);
+
+		expect(screen.queryByText('En turno: 2')).not.toBeInTheDocument();
+		expect(screen.getByLabelText('En turno: 2')).toHaveTextContent('2');
+		expect(screen.getByLabelText('Finalizados: 3')).toHaveTextContent('3');
+	});
+});
