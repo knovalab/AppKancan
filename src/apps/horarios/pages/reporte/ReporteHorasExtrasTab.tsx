@@ -1,9 +1,15 @@
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import {
+	Accordion,
+	AccordionDetails,
+	AccordionSummary,
 	Alert,
+	AlertTitle,
 	Box,
 	Button,
 	CircularProgress,
+	Collapse,
 	FormControl,
 	InputLabel,
 	MenuItem,
@@ -14,12 +20,17 @@ import {
 	TableContainer,
 	TableHead,
 	TableRow,
+	Tooltip,
 	Typography,
 } from '@mui/material';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { PeriodoEstadoChip } from '../../components/horas-extras/PeriodoEstadoChip';
-import { ESTADO_PERIODO, formatoMinutos } from '../../domain/horasExtras';
+import {
+	AVISO_SOLO_LIQUIDADOS,
+	ESTADO_PERIODO,
+	formatoMinutos,
+} from '../../domain/horasExtras';
 import { useAvisos } from '../../hooks/useAvisos';
 import {
 	DIAS_ALERTA_PENDIENTE,
@@ -33,6 +44,7 @@ const fecha = (f: string) => dayjs(f).format('DD/MM/YYYY');
 const plural = (n: number, uno: string, varios: string) =>
 	`${n} ${n === 1 ? uno : varios}`;
 const head = { fontWeight: 700, color: '#1e293b', bgcolor: '#f0f7ff' };
+const tabla = { borderRadius: 2, border: '1px solid #e2e8f0', bgcolor: '#fff' };
 
 function Tarjeta({
 	titulo,
@@ -78,8 +90,10 @@ function Tarjeta({
 }
 
 /**
- * Reportes → Horas extras → Tiempo real (R1): horas **aprobadas** por periodo
- * (por vincular o liquidadas) con filtro por empresa, alertas y exportación.
+ * Reportes → Horas extras → Tiempo real (R1): horas **aprobadas** de un periodo
+ * (por vincular o liquidadas) y su detalle por tienda, con filtro por empresa y
+ * tienda. Se trabaja un periodo a la vez: la lista de todos queda plegada.
+ * Solo se exportan periodos liquidados.
  */
 export default function ReporteHorasExtrasTab() {
 	const { showSnackbar } = useAvisos();
@@ -87,9 +101,11 @@ export default function ReporteHorasExtrasTab() {
 	const [tiendaId, setTiendaId] = useState<number | ''>('');
 	const [periodoId, setPeriodoId] = useState<number | ''>('');
 	const [exportando, setExportando] = useState(false);
+	const [verAvisos, setVerAvisos] = useState(false);
 	const {
 		empresas,
 		tiendasEmpresa,
+		tiendaDe,
 		resumen,
 		actual,
 		vencidos,
@@ -105,10 +121,29 @@ export default function ReporteHorasExtrasTab() {
 		resumen.find((r) => r.periodo.id === actual?.id);
 	const liquidado = elegido?.periodo.status === ESTADO_PERIODO.liquidado;
 
+	const avisos = [
+		...(vencidos.length > 0
+			? [
+					`${plural(vencidos.length, 'periodo terminó', 'periodos terminaron')} y sigue${vencidos.length !== 1 ? 'n' : ''} sin liquidar: ${vencidos.map((p) => p.name || fecha(p.end_date)).join(', ')}.`,
+				]
+			: []),
+		...(pendientes.antiguas > 0
+			? [
+					`${plural(pendientes.antiguas, 'hora extra lleva', 'horas extras llevan')} más de ${DIAS_ALERTA_PENDIENTE} días pendiente${pendientes.antiguas !== 1 ? 's' : ''} de aprobación.`,
+				]
+			: []),
+	];
+
 	const exportar = async () => {
+		if (!elegido || !liquidado) return;
 		setExportando(true);
 		try {
-			await exportarReporteTiempoRealExcel(resumen, empresa, nombreTienda);
+			await exportarReporteTiempoRealExcel(
+				elegido,
+				tiendaDe,
+				empresa,
+				nombreTienda,
+			);
 		} catch (err) {
 			showSnackbar(
 				mensajeDeError(err, 'Error al exportar el reporte'),
@@ -202,16 +237,25 @@ export default function ReporteHorasExtrasTab() {
 							))}
 						</Select>
 					</FormControl>
-					<Button
-						variant="outlined"
-						startIcon={
-							exportando ? <CircularProgress size={16} /> : <FileDownloadIcon />
-						}
-						onClick={exportar}
-						disabled={exportando || resumen.length === 0}
-					>
-						Exportar a Excel
-					</Button>
+					{/* El span deja mostrar el tooltip con el botón deshabilitado. */}
+					<Tooltip title={elegido && !liquidado ? AVISO_SOLO_LIQUIDADOS : ''}>
+						<span>
+							<Button
+								variant="outlined"
+								startIcon={
+									exportando ? (
+										<CircularProgress size={16} />
+									) : (
+										<FileDownloadIcon />
+									)
+								}
+								onClick={exportar}
+								disabled={exportando || !liquidado}
+							>
+								Exportar a Excel
+							</Button>
+						</span>
+					</Tooltip>
 				</Box>
 			</Box>
 
@@ -220,22 +264,31 @@ export default function ReporteHorasExtrasTab() {
 					{mensajeDeError(error, 'Error al cargar el reporte de horas extras')}
 				</Alert>
 			)}
-			{vencidos.length > 0 && (
-				<Alert severity="warning" sx={{ mb: 1.5 }}>
-					{plural(vencidos.length, 'periodo terminó', 'periodos terminaron')} y
-					sigue{vencidos.length !== 1 ? 'n' : ''} sin liquidar:{' '}
-					{vencidos.map((p) => p.name || fecha(p.end_date)).join(', ')}.
-				</Alert>
-			)}
-			{pendientes.antiguas > 0 && (
-				<Alert severity="warning" sx={{ mb: 1.5 }}>
-					{plural(
-						pendientes.antiguas,
-						'hora extra lleva',
-						'horas extras llevan',
-					)}{' '}
-					más de {DIAS_ALERTA_PENDIENTE} días pendiente
-					{pendientes.antiguas !== 1 ? 's' : ''} de aprobación.
+			{avisos.length > 0 && (
+				<Alert
+					severity="warning"
+					sx={{ mb: 2 }}
+					action={
+						<Button
+							color="inherit"
+							size="small"
+							onClick={() => setVerAvisos((v) => !v)}
+							aria-expanded={verAvisos}
+						>
+							{verAvisos ? 'Ocultar' : 'Ver'}
+						</Button>
+					}
+				>
+					<AlertTitle sx={{ mb: 0 }}>
+						{plural(avisos.length, 'aviso', 'avisos')}
+					</AlertTitle>
+					<Collapse in={verAvisos}>
+						<Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2 }}>
+							{avisos.map((a) => (
+								<li key={a}>{a}</li>
+							))}
+						</Box>
+					</Collapse>
 				</Alert>
 			)}
 
@@ -277,64 +330,132 @@ export default function ReporteHorasExtrasTab() {
 							nota="no se incluyen"
 						/>
 					</Box>
+
+					<Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+						¿Qué tiendas suman las horas de este periodo?
+					</Typography>
+					{elegido.tiendas.length === 0 ? (
+						<Alert severity="info" sx={{ mb: 3 }}>
+							No hay horas aprobadas en este periodo
+							{empresa || tiendaId !== '' ? ' con estos filtros' : ''}.
+						</Alert>
+					) : (
+						<TableContainer sx={{ ...tabla, mb: 3 }}>
+							<Table size="small" aria-label="Horas extras por tienda">
+								<TableHead>
+									<TableRow>
+										{[
+											'Tienda',
+											'Empresa',
+											'Horas del periodo',
+											'Rezagadas',
+											'Total',
+										].map((c) => (
+											<TableCell key={c} sx={head}>
+												{c}
+											</TableCell>
+										))}
+									</TableRow>
+								</TableHead>
+								<TableBody>
+									{elegido.tiendas.map((t) => {
+										const info = tiendaDe(t.storeId);
+										return (
+											<TableRow key={t.storeId ?? 'sin-tienda'} hover>
+												<TableCell sx={{ fontWeight: 600 }}>
+													{info.name}
+												</TableCell>
+												<TableCell>{info.company || '--'}</TableCell>
+												<TableCell>
+													{formatoMinutos(t.delPeriodo.minutos)}
+												</TableCell>
+												<TableCell>
+													{formatoMinutos(t.rezagadas.minutos)}
+												</TableCell>
+												<TableCell sx={{ fontWeight: 700 }}>
+													{formatoMinutos(t.total.minutos)}
+												</TableCell>
+											</TableRow>
+										);
+									})}
+								</TableBody>
+							</Table>
+						</TableContainer>
+					)}
 				</>
 			)}
 
 			{resumen.length > 0 && (
-				<TableContainer
-					sx={{ borderRadius: 2, border: '1px solid #e2e8f0', bgcolor: '#fff' }}
+				<Accordion
+					disableGutters
+					elevation={0}
+					sx={{ ...tabla, '&::before': { display: 'none' } }}
 				>
-					<Table size="small" aria-label="Horas extras por periodo">
-						<TableHead>
-							<TableRow>
-								{[
-									'Periodo',
-									'Fechas',
-									'Estado',
-									'Horas del periodo',
-									'Rezagadas',
-									'Total',
-									'Liquidado el',
-								].map((c) => (
-									<TableCell key={c} sx={head}>
-										{c}
-									</TableCell>
-								))}
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{resumen.map((r) => (
-								<TableRow
-									key={r.periodo.id}
-									hover
-									selected={r.periodo.id === elegido?.periodo.id}
-								>
-									<TableCell sx={{ fontWeight: 600 }}>
-										{r.periodo.name || 'Sin nombre'}
-									</TableCell>
-									<TableCell sx={{ whiteSpace: 'nowrap' }}>
-										{fecha(r.periodo.start_date)} al {fecha(r.periodo.end_date)}
-									</TableCell>
-									<TableCell>
-										<PeriodoEstadoChip estado={r.periodo.status} />
-									</TableCell>
-									<TableCell>{formatoMinutos(r.delPeriodo.minutos)}</TableCell>
-									<TableCell>{formatoMinutos(r.rezagadas.minutos)}</TableCell>
-									<TableCell sx={{ fontWeight: 700 }}>
-										{formatoMinutos(r.total.minutos)}
-									</TableCell>
-									<TableCell sx={{ whiteSpace: 'nowrap' }}>
-										{r.periodo.liquidacion_at
-											? dayjs(r.periodo.liquidacion_at).format(
-													'DD/MM/YYYY HH:mm',
-												)
-											: '--'}
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</TableContainer>
+					<AccordionSummary expandIcon={<ExpandMoreIcon />}>
+						<Typography sx={{ fontWeight: 700 }}>
+							Todos los periodos ({resumen.length})
+						</Typography>
+					</AccordionSummary>
+					<AccordionDetails sx={{ p: 0 }}>
+						<TableContainer>
+							<Table size="small" aria-label="Horas extras por periodo">
+								<TableHead>
+									<TableRow>
+										{[
+											'Periodo',
+											'Fechas',
+											'Estado',
+											'Horas del periodo',
+											'Rezagadas',
+											'Total',
+											'Liquidado el',
+										].map((c) => (
+											<TableCell key={c} sx={head}>
+												{c}
+											</TableCell>
+										))}
+									</TableRow>
+								</TableHead>
+								<TableBody>
+									{resumen.map((r) => (
+										<TableRow
+											key={r.periodo.id}
+											hover
+											selected={r.periodo.id === elegido?.periodo.id}
+										>
+											<TableCell sx={{ fontWeight: 600 }}>
+												{r.periodo.name || 'Sin nombre'}
+											</TableCell>
+											<TableCell sx={{ whiteSpace: 'nowrap' }}>
+												{fecha(r.periodo.start_date)} al{' '}
+												{fecha(r.periodo.end_date)}
+											</TableCell>
+											<TableCell>
+												<PeriodoEstadoChip estado={r.periodo.status} />
+											</TableCell>
+											<TableCell>
+												{formatoMinutos(r.delPeriodo.minutos)}
+											</TableCell>
+											<TableCell>
+												{formatoMinutos(r.rezagadas.minutos)}
+											</TableCell>
+											<TableCell sx={{ fontWeight: 700 }}>
+												{formatoMinutos(r.total.minutos)}
+											</TableCell>
+											<TableCell sx={{ whiteSpace: 'nowrap' }}>
+												{r.periodo.liquidacion_at
+													? dayjs(r.periodo.liquidacion_at).format(
+															'DD/MM/YYYY HH:mm',
+														)
+													: '--'}
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+						</TableContainer>
+					</AccordionDetails>
+				</Accordion>
 			)}
 		</Box>
 	);

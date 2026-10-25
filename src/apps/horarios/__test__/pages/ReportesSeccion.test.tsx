@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import type { Rol } from '@/apps/horarios/navigation/secciones';
+import { type Rol, SECCIONES } from '@/apps/horarios/navigation/secciones';
 
 let roles: Rol[] = [];
 vi.mock('@/apps/horarios/hooks/useHorariosLayout', () => ({
@@ -39,6 +39,17 @@ describe('Reportes: vistas por rol', () => {
 		montar(['areaManager', 'report']);
 		expect(screen.getByText('REPORTE ASISTENCIA')).toBeInTheDocument();
 		expect(screen.getByRole('tab', { name: 'Horas extras' })).toBeInTheDocument();
+	});
+
+	it('gerencia: solo Horas extras (ni Asistencia ni ?vista=asistencia)', async () => {
+		montar(['gerencia'], '/horarios/reportes?vista=asistencia');
+		expect(await screen.findByText('REPORTE HORAS EXTRAS')).toBeInTheDocument();
+		expect(screen.queryByText('REPORTE ASISTENCIA')).not.toBeInTheDocument();
+		expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+	});
+
+	it('gerencia: Reportes es la única sección que puede ver', () => {
+		expect(SECCIONES.filter((s) => s.roles.includes('gerencia')).map((s) => s.path)).toEqual(['reportes']);
 	});
 
 	it('report + comercial: las dos vistas; ?vista= elige', async () => {

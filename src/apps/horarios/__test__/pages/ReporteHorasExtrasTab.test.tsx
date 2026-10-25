@@ -23,7 +23,7 @@ vi.mock('@/apps/horarios/api/directus/read', () => ({
 	],
 }));
 vi.mock('@/apps/horarios/utils/exportarReporteHorasExtras', () => ({
-	exportarReporteTiempoRealExcel: (r: unknown, e: unknown, t: unknown) => exportar(r, e, t),
+	exportarReporteTiempoRealExcel: (r: unknown, tiendaDe: unknown, e: unknown, t: unknown) => exportar(r, tiendaDe, e, t),
 }));
 vi.mock('@/apps/horarios/hooks/useAvisos', () => ({ useAvisos: () => ({ showSnackbar: vi.fn() }) }));
 vi.mock('@/apps/horarios/utils/timeSync', () => ({ getRealColombiaTime: () => dayjs('2026-10-28T10:00:00') }));
@@ -58,17 +58,36 @@ const montar = async () => {
 	return screen.findByText('Horas extras en tiempo real');
 };
 const tarjeta = (titulo: string) => screen.getByText(titulo).parentElement!.textContent;
+/** "Todos los periodos" está plegado: se abre para leer la tabla. */
+const tablaPeriodos = () => {
+	fireEvent.click(screen.getByRole('button', { name: /Todos los periodos/ }));
+	return screen.getByRole('table', { name: 'Horas extras por periodo' });
+};
+const filasTiendas = () =>
+	within(screen.getByRole('table', { name: 'Horas extras por tienda' }))
+		.getAllByRole('row')
+		.slice(1)
+		.map((r) => within(r).getAllByRole('cell').map((c) => c.textContent));
+const elegirPeriodo = (nombre: RegExp) => {
+	fireEvent.mouseDown(screen.getByLabelText('Periodo'));
+	fireEvent.click(screen.getByRole('option', { name: nombre }));
+};
+const botonExportar = () => screen.getByRole('button', { name: 'Exportar a Excel' });
 
 describe('Reportes · Horas extras en tiempo real', () => {
-	it('abre en el periodo actual con tarjetas, alertas y tabla por periodo', async () => {
+	it('abre en el periodo actual con tarjetas, avisos agrupados y todos los periodos plegados', async () => {
 		await montar();
 		// Periodo actual: el preliquidado más reciente (hoy cae después de todos).
 		expect(tarjeta('Aprobadas por vincular')).toContain('1 h 30 min');
 		expect(tarjeta('Pendientes de aprobación')).toContain('3 h');
-		expect(screen.getByText(/1 periodo terminó y sigue sin liquidar: Oct 2/)).toBeInTheDocument();
-		expect(screen.getByText(/2 horas extras llevan más de 7 días pendientes/)).toBeInTheDocument();
+		// Los avisos van en un solo bloque, plegado.
+		expect(screen.getByText('2 avisos')).toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Ver' }));
+		expect(screen.getByText(/1 periodo terminó y sigue sin liquidar: Oct 2/)).toBeVisible();
+		expect(screen.getByText(/2 horas extras llevan más de 7 días pendientes/)).toBeVisible();
 
-		const fila = within(screen.getByRole('table', { name: 'Horas extras por periodo' })).getByRole('row', { name: /Oct 1/ });
+		expect(screen.queryByRole('table', { name: 'Horas extras por periodo' })).toBeNull();
+		const fila = within(tablaPeriodos()).getByRole('row', { name: /Oct 1/ });
 		expect(within(fila).getAllByRole('cell').map((c) => c.textContent)).toEqual([
 			'Oct 1',
 			'01/10/2026 al 10/10/2026',
@@ -82,17 +101,48 @@ describe('Reportes · Horas extras en tiempo real', () => {
 		expect(agregadoHorasExtras).toHaveBeenCalledWith({ estados: ['aprobada'], conPeriodo: true }, ['period_id', 'store_id', 'work_date']);
 	});
 
+	it('detalle por tienda del periodo elegido: suma lo mismo que el total', async () => {
+		await montar();
+		expect(filasTiendas()).toEqual([['Ipiales', 'Empresa A', '1 h 30 min', '0 min', '1 h 30 min']]);
+
+		elegirPeriodo(/Oct 1/);
+		expect(tarjeta('Total liquidado')).toContain('2 h 30 min');
+		expect(filasTiendas()).toEqual([
+			['Ipiales', 'Empresa A', '2 h', '0 min', '2 h'],
+			['Pasto', 'Empresa B', '0 min', '30 min', '30 min'],
+		]);
+	});
+
+	it('solo exporta periodos liquidados', async () => {
+		await montar();
+		// Periodo actual: preliquidado.
+		expect(botonExportar()).toBeDisabled();
+
+		elegirPeriodo(/Oct 1/);
+		expect(botonExportar()).toBeEnabled();
+		fireEvent.click(botonExportar());
+		await waitFor(() => expect(exportar).toHaveBeenCalledTimes(1));
+		const [r, tiendaDe] = exportar.mock.calls[0];
+		expect(r.periodo.id).toBe(1);
+		expect(r.tiendas.map((t: { storeId: number }) => t.storeId)).toEqual([26, 30]);
+		expect(tiendaDe(30)).toMatchObject({ name: 'Pasto', company: 'Empresa B' });
+	});
+
 	it('filtra por empresa y exporta lo filtrado', async () => {
 		await montar();
 		fireEvent.mouseDown(screen.getByLabelText('Empresa'));
 		fireEvent.click(screen.getByRole('option', { name: 'Empresa B' }));
 		await waitFor(() => expect(tarjeta('Pendientes de aprobación')).toContain('2 h'));
-		const fila = within(screen.getByRole('table', { name: 'Horas extras por periodo' })).getByRole('row', { name: /Oct 1/ });
+		// El preliquidado no tiene horas de Pasto.
+		expect(screen.getByText('No hay horas aprobadas en este periodo con estos filtros.')).toBeInTheDocument();
+		const fila = within(tablaPeriodos()).getByRole('row', { name: /Oct 1/ });
 		expect(within(fila).getAllByRole('cell')[5].textContent).toBe('30 min'); // solo la rezagada de Pasto
 
-		fireEvent.click(screen.getByRole('button', { name: 'Exportar a Excel' }));
+		elegirPeriodo(/Oct 1/);
+		expect(filasTiendas()).toEqual([['Pasto', 'Empresa B', '0 min', '30 min', '30 min']]);
+		fireEvent.click(botonExportar());
 		await waitFor(() => expect(exportar).toHaveBeenCalledTimes(1));
-		expect(exportar.mock.calls[0][1]).toBe('Empresa B');
+		expect(exportar.mock.calls[0].slice(2)).toEqual(['Empresa B', '']);
 	});
 
 	it('filtro de tienda: opciones según la empresa y totales solo de esa tienda', async () => {
@@ -103,11 +153,12 @@ describe('Reportes · Horas extras en tiempo real', () => {
 		expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['Todas las tiendas', 'Ipiales']);
 		fireEvent.click(screen.getByRole('option', { name: 'Ipiales' }));
 		await waitFor(() => expect(tarjeta('Pendientes de aprobación')).toContain('1 h'));
-		const fila = within(screen.getByRole('table', { name: 'Horas extras por periodo' })).getByRole('row', { name: /Oct 1/ });
+		const fila = within(tablaPeriodos()).getByRole('row', { name: /Oct 1/ });
 		expect(within(fila).getAllByRole('cell')[5].textContent).toBe('2 h');
 
-		fireEvent.click(screen.getByRole('button', { name: 'Exportar a Excel' }));
+		elegirPeriodo(/Oct 1/);
+		fireEvent.click(botonExportar());
 		await waitFor(() => expect(exportar).toHaveBeenCalledTimes(1));
-		expect(exportar.mock.calls[0].slice(1)).toEqual(['Empresa A', 'Ipiales']);
+		expect(exportar.mock.calls[0].slice(2)).toEqual(['Empresa A', 'Ipiales']);
 	});
 });

@@ -16,7 +16,8 @@ export type Rol =
 	| 'areaManager'
 	| 'report'
 	| 'comercial'
-	| 'nomina';
+	| 'nomina'
+	| 'gerencia';
 
 export type ModoTienda =
 	| 'ninguno' // no se muestra
@@ -117,7 +118,7 @@ export const SECCIONES: readonly Seccion[] = [
 		titulo: 'Reporte de Asistencia',
 		subtitulo: 'Exporta informes y visualiza registros detallados',
 		icon: FileDownloadIcon,
-		roles: ['report', 'areaManager', 'comercial', 'nomina'],
+		roles: ['report', 'areaManager', 'comercial', 'nomina', 'gerencia'],
 		tienda: 'una-o-todas',
 		selectorEnHeader: false,
 		subsecciones: [
@@ -177,6 +178,7 @@ export const INICIO_POR_ROL: Record<Rol, string> = {
 	report: 'reportes',
 	comercial: 'horas-extras',
 	nomina: 'horas-extras',
+	gerencia: 'reportes',
 };
 
 /** Orden de prioridad para decidir el rol principal cuando hay varios. */
@@ -187,6 +189,7 @@ export const PRIORIDAD_ROL: readonly Rol[] = [
 	'report',
 	'comercial',
 	'nomina',
+	'gerencia',
 ];
 
 export const buscarSeccion = (path: string | undefined): Seccion | null =>

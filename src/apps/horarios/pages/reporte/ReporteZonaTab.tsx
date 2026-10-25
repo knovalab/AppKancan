@@ -15,12 +15,14 @@ import {
 	InputLabel,
 	MenuItem,
 	Select,
+	Tab,
 	Table,
 	TableBody,
 	TableCell,
 	TableContainer,
 	TableHead,
 	TableRow,
+	Tabs,
 	Typography,
 } from '@mui/material';
 import { BarChart } from '@mui/x-charts/BarChart';
@@ -115,8 +117,10 @@ export interface ReporteZonaTabProps {
 
 /**
  * Reportes → Horas extras → Por zona (R2 + R4): horas **aprobadas** de la zona
- * en un rango, ranking de tiendas con variación, día de la semana, top de
- * personas y detalle desplegable tienda → persona → días. Exporta a Excel.
+ * en un rango. Dos sub-pestañas para no saturar:
+ * - **Resumen**: KPIs, día de la semana y top de personas ("cómo va la zona").
+ * - **Tiendas**: ranking con variación y despliegue tienda → personas → días.
+ * Exporta a Excel (con registros y horas por persona, que no caben en pantalla).
  */
 export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 	const { showSnackbar } = useAvisos();
@@ -127,7 +131,10 @@ export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 	const [fechaFin, setFechaFin] = useState<Dayjs | null>(() => hoy);
 	const [zonaId, setZonaId] = useState(TODAS);
 	const [tiendaId, setTiendaId] = useState<number | ''>('');
+	const [vista, setVista] = useState<'resumen' | 'tiendas'>('resumen');
 	const [abiertas, setAbiertas] = useState<ReadonlySet<number>>(new Set());
+	// Personas con los días desplegados: `${storeId}-${empleadoId}`.
+	const [conDias, setConDias] = useState<ReadonlySet<string>>(new Set());
 	const [exportando, setExportando] = useState(false);
 
 	// También para el jefe: da el nombre de la zona de sus tiendas.
@@ -172,13 +179,17 @@ export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 			: `${zonaTexto}, tienda ${nombreTienda(tiendaId)}`;
 	const persona = (id: number) =>
 		personas.get(id) ?? { nombre: `Empleado ${id}`, documento: '' };
-	const alternar = (id: number) =>
-		setAbiertas((prev) => {
-			const sig = new Set(prev);
-			if (sig.has(id)) sig.delete(id);
-			else sig.add(id);
-			return sig;
-		});
+	const alternarEn =
+		<T,>(set: (f: (prev: ReadonlySet<T>) => ReadonlySet<T>) => void) =>
+		(id: T) =>
+			set((prev) => {
+				const sig = new Set(prev);
+				if (sig.has(id)) sig.delete(id);
+				else sig.add(id);
+				return sig;
+			});
+	const alternar = alternarEn(setAbiertas);
+	const alternarDias = alternarEn(setConDias);
 
 	const exportar = async () => {
 		setExportando(true);
@@ -223,23 +234,23 @@ export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 						{formatoMinutos(t.minutos)}
 					</TableCell>
 					<TableCell>{pct(t.porcentaje)}</TableCell>
-					<TableCell>{t.registros}</TableCell>
 					<TableCell>{t.personas.length}</TableCell>
-					<TableCell>
-						{t.minutosPorPersona == null
-							? '--'
-							: formatoMinutos(Math.round(t.minutosPorPersona))}
-					</TableCell>
 					<TableCell>
 						<Variacion v={t.variacion} />
 					</TableCell>
 				</TableRow>
 				<TableRow>
 					<TableCell
-						colSpan={8}
+						colSpan={6}
 						sx={{ py: 0, borderBottom: abierta ? undefined : 0 }}
 					>
 						<Collapse in={abierta} unmountOnExit>
+							<Typography variant="body2" sx={{ color: '#64748b', mt: 1 }}>
+								{t.registros} {t.registros === 1 ? 'registro' : 'registros'} ·{' '}
+								{t.minutosPorPersona == null
+									? 'sin plantilla activa'
+									: `${formatoMinutos(Math.round(t.minutosPorPersona))} por persona de plantilla`}
+							</Typography>
 							<Table
 								size="small"
 								aria-label={`Personas de ${nombreTienda(t.storeId)}`}
@@ -265,28 +276,61 @@ export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 								<TableBody>
 									{t.personas.map((p) => {
 										const { nombre, documento } = persona(p.empleadoId);
+										const clave = `${t.storeId}-${p.empleadoId}`;
+										const verDias = conDias.has(clave);
+										const nDias = `${p.dias.length} ${p.dias.length === 1 ? 'día' : 'días'}`;
 										return (
-											<TableRow key={p.empleadoId}>
-												<TableCell sx={{ fontWeight: 600 }}>{nombre}</TableCell>
-												<TableCell>{documento || '--'}</TableCell>
-												<TableCell sx={{ whiteSpace: 'nowrap' }}>
-													{formatoMinutos(p.minutos)}
-												</TableCell>
-												<TableCell>
-													<Box
-														sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}
-													>
-														{p.dias.map((d) => (
-															<Chip
-																key={d.fecha}
-																size="small"
-																variant="outlined"
-																label={`${dayjs(d.fecha).format('ddd DD/MM')}: ${formatoMinutos(d.minutos)}`}
-															/>
-														))}
-													</Box>
-												</TableCell>
-											</TableRow>
+											<Fragment key={p.empleadoId}>
+												<TableRow>
+													<TableCell sx={{ fontWeight: 600 }}>
+														{nombre}
+													</TableCell>
+													<TableCell>{documento || '--'}</TableCell>
+													<TableCell sx={{ whiteSpace: 'nowrap' }}>
+														{formatoMinutos(p.minutos)}
+													</TableCell>
+													<TableCell>
+														{/* Los días se pliegan: una persona con muchos no llena la pantalla. */}
+														<Button
+															size="small"
+															onClick={() => alternarDias(clave)}
+															aria-expanded={verDias}
+															aria-label={`${verDias ? 'Ocultar' : 'Ver'} días de ${nombre}`}
+															endIcon={
+																verDias ? (
+																	<KeyboardArrowDownIcon />
+																) : (
+																	<KeyboardArrowRightIcon />
+																)
+															}
+														>
+															{nDias}
+														</Button>
+													</TableCell>
+												</TableRow>
+												{verDias && (
+													<TableRow>
+														<TableCell colSpan={4} sx={{ pt: 0 }}>
+															<Box
+																sx={{
+																	display: 'flex',
+																	flexWrap: 'wrap',
+																	gap: 0.5,
+																}}
+															>
+																{p.dias.map((d) => (
+																	<Chip
+																		key={d.fecha}
+																		size="small"
+																		variant="outlined"
+																		label={`${dayjs(d.fecha).format('ddd DD/MM')}: ${formatoMinutos(d.minutos)}`}
+																	/>
+																))}
+															</Box>
+														</TableCell>
+													</TableRow>
+												)}
+											</Fragment>
 										);
 									})}
 								</TableBody>
@@ -427,140 +471,165 @@ export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 				</Alert>
 			) : (
 				<>
-					<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 3 }}>
-						<Kpi
-							titulo="Horas extras"
-							valor={formatoMinutos(reporte.total.minutos)}
-						/>
-						<Kpi titulo="Registros" valor={String(reporte.total.registros)} />
-						<Kpi
-							titulo="Personas con horas"
-							valor={String(reporte.total.personas)}
-						/>
-						<Kpi
-							titulo="Horas por persona"
-							valor={
-								reporte.total.minutosPorPersona == null
-									? '--'
-									: formatoMinutos(Math.round(reporte.total.minutosPorPersona))
-							}
-							nota="sobre la plantilla activa"
-						/>
-					</Box>
-
-					<Box
-						sx={{
-							display: 'grid',
-							gridTemplateColumns: { xs: '1fr', md: '3fr 2fr' },
-							gap: 2,
-							mb: 3,
-						}}
+					<Tabs
+						value={vista}
+						onChange={(_, v: 'resumen' | 'tiendas') => setVista(v)}
+						aria-label="Vista del reporte por zona"
+						sx={{ mb: 2, borderBottom: '1px solid #e2e8f0' }}
 					>
-						<Box
-							sx={{
-								p: 2,
-								borderRadius: 2,
-								border: '1px solid #e2e8f0',
-								bgcolor: '#f8fafc',
-							}}
-						>
-							<Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-								Horas por día de la semana
-							</Typography>
-							<BarChart
-								height={240}
-								xAxis={[{ scaleType: 'band', data: DIAS_SEMANA }]}
-								series={[
-									{
-										data: reporte.porDiaSemana.map(
-											(m) => Math.round((m / 60) * 10) / 10,
-										),
-										label: 'Horas',
-										color: '#004680',
-										valueFormatter: (v) => `${v ?? 0} h`,
-									},
-								]}
-								hideLegend
-							/>
-						</Box>
-						<Box
-							sx={{
-								p: 2,
-								borderRadius: 2,
-								border: '1px solid #e2e8f0',
-								bgcolor: '#f8fafc',
-							}}
-						>
-							<Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-								Personas con más horas
-							</Typography>
-							<Box
-								component="ol"
-								sx={{ m: 0, pl: 2.5 }}
-								aria-label="Personas con más horas"
-							>
-								{reporte.topPersonas.map((p) => (
-									<Box
-										component="li"
-										key={p.empleadoId}
-										sx={{
-											py: 0.5,
-											display: 'flex',
-											justifyContent: 'space-between',
-											gap: 1,
-										}}
-									>
-										<Typography variant="body2" noWrap>
-											{persona(p.empleadoId).nombre}
-											<Typography
-												component="span"
-												variant="caption"
-												sx={{ color: '#94a3b8', ml: 1 }}
-											>
-												{p.tiendas.map(nombreTienda).join(', ')}
-											</Typography>
-										</Typography>
-										<Typography
-											variant="body2"
-											sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}
-										>
-											{formatoMinutos(p.minutos)}
-										</Typography>
-									</Box>
-								))}
+						<Tab value="resumen" label="Resumen" />
+						<Tab
+							value="tiendas"
+							label={`Tiendas (${reporte.tiendas.length})`}
+						/>
+					</Tabs>
+					{vista === 'resumen' ? (
+						<>
+							<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 3 }}>
+								<Kpi
+									titulo="Horas extras"
+									valor={formatoMinutos(reporte.total.minutos)}
+								/>
+								<Kpi
+									titulo="Registros"
+									valor={String(reporte.total.registros)}
+								/>
+								<Kpi
+									titulo="Personas con horas"
+									valor={String(reporte.total.personas)}
+								/>
+								<Kpi
+									titulo="Horas por persona"
+									valor={
+										reporte.total.minutosPorPersona == null
+											? '--'
+											: formatoMinutos(
+													Math.round(reporte.total.minutosPorPersona),
+												)
+									}
+									nota="sobre la plantilla activa"
+								/>
 							</Box>
-						</Box>
-					</Box>
 
-					<TableContainer
-						sx={{
-							borderRadius: 2,
-							border: '1px solid #e2e8f0',
-							bgcolor: '#fff',
-						}}
-					>
-						<Table size="small" aria-label="Horas extras por tienda">
-							<TableHead>
-								<TableRow>
-									<TableCell sx={head} />
-									{[
-										'Tienda',
-										'Horas',
-										'% zona',
-										'Registros',
-										'Personas',
-										'Horas por persona',
-										'Variación',
-									].map((c) => (
-										<TableCell key={c} sx={head}>
-											{c}
-										</TableCell>
-									))}
-								</TableRow>
-							</TableHead>
-							<TableBody>{reporte.tiendas.map(filaTienda)}</TableBody>
-						</Table>
-					</TableContainer>
+							<Box
+								sx={{
+									display: 'grid',
+									gridTemplateColumns: { xs: '1fr', md: '3fr 2fr' },
+									gap: 2,
+									mb: 3,
+								}}
+							>
+								<Box
+									sx={{
+										p: 2,
+										borderRadius: 2,
+										border: '1px solid #e2e8f0',
+										bgcolor: '#f8fafc',
+									}}
+								>
+									<Typography
+										variant="subtitle1"
+										sx={{ fontWeight: 700, mb: 1 }}
+									>
+										¿Qué días de la semana suman más horas?
+									</Typography>
+									<BarChart
+										height={240}
+										xAxis={[{ scaleType: 'band', data: DIAS_SEMANA }]}
+										series={[
+											{
+												data: reporte.porDiaSemana.map(
+													(m) => Math.round((m / 60) * 10) / 10,
+												),
+												label: 'Horas',
+												color: '#004680',
+												valueFormatter: (v) => `${v ?? 0} h`,
+											},
+										]}
+										hideLegend
+									/>
+								</Box>
+								<Box
+									sx={{
+										p: 2,
+										borderRadius: 2,
+										border: '1px solid #e2e8f0',
+										bgcolor: '#f8fafc',
+									}}
+								>
+									<Typography
+										variant="subtitle1"
+										sx={{ fontWeight: 700, mb: 1 }}
+									>
+										¿Quién suma más horas?
+									</Typography>
+									<Box
+										component="ol"
+										sx={{ m: 0, pl: 2.5 }}
+										aria-label="Personas con más horas"
+									>
+										{reporte.topPersonas.map((p) => (
+											<Box
+												component="li"
+												key={p.empleadoId}
+												sx={{
+													py: 0.5,
+													display: 'flex',
+													justifyContent: 'space-between',
+													gap: 1,
+												}}
+											>
+												<Typography variant="body2" noWrap>
+													{persona(p.empleadoId).nombre}
+													<Typography
+														component="span"
+														variant="caption"
+														sx={{ color: '#94a3b8', ml: 1 }}
+													>
+														{p.tiendas.map(nombreTienda).join(', ')}
+													</Typography>
+												</Typography>
+												<Typography
+													variant="body2"
+													sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}
+												>
+													{formatoMinutos(p.minutos)}
+												</Typography>
+											</Box>
+										))}
+									</Box>
+								</Box>
+							</Box>
+						</>
+					) : (
+						<TableContainer
+							sx={{
+								borderRadius: 2,
+								border: '1px solid #e2e8f0',
+								bgcolor: '#fff',
+							}}
+						>
+							<Table size="small" aria-label="Horas extras por tienda">
+								<TableHead>
+									<TableRow>
+										<TableCell sx={head} />
+										{[
+											'Tienda',
+											'Horas',
+											'% de la zona',
+											'Personas',
+											'Variación',
+										].map((c) => (
+											<TableCell key={c} sx={head}>
+												{c}
+											</TableCell>
+										))}
+									</TableRow>
+								</TableHead>
+								<TableBody>{reporte.tiendas.map(filaTienda)}</TableBody>
+							</Table>
+						</TableContainer>
+					)}
 				</>
 			)}
 		</Box>

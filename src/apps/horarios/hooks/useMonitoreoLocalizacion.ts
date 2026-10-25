@@ -3,7 +3,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 import { fetchTimeRecords } from '../api/directus/read';
 import { LOG_TYPE } from '../domain/registro';
-import { coordenadasDe } from '../domain/ubicacion';
+import { coordenadasDe, distanciaMetros } from '../domain/ubicacion';
 import type { TimeRecordDto } from '../interfaces/api/timeRecords';
 import type { Tienda } from '../interfaces/tiendas';
 
@@ -18,6 +18,8 @@ export interface LocalizacionRecordItem {
 	lat: number;
 	lon: number;
 	accuracy: number | null;
+	/** Metros entre la marcación y la tienda; null si la tienda no tiene ubicación. */
+	distanciaTienda: number | null;
 }
 
 export interface LocalizacionLogTypeSection {
@@ -141,11 +143,22 @@ export function useMonitoreoLocalizacion({
 				}
 			}
 
+			const tiendaPunto =
+				typeof record.store_id === 'object'
+					? record.store_id?.location?.coordinates
+					: undefined;
+
 			result.push({
 				record,
 				lat,
 				lon,
 				accuracy: record.accuracy ?? null,
+				distanciaTienda: tiendaPunto
+					? distanciaMetros(
+							{ latitud: lat, longitud: lon },
+							{ latitud: tiendaPunto[1], longitud: tiendaPunto[0] },
+						)
+					: null,
 			});
 		}
 
@@ -285,4 +298,3 @@ export function useMonitoreoLocalizacion({
 		totalRecords,
 	};
 }
-

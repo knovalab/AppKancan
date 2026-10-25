@@ -17,6 +17,15 @@ export interface ResumenPeriodo<P extends RangoPeriodo = RangoPeriodo> {
 	/** Con fecha anterior al inicio (pagadas o por pagar en este periodo). */
 	rezagadas: Totales;
 	total: Totales;
+	/** Las mismas horas por tienda trabajada (más horas primero; sin tienda: `null`). */
+	tiendas: TotalesTienda[];
+}
+
+export interface TotalesTienda {
+	storeId: number | null;
+	delPeriodo: Totales;
+	rezagadas: Totales;
+	total: Totales;
 }
 
 const cero = (): Totales => ({ registros: 0, minutos: 0 });
@@ -29,6 +38,7 @@ const sumar = (t: Totales, registros: number, minutos: number) => {
  * Totales por periodo para el reporte en tiempo real. Solo **aprobadas**:
  * - Liquidado: lo vinculado (`vinculadas`, ya agregado por periodo, tienda y día).
  * - Preliquidado: lo que se vincularía hoy (`porPagar`, con la misma regla que Periodos).
+ *   Cada fila cuenta `registros` (si viene agregada) o 1.
  * `incluirTienda` aplica el filtro de empresa.
  */
 export function resumenPorPeriodo<P extends RangoPeriodo>(
@@ -46,6 +56,7 @@ export function resumenPorPeriodo<P extends RangoPeriodo>(
 		period_id?: unknown;
 		minutes: number;
 		store_id: unknown;
+		registros?: number;
 	}[],
 	tiendaDe: (h: { store_id: unknown }) => number | null,
 	incluirTienda: (storeId: number | null) => boolean,
@@ -54,17 +65,34 @@ export function resumenPorPeriodo<P extends RangoPeriodo>(
 	return periodos.map((periodo) => {
 		const delPeriodo = cero();
 		const rezagadas = cero();
+		const porTienda = new Map<number | null, TotalesTienda>();
+		const sumarEn = (
+			rezagada: boolean,
+			storeId: number | null,
+			registros: number,
+			minutos: number,
+		) => {
+			let t = porTienda.get(storeId);
+			if (!t) {
+				t = { storeId, delPeriodo: cero(), rezagadas: cero(), total: cero() };
+				porTienda.set(storeId, t);
+			}
+			sumar(rezagada ? rezagadas : delPeriodo, registros, minutos);
+			sumar(rezagada ? t.rezagadas : t.delPeriodo, registros, minutos);
+			sumar(t.total, registros, minutos);
+		};
 		if (periodo.status === ESTADO_PERIODO.liquidado) {
 			for (const v of vinculadas) {
 				if (v.periodoId !== periodo.id || !incluirTienda(v.storeId)) continue;
-				const destino =
-					v.fecha && v.fecha < periodo.start_date ? rezagadas : delPeriodo;
-				sumar(destino, v.registros, v.minutos);
+				const rezagada = !!v.fecha && v.fecha < periodo.start_date;
+				sumarEn(rezagada, v.storeId, v.registros, v.minutos);
 			}
 		} else {
 			const c = clasificarParaPeriodo(porPagarFiltradas, periodo, periodos);
-			for (const h of c.delPeriodo) sumar(delPeriodo, 1, h.minutes);
-			for (const h of c.rezagadas) sumar(rezagadas, 1, h.minutes);
+			for (const h of c.delPeriodo)
+				sumarEn(false, tiendaDe(h), h.registros ?? 1, h.minutes);
+			for (const h of c.rezagadas)
+				sumarEn(true, tiendaDe(h), h.registros ?? 1, h.minutes);
 		}
 		return {
 			periodo,
@@ -74,6 +102,9 @@ export function resumenPorPeriodo<P extends RangoPeriodo>(
 				registros: delPeriodo.registros + rezagadas.registros,
 				minutos: delPeriodo.minutos + rezagadas.minutos,
 			},
+			tiendas: [...porTienda.values()].sort(
+				(a, b) => b.total.minutos - a.total.minutos,
+			),
 		};
 	});
 }
@@ -226,6 +257,146 @@ export function reporteZona(
 		porDiaSemana,
 		topPersonas: [...personasZona.values()].sort(porMinutos).slice(0, topN),
 	};
+}
+
+const variacion = (ahora: number, antes: number) =>
+	antes ? (ahora - antes) / antes : null;
+// getDay(): 0 = domingo → lunes primero. Mediodía para no cruzar de día por zona horaria.
+const diaSemana = (fecha: string) =>
+	(new Date(`${fecha}T12:00:00`).getDay() + 6) % 7;
+
+export interface ZonaGerencia extends Totales {
+	/** `null` = tiendas sin zona. */
+	zona: string | null;
+	tiendas: number;
+	/** Minutos por día de la semana, lunes a domingo (mapa de calor). */
+	porDiaSemana: number[];
+	porcentaje: number;
+	variacion: number | null;
+}
+
+export interface TiendaGerencia extends Totales {
+	storeId: number;
+	zona: string | null;
+	porcentaje: number;
+	variacion: number | null;
+}
+
+export interface ReporteGerencia {
+	total: Totales & { variacion: number | null };
+	/** Más horas primero. */
+	zonas: ZonaGerencia[];
+	/** Más horas primero. */
+	tiendas: TiendaGerencia[];
+	porDiaSemana: number[];
+}
+
+/**
+ * Vista macro de gerencia, **sin personas**: zonas y tiendas a partir de un agregado
+ * por tienda × día. `previas`: minutos por tienda del rango anterior (variación).
+ */
+export function reporteGerencia(
+	filas: readonly {
+		storeId: number | null;
+		fecha: string | null;
+		registros: number;
+		minutos: number;
+	}[],
+	previas: ReadonlyMap<number, number>,
+	zonaDe: (storeId: number) => string | null,
+): ReporteGerencia {
+	const porDiaSemana = [0, 0, 0, 0, 0, 0, 0];
+	const tiendas = new Map<number, Totales>();
+	const total = cero();
+	const zonas = new Map<string | null, ZonaGerencia & { antes: number }>();
+	const zona = (nombre: string | null) => {
+		const z = zonas.get(nombre) ?? {
+			zona: nombre,
+			...cero(),
+			tiendas: 0,
+			porcentaje: 0,
+			variacion: null,
+			porDiaSemana: [0, 0, 0, 0, 0, 0, 0],
+			antes: 0,
+		};
+		zonas.set(nombre, z);
+		return z;
+	};
+	for (const f of filas) {
+		if (f.storeId == null) continue;
+		const t = tiendas.get(f.storeId) ?? cero();
+		tiendas.set(f.storeId, t);
+		sumar(t, f.registros, f.minutos);
+		sumar(total, f.registros, f.minutos);
+		if (f.fecha) {
+			porDiaSemana[diaSemana(f.fecha)] += f.minutos;
+			zona(zonaDe(f.storeId)).porDiaSemana[diaSemana(f.fecha)] += f.minutos;
+		}
+	}
+	const parte = (m: number) => (total.minutos ? m / total.minutos : 0);
+	const porMinutos = <T extends Totales>(a: T, b: T) => b.minutos - a.minutos;
+
+	const listaTiendas: TiendaGerencia[] = [...tiendas].map(([storeId, t]) => {
+		const nombreZona = zonaDe(storeId);
+		const z = zona(nombreZona);
+		sumar(z, t.registros, t.minutos);
+		z.tiendas += 1;
+		return {
+			storeId,
+			zona: nombreZona,
+			...t,
+			porcentaje: parte(t.minutos),
+			variacion: variacion(t.minutos, previas.get(storeId) ?? 0),
+		};
+	});
+	// Lo previo cuenta para su zona aunque la tienda no tenga horas ahora.
+	let totalAntes = 0;
+	for (const [storeId, m] of previas) {
+		totalAntes += m;
+		zona(zonaDe(storeId)).antes += m;
+	}
+	return {
+		total: { ...total, variacion: variacion(total.minutos, totalAntes) },
+		zonas: [...zonas.values()]
+			.filter((z) => z.minutos > 0)
+			.map(({ antes, ...z }) => ({
+				...z,
+				porcentaje: parte(z.minutos),
+				variacion: variacion(z.minutos, antes),
+			}))
+			.sort(porMinutos),
+		tiendas: listaTiendas.sort(porMinutos),
+		porDiaSemana,
+	};
+}
+
+export interface PuntoTendencia<P extends RangoPeriodo = RangoPeriodo> {
+	periodo: P;
+	minutos: number;
+	/** Minutos por zona (`null` = sin zona). */
+	porZona: Map<string | null, number>;
+}
+
+/**
+ * Tendencia de gerencia: total de cada periodo y su reparto por zona, del más
+ * antiguo al más reciente (los `ultimos` N).
+ */
+export function tendenciaPorPeriodo<P extends RangoPeriodo>(
+	resumen: readonly ResumenPeriodo<P>[],
+	zonaDe: (storeId: number) => string | null,
+	ultimos = 8,
+): PuntoTendencia<P>[] {
+	return [...resumen]
+		.sort((a, b) => a.periodo.start_date.localeCompare(b.periodo.start_date))
+		.slice(-ultimos)
+		.map((r) => {
+			const porZona = new Map<string | null, number>();
+			for (const t of r.tiendas) {
+				const z = t.storeId == null ? null : zonaDe(t.storeId);
+				porZona.set(z, (porZona.get(z) ?? 0) + t.total.minutos);
+			}
+			return { periodo: r.periodo, minutos: r.total.minutos, porZona };
+		});
 }
 
 /** Rango anterior de la misma duración, justo antes de `desde` (para la variación). */

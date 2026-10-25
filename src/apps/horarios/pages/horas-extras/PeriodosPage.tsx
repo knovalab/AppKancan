@@ -1,6 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { Alert, Box, Button, Paper, Typography } from '@mui/material';
+import { Alert, Box, Button, Paper, Tooltip, Typography } from '@mui/material';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ReporteTiendasPagination } from '../../components/com_time_record_store';
@@ -8,6 +8,10 @@ import { CrearPeriodoModal } from '../../components/horas-extras/CrearPeriodoMod
 import { ExportarPeriodosDialog } from '../../components/horas-extras/ExportarPeriodosDialog';
 import { PeriodoDetalleDialog } from '../../components/horas-extras/PeriodoDetalleDialog';
 import { PeriodosTabla } from '../../components/horas-extras/PeriodosTabla';
+import {
+	AVISO_SOLO_LIQUIDADOS,
+	ESTADO_PERIODO,
+} from '../../domain/horasExtras';
 import { usePeriodosConTotales } from '../../hooks/usePeriodos';
 import { mensajeDeError } from '../../utils/errores';
 
@@ -22,6 +26,9 @@ export default function PeriodosPage() {
 	const [creando, setCreando] = useState(false);
 	const [exportando, setExportando] = useState(false);
 
+	const hayLiquidados = periodos.some(
+		(p) => p.status === ESTADO_PERIODO.liquidado,
+	);
 	const abiertoId = Number(params.get(PARAM_PERIODO));
 	const abierto = periodos.find((p) => p.id === abiertoId);
 	const cambiarAbierto = (id: number | null) =>
@@ -64,17 +71,22 @@ export default function PeriodosPage() {
 					</Typography>
 				</Box>
 				<Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-					<Button
-						variant="outlined"
-						startIcon={<FileDownloadIcon />}
-						disabled={isLoading || periodos.length === 0}
-						onClick={() => {
-							setAperturas((n) => n + 1);
-							setExportando(true);
-						}}
-					>
-						Exportar a Excel
-					</Button>
+					{/* El span deja mostrar el tooltip con el botón deshabilitado. */}
+					<Tooltip title={hayLiquidados ? '' : AVISO_SOLO_LIQUIDADOS}>
+						<span>
+							<Button
+								variant="outlined"
+								startIcon={<FileDownloadIcon />}
+								disabled={isLoading || !hayLiquidados}
+								onClick={() => {
+									setAperturas((n) => n + 1);
+									setExportando(true);
+								}}
+							>
+								Exportar a Excel
+							</Button>
+						</span>
+					</Tooltip>
 					<Button
 						variant="contained"
 						startIcon={<AddIcon />}

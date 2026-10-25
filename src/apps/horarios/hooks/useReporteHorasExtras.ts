@@ -10,7 +10,9 @@ import {
 	listarZonas,
 } from '../api/directus/reportesHorasExtras';
 import {
+	calidadProceso,
 	ESTADO_HORA_EXTRA,
+	type HoraCalidad,
 	periodoActual,
 	periodosVencidos,
 	rangoAnterior,
@@ -105,6 +107,16 @@ export function useReporteTiempoReal(
 		return (id: number | null) => id != null && ids.has(id);
 	}, [tiendasEmpresa, empresa, tienda]);
 
+	// Nombre y empresa de cada fila del detalle por tienda.
+	const tiendaDe = useMemo(() => {
+		const porId = new Map(tiendas.map((t) => [Number(t.id), t]));
+		return (id: number | null) =>
+			(id != null && porId.get(id)) || {
+				name: id == null ? 'Sin tienda' : `Tienda ${id}`,
+				company: '',
+			};
+	}, [tiendas]);
+
 	const periodos = periodosQ.data ?? SIN_PERIODOS;
 	const resumen = useMemo(
 		() =>
@@ -137,6 +149,7 @@ export function useReporteTiempoReal(
 		hoy,
 		empresas,
 		tiendasEmpresa,
+		tiendaDe,
 		resumen,
 		actual: periodoActual(periodos, hoy),
 		vencidos: periodosVencidos(periodos, hoy),
@@ -251,5 +264,85 @@ export function useReporteZona(
 		antes,
 		isLoading: actualQ.isLoading || previoQ.isLoading,
 		error: actualQ.error ?? previoQ.error ?? empleadosQ.error,
+	};
+}
+
+const fechaLocal = (f?: string | null) =>
+	f ? dayjs(f).format('YYYY-MM-DD HH:mm') : null;
+
+/**
+ * Calidad del proceso (R5): las horas extras del rango (por fecha trabajada) en
+ * las tiendas indicadas (vacío = todas), con sus fechas de registro y revisión.
+ */
+export function useCalidadProceso(
+	tiendas: number[],
+	desde: string,
+	hasta: string,
+	enabled = true,
+) {
+	const horasQ = useQuery({
+		queryKey: clave(`calidad|${tiendas.join(',')}|${desde}|${hasta}`),
+		// shortcut: trae las filas del rango (no agregado); si el rango crece a años, paginar o agregar en Directus.
+		queryFn: () =>
+			listarHorasExtras({
+				tiendas,
+				desde,
+				hasta,
+				estados: [
+					ESTADO_HORA_EXTRA.pendiente,
+					ESTADO_HORA_EXTRA.aprobada,
+					ESTADO_HORA_EXTRA.descartadaComercial,
+				],
+			}),
+		enabled,
+		...fresco,
+	});
+	const tiendasQ = useQuery<Tienda[]>({
+		queryKey: ['adminTiendas'],
+		queryFn: getStores,
+		staleTime: 30 * 60 * 1000,
+	});
+
+	const calidad = useMemo(
+		() =>
+			calidadProceso(
+				(horasQ.data ?? []).map(
+					(h): HoraCalidad => ({
+						storeId: idRelacion(h.store_id),
+						empleadoId: idRelacion(h.employee_id),
+						registrador:
+							h.created_by && typeof h.created_by === 'object'
+								? formatNombrePropio(
+										`${h.created_by.first_name ?? ''} ${h.created_by.last_name ?? ''}`.trim(),
+									) || null
+								: null,
+						fecha: h.work_date,
+						estado: h.status,
+						creada: fechaLocal(h.created_at),
+						revisada: fechaLocal(h.reviewed_at),
+						inicioPeriodo:
+							h.period_id && typeof h.period_id === 'object'
+								? (h.period_id.start_date ?? null)
+								: null,
+						minutos: h.minutes,
+					}),
+				),
+			),
+		[horasQ.data],
+	);
+	const nombresTiendas = useMemo(
+		() =>
+			new Map(
+				(tiendasQ.data ?? SIN_TIENDAS).map((t) => [String(t.id), t.name]),
+			),
+		[tiendasQ.data],
+	);
+
+	return {
+		calidad,
+		nombreTienda: (clave: string) =>
+			nombresTiendas.get(clave) ?? (clave ? `Tienda ${clave}` : 'Sin tienda'),
+		isLoading: horasQ.isLoading,
+		error: horasQ.error,
 	};
 }

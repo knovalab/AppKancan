@@ -11,7 +11,7 @@ const ReporteHorasExtrasVista = lazy(
 	() => import('../reporte/ReporteHorasExtrasVista'),
 );
 
-/** Quién ve cada vista de Reportes. Gerencia = comercial; el jefe de zona ve su zona. */
+/** Quién ve cada vista de Reportes. El jefe de zona ve su zona; gerencia, solo Horas extras. */
 const VISTAS = [
 	{
 		id: 'asistencia',
@@ -23,7 +23,7 @@ const VISTAS = [
 		id: 'horas-extras',
 		label: 'Horas extras',
 		icon: <MoreTimeIcon />,
-		roles: ['comercial', 'nomina', 'areaManager'],
+		roles: ['comercial', 'nomina', 'areaManager', 'gerencia'],
 	},
 ] as const satisfies readonly {
 	id: string;

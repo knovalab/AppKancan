@@ -14,6 +14,9 @@ export const ETIQUETA_ESTADO_PERIODO: Record<EstadoPeriodo, string> = {
 	liquidado: 'Liquidado',
 };
 
+/** Solo se descargan periodos liquidados: los preliquidados aún pueden cambiar. */
+export const AVISO_SOLO_LIQUIDADOS = 'Se puede descargar cuando se liquide';
+
 /** Largo máximo del nombre (opcional) de un periodo. */
 export const MAX_CARACTERES_NOMBRE_PERIODO = 60;
 

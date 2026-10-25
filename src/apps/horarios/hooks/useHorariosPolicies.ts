@@ -7,6 +7,7 @@ interface HorariosPolicies {
 	esReport: () => boolean;
 	esComercial: () => boolean;
 	esNomina: () => boolean;
+	esGerencia: () => boolean;
 	tieneTemporal: () => boolean;
 	puedeVerDemo: () => boolean;
 }
@@ -54,6 +55,12 @@ export const useHorariosPolicies = (): HorariosPolicies => {
 			return s.includes('nomina') && MODULO_REGEX.test(s);
 		});
 
+	const esGerencia = (): boolean =>
+		(user?.policies ?? []).some((p) => {
+			const s = p.toLowerCase();
+			return s.includes('gerencia') && MODULO_REGEX.test(s);
+		});
+
 	const tieneTemporal = (): boolean =>
 		(user?.policies ?? []).some((p) => p.toLowerCase() === 'temporal');
 
@@ -66,6 +73,7 @@ export const useHorariosPolicies = (): HorariosPolicies => {
 		esReport,
 		esComercial,
 		esNomina,
+		esGerencia,
 		puedeVerDemo,
 		tieneTemporal,
 		esAreaManager,

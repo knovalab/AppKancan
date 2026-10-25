@@ -171,6 +171,24 @@ describe('useHorariosPolicies', () => {
 		});
 	});
 
+	describe('esGerencia', () => {
+		it('exige "gerencia" y el módulo, sin dar otros roles', () => {
+			mockUserWithPolicies(['time_log_gerencia']);
+			const { result } = renderHook(() => useHorariosPolicies());
+			expect(result.current.esGerencia()).toBe(true);
+			// Ni report (Asistencia) ni jefe de zona.
+			expect(result.current.esReport()).toBe(false);
+			expect(result.current.esAreaManager()).toBe(false);
+			expect(result.current.esComercial()).toBe(false);
+		});
+
+		it('ignora políticas "gerencia" de otros módulos', () => {
+			mockUserWithPolicies(['gerencia_comisiones']);
+			const { result } = renderHook(() => useHorariosPolicies());
+			expect(result.current.esGerencia()).toBe(false);
+		});
+	});
+
 	describe('tieneTemporal', () => {
 		it('should return true when policy is strictly temporal', () => {
 			mockUserWithPolicies(['temporal']);

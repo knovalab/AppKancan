@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import {
-	ETIQUETA_ESTADO_PERIODO,
+	ESTADO_PERIODO,
 	type ReporteZona,
 	type ResumenPeriodo,
 } from '../domain/horasExtras';
@@ -9,12 +9,18 @@ import type { PeriodDto } from '../interfaces/api/period';
 const fecha = (f: string) => dayjs(f).format('DD/MM/YYYY');
 const horas = (minutos: number) => minutos / 60;
 
-/** Reporte en tiempo real por periodo a Excel (una hoja). Horas en decimal. */
+/**
+ * Un periodo **liquidado** del reporte en tiempo real a Excel: resumen y detalle por
+ * tienda. Horas en decimal. Los preliquidados no se exportan (números preliminares).
+ */
 export async function exportarReporteTiempoRealExcel(
-	resumen: ResumenPeriodo<PeriodDto>[],
+	r: ResumenPeriodo<PeriodDto>,
+	tiendaDe: (storeId: number | null) => { name: string; company?: string },
 	empresa: string,
 	tienda = '',
 ) {
+	if (r.periodo.status !== ESTADO_PERIODO.liquidado)
+		throw new Error('Solo se pueden exportar periodos liquidados');
 	const [excelModule, { saveAs }] = await Promise.all([
 		import('exceljs'),
 		import('file-saver'),
@@ -22,34 +28,51 @@ export async function exportarReporteTiempoRealExcel(
 	const ExcelJS = (excelModule.default ||
 		excelModule) as typeof import('exceljs');
 	const workbook = new ExcelJS.Workbook();
-	const ws = workbook.addWorksheet('Tiempo real');
+	const ws = workbook.addWorksheet('Periodo');
 	ws.columns = [
 		{ width: 28 },
-		{ width: 26 },
-		{ width: 16 },
-		{ width: 16 },
+		{ width: 22 },
+		{ width: 18 },
 		{ width: 14 },
 		{ width: 14 },
-		{ width: 20 },
 	];
-	ws.addRow(['Horas extras por periodo (aprobadas y liquidadas)']).font = {
+	const nombre = r.periodo.name || 'Sin nombre';
+	ws.addRow([`Horas extras liquidadas · ${nombre}`]).font = {
 		bold: true,
 		size: 14,
 		color: { argb: 'FF004680' },
 	};
 	ws.addRow([
+		`Del ${fecha(r.periodo.start_date)} al ${fecha(r.periodo.end_date)}`,
+		r.periodo.liquidacion_at
+			? `Liquidado el ${dayjs(r.periodo.liquidacion_at).format('DD/MM/YYYY HH:mm')}`
+			: '',
+	]);
+	ws.addRow([
 		`Empresa: ${empresa || 'Todas'}${tienda ? `, tienda: ${tienda}` : ''}`,
 		`Generado el ${dayjs().format('DD/MM/YYYY HH:mm')}`,
 	]).font = { italic: true, color: { argb: 'FF64748B' } };
 	ws.addRow([]);
+	for (const [titulo, t] of [
+		['Horas del periodo', r.delPeriodo],
+		['Rezagadas', r.rezagadas],
+		['Total liquidado', r.total],
+	] as const) {
+		const fila = ws.addRow([
+			titulo,
+			horas(t.minutos),
+			`${t.registros} registros`,
+		]);
+		fila.getCell(1).font = { bold: true };
+		fila.getCell(2).numFmt = '0.00';
+	}
+	ws.addRow([]);
 	const cab = ws.addRow([
-		'Periodo',
-		'Fechas',
-		'Estado',
+		'Tienda',
+		'Empresa',
 		'Horas del periodo',
 		'Rezagadas',
 		'Total horas',
-		'Liquidado el',
 	]);
 	cab.eachCell((c) => {
 		c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -59,26 +82,23 @@ export async function exportarReporteTiempoRealExcel(
 			fgColor: { argb: 'FF004680' },
 		};
 	});
-	for (const r of resumen) {
+	for (const t of r.tiendas) {
+		const { name, company } = tiendaDe(t.storeId);
 		const fila = ws.addRow([
-			r.periodo.name || 'Sin nombre',
-			`${fecha(r.periodo.start_date)} al ${fecha(r.periodo.end_date)}`,
-			ETIQUETA_ESTADO_PERIODO[r.periodo.status] ?? r.periodo.status,
-			horas(r.delPeriodo.minutos),
-			horas(r.rezagadas.minutos),
-			horas(r.total.minutos),
-			r.periodo.liquidacion_at
-				? dayjs(r.periodo.liquidacion_at).format('DD/MM/YYYY HH:mm')
-				: '',
+			name,
+			company ?? '',
+			horas(t.delPeriodo.minutos),
+			horas(t.rezagadas.minutos),
+			horas(t.total.minutos),
 		]);
-		for (const i of [4, 5, 6]) fila.getCell(i).numFmt = '0.00';
+		for (const i of [3, 4, 5]) fila.getCell(i).numFmt = '0.00';
 	}
 	const buffer = await workbook.xlsx.writeBuffer();
 	saveAs(
 		new Blob([buffer], {
 			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 		}),
-		`Horas_Extras_Tiempo_Real_${dayjs().format('YYYYMMDD-HHmmss')}.xlsx`,
+		`Horas_Extras_${nombre.replace(/\W+/g, '_')}_${dayjs().format('YYYYMMDD-HHmmss')}.xlsx`,
 	);
 }
 

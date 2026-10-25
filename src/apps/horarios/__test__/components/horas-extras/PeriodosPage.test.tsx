@@ -213,25 +213,23 @@ describe('PeriodosPage', () => {
 	});
 
 	describe('exportar a Excel', () => {
-		it('elige uno o varios periodos y genera una hoja por empresa con un bloque por periodo', async () => {
+		it('solo se eligen periodos liquidados: una hoja por empresa con un bloque por periodo', async () => {
 			montar();
 			await screen.findByRole('row', { name: /11\/10\/2026 al 25\/10\/2026/ });
 			fireEvent.click(screen.getByRole('button', { name: 'Exportar a Excel' }));
 			const dialogo = await screen.findByRole('dialog', { name: /Exportar periodos/ });
-			// Por defecto, el más reciente.
-			expect(within(dialogo).getByText('1 de 2 seleccionados')).toBeInTheDocument();
-			fireEvent.click(within(dialogo).getByRole('button', { name: 'Seleccionar todos' }));
-			fireEvent.click(within(dialogo).getByRole('button', { name: 'Exportar (2)' }));
+			// Por defecto, el liquidado más reciente; el preliquidado no se puede elegir.
+			expect(within(dialogo).getByText('1 de 1 liquidados seleccionados')).toBeInTheDocument();
+			expect(within(dialogo).getByRole('checkbox', { name: /11\/10\/2026/ })).not.toBeChecked();
+			expect(within(dialogo).getByText(/Se puede descargar cuando se liquide/)).toBeInTheDocument();
+			expect(within(dialogo).getByRole('button', { name: 'Seleccionar todos' })).toBeDisabled();
+			fireEvent.click(within(dialogo).getByRole('button', { name: 'Exportar (1)' }));
 
 			await waitFor(() => expect(exportarPeriodosExcel).toHaveBeenCalledTimes(1));
 			const hojas = exportarPeriodosExcel.mock.calls[0][0];
 			expect(hojas.map((h: { empresa: string }) => h.empresa)).toEqual(['Empresa A']);
-			// Orden cronológico: liquidado (01/10) y luego el preliquidado (11/10).
-			const [b1, b2] = hojas[0].bloques;
-			expect(b1.periodo.id).toBe(1);
-			expect(b1.totales).toEqual({ horasExtras: 2, minutos: 120, empleados: 2 });
-			expect(b2.periodo.id).toBe(2);
-			expect(b2.totales).toEqual({ horasExtras: 2, minutos: 90, empleados: 2 }); // del periodo + rezagada
+			expect(hojas[0].bloques.map((b: { periodo: { id: number } }) => b.periodo.id)).toEqual([1]);
+			expect(hojas[0].bloques[0].totales).toEqual({ horasExtras: 2, minutos: 120, empleados: 2 });
 			expect(showSnackbar).toHaveBeenCalledWith('Excel de periodos generado', 'success');
 		});
 
@@ -242,6 +240,13 @@ describe('PeriodosPage', () => {
 			const dialogo = await screen.findByRole('dialog', { name: /Exportar periodos/ });
 			fireEvent.click(within(dialogo).getByRole('button', { name: 'Quitar todos' }));
 			expect(within(dialogo).getByRole('button', { name: 'Exportar (0)' })).toBeDisabled();
+		});
+
+		it('sin periodos liquidados, el botón Exportar queda deshabilitado', async () => {
+			listarPeriodos.mockResolvedValue([abierto]);
+			montar();
+			await screen.findByRole('row', { name: /11\/10\/2026 al 25\/10\/2026/ });
+			expect(screen.getByRole('button', { name: 'Exportar a Excel' })).toBeDisabled();
 		});
 	});
 });

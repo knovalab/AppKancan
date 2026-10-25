@@ -19,6 +19,37 @@ const CAMPOS = [
 	'updated_by.last_name',
 ];
 
+/**
+ * Periodos con solo sus datos (sin `updated_by`): para reportes de quien no lee
+ * usuarios, como gerencia (`time_log_gerencia`).
+ */
+export async function listarPeriodosResumen(): Promise<PeriodDto[]> {
+	try {
+		return (await withAutoRefresh(() =>
+			directus.request(
+				readItems('com_period', {
+					fields: [
+						'id',
+						'name',
+						'start_date',
+						'end_date',
+						'status',
+						'liquidacion_at',
+					],
+					sort: ['-start_date'],
+					limit: -1,
+				}),
+			),
+		)) as PeriodDto[];
+	} catch (error) {
+		throw errorDeApi(
+			error,
+			'Error consultando periodos',
+			'Error al cargar los periodos',
+		);
+	}
+}
+
 export async function listarPeriodos(): Promise<PeriodDto[]> {
 	try {
 		return (await withAutoRefresh(() =>

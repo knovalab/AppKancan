@@ -31,14 +31,22 @@ const idDeTienda = (valor: unknown): number => {
  */
 export function useHorariosAcceso(): HorariosAcceso {
 	const { user, loading: cargandoAuth } = useAuth();
-	const { esAdmin, esAreaManager, esReport, esComercial, esNomina, puedeVerDemo } =
-		useHorariosPolicies();
+	const {
+		esAdmin,
+		esAreaManager,
+		esReport,
+		esComercial,
+		esNomina,
+		esGerencia,
+		puedeVerDemo,
+	} = useHorariosPolicies();
 
 	const admin = esAdmin();
 	const areaManager = esAreaManager() && !admin;
 	const report = esReport();
 	const comercial = esComercial();
 	const nomina = esNomina();
+	const gerencia = esGerencia();
 
 	const roles = useMemo(() => {
 		const set = new Set<Rol>();
@@ -47,9 +55,11 @@ export function useHorariosAcceso(): HorariosAcceso {
 		if (report) set.add('report');
 		if (comercial) set.add('comercial');
 		if (nomina) set.add('nomina');
-		if (!admin && !areaManager && !report) set.add('tienda');
+		if (gerencia) set.add('gerencia');
+		// Gerencia solo ve reportes: no hereda el rol de tienda.
+		if (!admin && !areaManager && !report && !gerencia) set.add('tienda');
 		return set as ReadonlySet<Rol>;
-	}, [admin, areaManager, report, comercial, nomina]);
+	}, [admin, areaManager, report, comercial, nomina, gerencia]);
 
 	const rolPrincipal = PRIORIDAD_ROL.find((r) => roles.has(r)) ?? 'tienda';
 
@@ -101,7 +111,8 @@ export function useHorariosAcceso(): HorariosAcceso {
 	const cargando =
 		cargandoAuth ||
 		!user ||
-		((admin || report || areaManager || comercial || nomina) && cargandoTiendas) ||
+		((admin || report || areaManager || comercial || nomina) &&
+			cargandoTiendas) ||
 		(areaManager && cargandoAcceso);
 	const verDemo = puedeVerDemo();
 

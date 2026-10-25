@@ -69,13 +69,20 @@ const montar = (tiendasJefe: number[] | null) =>
 const tabla = () => screen.getByRole('table', { name: 'Horas extras por tienda' });
 const celdas = (nombre: RegExp) =>
 	within(within(tabla()).getByRole('row', { name: nombre })).getAllByRole('cell').map((c) => c.textContent);
-// La primera coincidencia es la tarjeta (la cabecera de la tabla viene después).
-const kpi = (titulo: string) => screen.getAllByText(titulo)[0].parentElement!.textContent;
+const kpi = (titulo: string) => screen.getByText(titulo).parentElement!.textContent;
+/** Espera a que cargue (aparecen las sub-pestañas). */
+const cargado = () => screen.findByRole('tab', { name: /Tiendas/ });
+const irATiendas = async () => {
+	fireEvent.click(await cargado());
+	return tabla();
+};
 
 describe('Reportes · Horas extras por zona', () => {
-	it('jefe: sus tiendas, KPIs, ranking con variación, día de la semana y top personas', async () => {
+	it('jefe: Resumen (KPIs, día de la semana, top) y Tiendas (ranking de 5 columnas con variación)', async () => {
 		montar([26, 30]);
-		await screen.findByRole('table', { name: 'Horas extras por tienda' });
+		await cargado();
+		// Abre en Resumen: sin la tabla de tiendas.
+		expect(screen.queryByRole('table', { name: 'Horas extras por tienda' })).toBeNull();
 		expect(screen.queryByLabelText('Zona')).not.toBeInTheDocument();
 		// Solo aprobadas, solo sus tiendas, mes en curso; y el rango anterior para la variación.
 		expect(agregado).toHaveBeenCalledWith(
@@ -88,30 +95,36 @@ describe('Reportes · Horas extras por zona', () => {
 		expect(kpi('Personas con horas')).toContain('3');
 		expect(kpi('Horas por persona')).toContain('1 h 8 min'); // 270 min / 4 de plantilla ≈ 67,5
 
-		// Ipiales primero (más horas): 210 min, 78 %, +50 % frente a 140.
-		expect(celdas(/Ipiales/)).toEqual(['', 'Ipiales', '3 h 30 min', '78 %', '3', '2', '1 h 45 min', '+50 %']);
-		expect(celdas(/Pasto/)[7]).toBe('--'); // sin horas en el rango anterior
-
 		expect(screen.getByTestId('grafica').textContent).toBe('0,1.5,1,0,0,0,2');
 		const top = within(screen.getByRole('list', { name: 'Personas con más horas' })).getAllByRole('listitem');
 		expect(top[0].textContent).toContain('Ana Pérez');
 		expect(top[0].textContent).toContain('3 h');
+
+		await irATiendas();
+		expect(screen.getByRole('tab', { name: 'Tiendas (2)' })).toHaveAttribute('aria-selected', 'true');
+		// Ipiales primero (más horas): 210 min, 78 %, 2 personas, +50 % frente a 140.
+		expect(celdas(/Ipiales/)).toEqual(['', 'Ipiales', '3 h 30 min', '78 %', '2', '+50 %']);
+		expect(celdas(/Pasto/)[5]).toBe('--'); // sin horas en el rango anterior
 	});
 
-	it('detalle: tienda → personas → días', async () => {
+	it('detalle: tienda (registros y por persona) → personas → días plegados', async () => {
 		montar([26, 30]);
-		await screen.findByRole('table', { name: 'Horas extras por tienda' });
+		await irATiendas();
 		fireEvent.click(screen.getByRole('button', { name: 'Ver personas de Ipiales' }));
 		const personas = await screen.findByRole('table', { name: 'Personas de Ipiales' });
+		expect(screen.getByText('3 registros · 1 h 45 min por persona de plantilla')).toBeInTheDocument();
 		const ana = within(personas).getByRole('row', { name: /Ana Pérez/ });
-		expect(within(ana).getAllByRole('cell').map((c) => c.textContent).slice(0, 3)).toEqual(['Ana Pérez', '107', '3 h']);
-		expect(within(ana).getByText(/20\/10: 1 h/)).toBeInTheDocument();
-		expect(within(ana).getByText(/25\/10: 2 h/)).toBeInTheDocument();
+		expect(within(ana).getAllByRole('cell').map((c) => c.textContent)).toEqual(['Ana Pérez', '107', '3 h', '2 días']);
+		expect(within(personas).queryByText(/20\/10: 1 h/)).toBeNull();
+
+		fireEvent.click(within(ana).getByRole('button', { name: 'Ver días de Ana Pérez' }));
+		expect(within(personas).getByText(/20\/10: 1 h/)).toBeInTheDocument();
+		expect(within(personas).getByText(/25\/10: 2 h/)).toBeInTheDocument();
 	});
 
 	it('comercial: elige la zona (sus tiendas) y exporta con su nombre', async () => {
 		montar(null);
-		await screen.findByRole('table', { name: 'Horas extras por tienda' });
+		await cargado();
 		// "Todas las zonas": sin filtro de tiendas.
 		expect(agregado.mock.calls[0][0].tiendas).toEqual([]);
 		fireEvent.mouseDown(screen.getByLabelText('Zona'));
@@ -120,7 +133,7 @@ describe('Reportes · Horas extras por zona', () => {
 			expect(agregado).toHaveBeenCalledWith(expect.objectContaining({ tiendas: [26, 30] }), ['store_id', 'employee_id', 'work_date']),
 		);
 		expect(screen.getByText(/por zona: Narino/)).toBeInTheDocument();
-		await screen.findByRole('table', { name: 'Horas extras por tienda' });
+		await cargado();
 		await waitFor(() => expect(screen.getByRole('button', { name: 'Exportar a Excel' })).toBeEnabled());
 		fireEvent.click(screen.getByRole('button', { name: 'Exportar a Excel' }));
 		await waitFor(() => expect(exportar).toHaveBeenCalledTimes(1));
@@ -129,7 +142,7 @@ describe('Reportes · Horas extras por zona', () => {
 
 	it('filtro de tienda: el jefe elige una de sus tiendas', async () => {
 		montar([26, 30]);
-		await screen.findByRole('table', { name: 'Horas extras por tienda' });
+		await cargado();
 		fireEvent.mouseDown(screen.getByLabelText('Tienda'));
 		const opciones = screen.getAllByRole('option').map((o) => o.textContent);
 		expect(opciones).toEqual(['Todas las tiendas', 'Ipiales', 'Pasto']);
@@ -142,7 +155,7 @@ describe('Reportes · Horas extras por zona', () => {
 
 	it('comercial: las tiendas del filtro son las de la zona elegida', async () => {
 		montar(null);
-		await screen.findByRole('table', { name: 'Horas extras por tienda' });
+		await cargado();
 		fireEvent.mouseDown(screen.getByLabelText('Zona'));
 		fireEvent.click(await screen.findByRole('option', { name: 'Narino' }));
 		fireEvent.mouseDown(screen.getByLabelText('Tienda'));

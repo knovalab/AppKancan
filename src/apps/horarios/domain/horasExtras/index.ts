@@ -1,3 +1,4 @@
+export * from './calidad';
 export * from './estados';
 export * from './lote';
 export * from './periodo';
