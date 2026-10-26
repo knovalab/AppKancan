@@ -2,16 +2,11 @@ import { Paper, Tab, Tabs } from '@mui/material';
 import { useState } from 'react';
 import { useHorariosLayout } from '../../hooks/useHorariosLayout';
 import ReporteGerencia from './gerencia/ReporteGerencia';
-import ReporteCalidadTab from './ReporteCalidadTab';
 import ReporteHorasExtrasTab from './ReporteHorasExtrasTab';
 import ReporteZonaTab from './ReporteZonaTab';
 
 /**
  * Reportes → Horas extras. Pestañas según el rol:
- * - **Tiempo real** (R1): comercial y nómina.
- * - **Por zona** (R2 + R4): jefe de zona (sus tiendas) y comercial (elige la zona).
- * - **Calidad** (R5): solo jefe de zona (sus tiendas).
- * Gerencia sola ve su propia versión (`ReporteGerencia`): sin personas ni descargas.
  */
 export default function ReporteHorasExtrasVista() {
 	const { acceso } = useHorariosLayout();
@@ -31,8 +26,6 @@ export default function ReporteHorasExtrasVista() {
 			? [{ id: 'tiempo-real', label: 'Tiempo real' }]
 			: []),
 		...(comercial || jefe ? [{ id: 'zona', label: 'Por zona' }] : []),
-		// Comercial no requiere Calidad por ahora.
-		...(jefe ? [{ id: 'calidad', label: 'Calidad' }] : []),
 	];
 	const tiendasJefe = jefe
 		? acceso.tiendasPermitidas.map((t) => Number(t.id))
@@ -69,8 +62,6 @@ export default function ReporteHorasExtrasVista() {
 					)}
 					{pestana === 'tiempo-real' ? (
 						<ReporteHorasExtrasTab />
-					) : pestana === 'calidad' ? (
-						<ReporteCalidadTab tiendasJefe={tiendasJefe} />
 					) : (
 						<ReporteZonaTab tiendasJefe={tiendasJefe} />
 					)}

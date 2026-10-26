@@ -12,10 +12,6 @@ vi.mock('@/apps/horarios/pages/reporte/ReporteHorasExtrasTab', () => ({ default:
 vi.mock('@/apps/horarios/pages/reporte/ReporteZonaTab', () => ({
 	default: ({ tiendasJefe }: { tiendasJefe: number[] | null }) => <div>ZONA {JSON.stringify(tiendasJefe)}</div>,
 }));
-
-vi.mock('@/apps/horarios/pages/reporte/ReporteCalidadTab', () => ({
-	default: ({ tiendasJefe }: { tiendasJefe: number[] | null }) => <div>CALIDAD {JSON.stringify(tiendasJefe)}</div>,
-}));
 vi.mock('@/apps/horarios/pages/reporte/gerencia/ReporteGerencia', () => ({ default: () => <div>GERENCIA</div> }));
 
 import ReporteHorasExtrasVista from '@/apps/horarios/pages/reporte/ReporteHorasExtrasVista';
@@ -26,12 +22,10 @@ const montar = (r: Rol[]) => {
 };
 
 describe('Reportes · Horas extras: pestañas por rol', () => {
-	it('jefe de zona: Por zona y Calidad, con sus tiendas', () => {
+	it('jefe de zona: solo Por zona, con sus tiendas', () => {
 		montar(['areaManager', 'report']);
 		expect(screen.getByText('ZONA [26]')).toBeInTheDocument();
-		expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Por zona', 'Calidad']);
-		fireEvent.click(screen.getByRole('tab', { name: 'Calidad' }));
-		expect(screen.getByText('CALIDAD [26]')).toBeInTheDocument();
+		expect(screen.queryByRole('tab')).not.toBeInTheDocument();
 	});
 	it('nómina: solo Tiempo real', () => {
 		montar(['tienda', 'nomina']);
@@ -48,7 +42,7 @@ describe('Reportes · Horas extras: pestañas por rol', () => {
 		expect(screen.queryByText('GERENCIA')).not.toBeInTheDocument();
 		expect(screen.getByRole('tab', { name: 'Tiempo real' })).toBeInTheDocument();
 	});
-	it('comercial: Tiempo real y Por zona sin tiendas fijas (elige zona); sin Calidad', () => {
+	it('comercial: Tiempo real y Por zona sin tiendas fijas (elige zona)', () => {
 		montar(['tienda', 'comercial']);
 		expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Tiempo real', 'Por zona']);
 		fireEvent.click(screen.getByRole('tab', { name: 'Por zona' }));
