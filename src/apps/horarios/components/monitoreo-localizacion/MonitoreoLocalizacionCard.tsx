@@ -13,12 +13,13 @@ import {
 	Clock,
 	Crosshair,
 	ExternalLink,
+	Flag,
 	MapPin,
 	Maximize2,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { LocalizacionRecordItem } from '../../hooks/useMonitoreoLocalizacion';
 import { formatDistancia } from '../../domain/ubicacion';
+import type { LocalizacionRecordItem } from '../../hooks/useMonitoreoLocalizacion';
 import { formatDocumentNumber } from '../../utils/format';
 import { MonitoreoLocalizacionModal } from './MonitoreoLocalizacionModal';
 import { getLogTypeColor } from './MonitoreoMultiMarkerMap';
@@ -204,6 +205,23 @@ export function MonitoreoLocalizacionCard({
 						flexWrap: 'wrap',
 					}}
 				>
+					{record.is_under_review && (
+						<Tooltip title={record.review_reason || 'Sin razón'} arrow>
+							<Chip
+								icon={<Flag size={11} color="#ffffff" />}
+								label="En revisión"
+								size="small"
+								sx={{
+									bgcolor: '#f59e0b',
+									color: '#ffffff',
+									fontWeight: 700,
+									fontSize: '0.72rem',
+									height: 22,
+									'& .MuiChip-icon': { ml: 0.5, mr: -0.25 },
+								}}
+							/>
+						</Tooltip>
+					)}
 					<Chip
 						icon={<MapPin size={11} color="#004680" />}
 						label={`${lat.toFixed(5)}, ${lon.toFixed(5)}`}

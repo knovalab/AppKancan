@@ -1,10 +1,13 @@
-import { Box, Card, Tooltip, Typography } from '@mui/material';
-import { Building2, Clock, Maximize2, User } from 'lucide-react';
+import { Box, Button, Card, Tooltip, Typography } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Building2, Clock, Flag, Maximize2, User } from 'lucide-react';
 import { useState } from 'react';
+import { updateTimeRecord } from '../../api/directus/create';
 import type { TimeRecordDto } from '../../interfaces/api/timeRecords';
 import { getDirectusPreviewUrl } from '../../utils/directusAssets';
 import { formatDocumentNumber } from '../../utils/format';
 import { AttendancePhotoLightbox } from '../attendance/AttendancePhotoLightbox';
+import { MarcarRevisionDialog } from './MarcarRevisionDialog';
 
 export interface MonitoreoFotoCardProps {
 	record: TimeRecordDto;
@@ -12,6 +15,27 @@ export interface MonitoreoFotoCardProps {
 
 export function MonitoreoFotoCard({ record }: MonitoreoFotoCardProps) {
 	const [lightboxOpen, setLightboxOpen] = useState(false);
+	const [dialogOpen, setDialogOpen] = useState(false);
+	const enRevision = record.is_under_review === true;
+
+	const queryClient = useQueryClient();
+	const revision = useMutation({
+		mutationFn: (razon: string) =>
+			updateTimeRecord(record.id, {
+				is_under_review: true,
+				review_reason: razon,
+			}),
+		onSuccess: () => {
+			setDialogOpen(false);
+			// Fotos y localización leen las mismas marcaciones
+			queryClient.invalidateQueries({
+				queryKey: ['monitoreoFotosTimeRecords'],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ['monitoreoLocalizacionTimeRecords'],
+			});
+		},
+	});
 
 	const emp = record.employee_id;
 	const nombreCompleto =
@@ -47,7 +71,8 @@ export function MonitoreoFotoCard({ record }: MonitoreoFotoCardProps) {
 				elevation={0}
 				sx={{
 					borderRadius: 3,
-					border: '1px solid #e2e8f0',
+					border: '1px solid',
+					borderColor: enRevision ? '#f59e0b' : '#e2e8f0',
 					bgcolor: '#ffffff',
 					overflow: 'hidden',
 					display: 'flex',
@@ -129,6 +154,33 @@ export function MonitoreoFotoCard({ record }: MonitoreoFotoCardProps) {
 						<Maximize2 size={18} />
 						<span>Ampliar foto</span>
 					</Box>
+
+					{enRevision && (
+						<Tooltip title={record.review_reason || 'Sin razón'} arrow>
+							<Box
+								onClick={(e) => e.stopPropagation()}
+								sx={{
+									position: 'absolute',
+									top: 10,
+									left: 10,
+									bgcolor: '#f59e0b',
+									color: '#ffffff',
+									px: 1,
+									py: 0.4,
+									borderRadius: 2,
+									display: 'flex',
+									alignItems: 'center',
+									gap: 0.5,
+									fontSize: '0.75rem',
+									fontWeight: 700,
+									boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+								}}
+							>
+								<Flag size={12} />
+								<span>En revisión</span>
+							</Box>
+						</Tooltip>
+					)}
 
 					{/* Time badge on top-right of the photo */}
 					<Box
@@ -229,8 +281,33 @@ export function MonitoreoFotoCard({ record }: MonitoreoFotoCardProps) {
 							{record.record_date}
 						</Typography>
 					</Box>
+
+					{!enRevision && (
+						<Button
+							size="small"
+							onClick={() => setDialogOpen(true)}
+							startIcon={<Flag size={14} />}
+							sx={{
+								textTransform: 'none',
+								fontWeight: 700,
+								fontSize: '0.78rem',
+								color: '#b45309',
+							}}
+						>
+							Marcar para revisión
+						</Button>
+					)}
 				</Box>
 			</Card>
+
+			<MarcarRevisionDialog
+				open={dialogOpen}
+				empleado={nombreCompleto}
+				guardando={revision.isPending}
+				error={revision.isError}
+				onClose={() => setDialogOpen(false)}
+				onConfirmar={(razon) => revision.mutate(razon)}
+			/>
 
 			{/* Lightbox for full screen inspection on single click */}
 			<AttendancePhotoLightbox

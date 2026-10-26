@@ -1,8 +1,8 @@
 import { readItems } from '@directus/sdk';
 import { withAutoRefresh } from '@/auth/services/directusInterceptor';
 import directus from '@/services/directus/directus';
-import { idRelacion } from './relacion';
 import { crearRegistrosVacios, ESTADO } from '../../domain/registro';
+import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
 import type { FiltroDirectus } from '../../interfaces/api/directus';
 import type { EmployeeDto } from '../../interfaces/api/employees';
 import type { NewnessBulkDto } from '../../interfaces/api/newness';
@@ -11,8 +11,7 @@ import type {
 	StoreClosedDayRawDto,
 } from '../../interfaces/api/stores';
 import type { TimeRecordBulkDto } from '../../interfaces/api/timeRecords';
-import type { EmpleadoAsistencia } from '../../domain/registro/modelo';
-
+import { idRelacion } from './relacion';
 
 /**
  * Obtiene empleados activos en lote (bulk) para un listado de tiendas

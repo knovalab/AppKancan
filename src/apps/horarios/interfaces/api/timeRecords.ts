@@ -28,6 +28,9 @@ export interface TimeRecordDto {
 	/** @deprecated Registros anteriores a `location` (GeoJSON). */
 	longitude?: number | null;
 	accuracy?: number | null;
+	/** Señalada desde Monitoreo como dudosa (foto borrosa, posible suplantación). */
+	is_under_review?: boolean | null;
+	review_reason?: string | null;
 }
 
 /** Entrada de `createTimeRecord`. La ubicación puede llegar como punto o como lat/lon sueltos. */
@@ -50,6 +53,8 @@ export interface UpdateTimeRecordDto {
 	observations?: string;
 	record_time?: string;
 	original_record_time?: string;
+	is_under_review?: boolean;
+	review_reason?: string;
 }
 
 /** `com_time_records` de las consultas en lote: `store_id` llega sin expandir. */

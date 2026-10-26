@@ -134,6 +134,10 @@ export async function updateTimeRecord(id: number, data: UpdateTimeRecordDto) {
 		if (data.record_time !== undefined) payload.record_time = data.record_time;
 		if (data.original_record_time !== undefined)
 			payload.original_record_time = data.original_record_time;
+		if (data.is_under_review !== undefined)
+			payload.is_under_review = data.is_under_review;
+		if (data.review_reason !== undefined)
+			payload.review_reason = data.review_reason;
 		return await withAutoRefresh(() =>
 			directus.request(updateItem('com_time_records', id, payload)),
 		);

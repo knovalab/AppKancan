@@ -303,6 +303,8 @@ export const fetchTimeRecords = async (
 					'photo',
 					'location',
 					'accuracy',
+					'is_under_review',
+					'review_reason',
 				],
 				filter,
 				sort: ['-record_date'],
