@@ -12,7 +12,20 @@ vi.mock('@/apps/horarios/api/directus/horasExtras', () => ({
 }));
 vi.mock('@/apps/horarios/hooks/useAvisos', () => ({ useAvisos: () => ({ showSnackbar }) }));
 vi.mock('@/apps/horarios/hooks/useHorariosLayout', () => ({
-	useHorariosLayout: () => ({ tienda: { storeIds: [26, 30] }, acceso: { roles: new Set(['comercial']) } }),
+	useHorariosLayout: () => ({
+		tienda: { storeIds: [26, 30] },
+		acceso: {
+			roles: new Set(['comercial']),
+			tiendasPermitidas: [
+				{ id: 26, name: 'Ipiales' },
+				{ id: 30, name: 'Pasto' },
+				{ id: 31, name: 'Tumaco' },
+			],
+		},
+	}),
+}));
+vi.mock('@/apps/horarios/hooks/useReporteHorasExtras', () => ({
+	useZonas: () => ({ data: [{ id: 'Sur', nombre: 'Sur', tiendas: [26, 30] }] }),
 }));
 
 import AprobacionPage from '@/apps/horarios/pages/horas-extras/AprobacionPage';
@@ -55,13 +68,13 @@ const montar = () => render(<AprobacionPage />, { wrapper: createQueryWrapper() 
 const montarHistorial = () => render(<HistorialPage />, { wrapper: createQueryWrapper() });
 
 describe('HistorialPage', () => {
-	it('arranca en el mes en curso con todos los estados menos pendiente', async () => {
+	it('arranca en el día de hoy con todos los estados menos pendiente', async () => {
 		montarHistorial();
 		expect(await screen.findByText('Carla X')).toBeInTheDocument();
 		const pedido = listarHorasExtras.mock.calls
 			.map(([f]) => f)
 			.find((f) => !f.estados.includes('pendiente'));
-		expect(pedido).toMatchObject({ tiendas: [26, 30], desde: dayjs().startOf('month').format('YYYY-MM-DD'), hasta: dayjs().format('YYYY-MM-DD') });
+		expect(pedido).toMatchObject({ tiendas: [26, 30, 31], desde: dayjs().format('YYYY-MM-DD'), hasta: dayjs().format('YYYY-MM-DD') });
 		expect(pedido.estados).toEqual(['sugerida', 'descartada_lider', 'descartada_comercial', 'aprobada']);
 		expect(screen.getByText('Historial de horas extras')).toBeInTheDocument();
 	});
@@ -102,6 +115,16 @@ describe('HistorialPage', () => {
 		expect(screen.queryByText('Diana X')).not.toBeInTheDocument();
 	});
 
+	it('filtra por zona', async () => {
+		montarHistorial();
+		await screen.findByText('Carla X');
+		fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Zona' }));
+		fireEvent.click(await screen.findByRole('option', { name: 'Sur' }));
+		await waitFor(() =>
+			expect(listarHorasExtras).toHaveBeenLastCalledWith(expect.objectContaining({ tiendas: [26, 30] })),
+		);
+	});
+
 	it('filtra por un estado', async () => {
 		montarHistorial();
 		await screen.findByText('Carla X');
@@ -121,11 +144,27 @@ describe('AprobacionPage', () => {
 		expect(screen.queryByText('Historial de horas extras')).not.toBeInTheDocument();
 	});
 
-	it('pide solo pendientes de las tiendas del header', async () => {
+	it('pide solo pendientes de todas las tiendas permitidas', async () => {
 		montar();
 		expect(await screen.findByText('Ana X')).toBeInTheDocument();
-		expect(listarHorasExtras).toHaveBeenCalledWith({ tiendas: [26, 30], estados: ['pendiente'] });
+		expect(listarHorasExtras).toHaveBeenCalledWith({ tiendas: [26, 30, 31], estados: ['pendiente'] });
 		expect(screen.getByText('2 pendientes · 2 h en total')).toBeInTheDocument();
+	});
+
+	it('filtra por zona y luego por una tienda de esa zona', async () => {
+		montar();
+		await screen.findByText('Ana X');
+		fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Zona' }));
+		fireEvent.click(await screen.findByRole('option', { name: 'Sur' }));
+		await waitFor(() =>
+			expect(listarHorasExtras).toHaveBeenLastCalledWith(expect.objectContaining({ tiendas: [26, 30] })),
+		);
+		fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Tienda' }));
+		expect(screen.queryByRole('option', { name: 'Tumaco' })).not.toBeInTheDocument();
+		fireEvent.click(await screen.findByRole('option', { name: 'Pasto' }));
+		await waitFor(() =>
+			expect(listarHorasExtras).toHaveBeenLastCalledWith(expect.objectContaining({ tiendas: [30] })),
+		);
 	});
 
 	it('el buscador acota lo que se ve y lo que se aprueba en lote', async () => {

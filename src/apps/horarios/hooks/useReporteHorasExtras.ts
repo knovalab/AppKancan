@@ -13,7 +13,6 @@ import {
 	ESTADO_HORA_EXTRA,
 	periodoActual,
 	periodosVencidos,
-	rangoAnterior,
 	reporteZona,
 	resumenPorPeriodo,
 } from '../domain/horasExtras';
@@ -185,7 +184,6 @@ export function useReporteZona(
 	hasta: string,
 	enabled = true,
 ) {
-	const antes = rangoAnterior(desde, hasta);
 	const base = { estados: [ESTADO_HORA_EXTRA.aprobada], tiendas };
 	const actualQ = useQuery({
 		queryKey: clave(`zona|${tiendas.join(',')}|${desde}|${hasta}`),
@@ -195,14 +193,6 @@ export function useReporteZona(
 				'employee_id',
 				'work_date',
 			]),
-		enabled,
-		...fresco,
-	});
-	const previoQ = useQuery({
-		queryKey: clave(
-			`zona-previo|${tiendas.join(',')}|${antes.desde}|${antes.hasta}`,
-		),
-		queryFn: () => agregadoHorasExtras({ ...base, ...antes }, ['store_id']),
 		enabled,
 		...fresco,
 	});
@@ -239,13 +229,8 @@ export function useReporteZona(
 	}, [empleados]);
 
 	const reporte = useMemo(
-		() =>
-			reporteZona(
-				actualQ.data ?? [],
-				new Map((previoQ.data ?? []).map((f) => [f.storeId ?? -1, f.minutos])),
-				plantilla,
-			),
-		[actualQ.data, previoQ.data, plantilla],
+		() => reporteZona(actualQ.data ?? [], plantilla),
+		[actualQ.data, plantilla],
 	);
 	const nombresTiendas = useMemo(
 		() =>
@@ -259,8 +244,7 @@ export function useReporteZona(
 		reporte,
 		personas,
 		nombresTiendas,
-		antes,
-		isLoading: actualQ.isLoading || previoQ.isLoading,
-		error: actualQ.error ?? previoQ.error ?? empleadosQ.error,
+		isLoading: actualQ.isLoading,
+		error: actualQ.error ?? empleadosQ.error,
 	};
 }

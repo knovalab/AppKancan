@@ -16,13 +16,13 @@ import { revisarHorasExtras } from '../../api/directus/horasExtras';
 import { ESTADO_HORA_EXTRA, formatoMinutos } from '../../domain/horasExtras';
 import { horariosKeys } from '../../hooks/registro/keys';
 import { useAvisos } from '../../hooks/useAvisos';
-import { useHorariosLayout } from '../../hooks/useHorariosLayout';
 import { useHorasExtras } from '../../hooks/useHorasExtras';
 import { mensajeDeError } from '../../utils/errores';
 import { aFilaHoraExtra, coincideEmpleado } from '../../utils/horasExtras';
 import { ReporteTiendasPagination } from '../com_time_record_store';
 import DateRangeFilter from '../reportes/DateRangeFilter';
 import { BuscarEmpleado } from './BuscarEmpleado';
+import { FiltrosZonaTienda, useFiltroZonaTienda } from './FiltrosZonaTienda';
 import { HorasExtrasTabla } from './HorasExtrasTabla';
 import {
 	type DecisionRevision,
@@ -32,11 +32,12 @@ import {
 const SOLO_PENDIENTES = [ESTADO_HORA_EXTRA.pendiente];
 
 /**
- * Tabla de horas extras pendientes de las tiendas del header, para que el
- * comercial las apruebe o rechace una a una o en lote.
+ * Tabla de horas extras pendientes de las tiendas permitidas, filtrables por
+ * zona y tienda, para que el comercial las apruebe o rechace una a una o en lote.
  */
 export function PendientesAprobacion() {
-	const { tienda } = useHorariosLayout();
+	const filtroZT = useFiltroZonaTienda();
+	const { tiendas } = filtroZT;
 	const queryClient = useQueryClient();
 	const { showSnackbar } = useAvisos();
 	const [page, setPage] = useState(0);
@@ -55,12 +56,12 @@ export function PendientesAprobacion() {
 
 	const filtros = useMemo(
 		() => ({
-			tiendas: tienda.storeIds,
+			tiendas,
 			estados: SOLO_PENDIENTES,
 			desde: fechaInicio?.format('YYYY-MM-DD'),
 			hasta: fechaFin?.format('YYYY-MM-DD'),
 		}),
-		[tienda.storeIds, fechaInicio, fechaFin],
+		[tiendas, fechaInicio, fechaFin],
 	);
 	const { data = [], isLoading, error } = useHorasExtras(filtros);
 	// Las marcadas que el buscador oculta no se aprueban: se revisa lo que se ve.
@@ -175,6 +176,7 @@ export function PendientesAprobacion() {
 							setPage(0);
 						}}
 					/>
+					<FiltrosZonaTienda filtro={filtroZT} onCambio={() => setPage(0)} />
 					{/* DateRangeFilter es fullWidth: sin ancho acotado ocuparía toda la fila. */}
 					<Box sx={{ width: { xs: '100%', sm: 280 } }}>
 						<DateRangeFilter
@@ -226,7 +228,7 @@ export function PendientesAprobacion() {
 
 			<HorasExtrasTabla
 				filas={pagina}
-				loading={isLoading && tienda.storeIds.length > 0}
+				loading={isLoading && tiendas.length > 0}
 				vacio="No hay horas extras pendientes"
 				seleccion={{ ids: idsSeleccion, onCambiar: cambiarSeleccion }}
 				acciones={(f) => (

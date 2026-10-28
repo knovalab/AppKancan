@@ -1,8 +1,6 @@
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import {
 	Alert,
 	Box,
@@ -80,36 +78,6 @@ function Kpi({
 	);
 }
 
-function Variacion({ v }: { v: number | null }) {
-	if (v == null)
-		return (
-			<Typography variant="body2" sx={{ color: '#94a3b8' }}>
-				--
-			</Typography>
-		);
-	const sube = v > 0;
-	return (
-		<Box
-			sx={{
-				display: 'inline-flex',
-				alignItems: 'center',
-				gap: 0.5,
-				color: v === 0 ? '#64748b' : sube ? '#b91c1c' : '#047857',
-			}}
-			aria-label={`${sube ? 'Sube' : 'Baja'} ${pct(Math.abs(v))} frente al periodo anterior`}
-		>
-			{v !== 0 &&
-				(sube ? (
-					<TrendingUpIcon fontSize="small" />
-				) : (
-					<TrendingDownIcon fontSize="small" />
-				))}
-			{sube ? '+' : v < 0 ? '−' : ''}
-			{pct(Math.abs(v))}
-		</Box>
-	);
-}
-
 export interface ReporteZonaTabProps {
 	/** Jefe de zona: sus tiendas (fijas). `null`: comercial, elige la zona. */
 	tiendasJefe: number[] | null;
@@ -119,7 +87,7 @@ export interface ReporteZonaTabProps {
  * Reportes → Horas extras → Por zona (R2 + R4): horas **aprobadas** de la zona
  * en un rango. Dos sub-pestañas para no saturar:
  * - **Resumen**: KPIs, día de la semana y top de personas ("cómo va la zona").
- * - **Tiendas**: ranking con variación y despliegue tienda → personas → días.
+ * - **Tiendas**: ranking y despliegue tienda → personas → días.
  * Exporta a Excel (con registros y horas por persona, que no caben en pantalla).
  */
 export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
@@ -160,7 +128,7 @@ export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 	// Sin rango elegido ("Todo"): desde el inicio del año, para no pedir la historia entera.
 	const desde = (fechaInicio ?? hoy.startOf('year')).format('YYYY-MM-DD');
 	const hasta = (fechaFin ?? hoy).format('YYYY-MM-DD');
-	const { reporte, personas, nombresTiendas, antes, isLoading, error } =
+	const { reporte, personas, nombresTiendas, isLoading, error } =
 		// Un jefe sin tiendas no consulta: sin filtro vería todo lo que Directus le permita.
 		useReporteZona(tiendas, desde, hasta, tiendasJefe?.length !== 0);
 
@@ -235,13 +203,10 @@ export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 					</TableCell>
 					<TableCell>{pct(t.porcentaje)}</TableCell>
 					<TableCell>{t.personas.length}</TableCell>
-					<TableCell>
-						<Variacion v={t.variacion} />
-					</TableCell>
 				</TableRow>
 				<TableRow>
 					<TableCell
-						colSpan={6}
+						colSpan={5}
 						sx={{ py: 0, borderBottom: abierta ? undefined : 0 }}
 					>
 						<Collapse in={abierta} unmountOnExit>
@@ -359,9 +324,7 @@ export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 						Horas extras por zona: {nombreZona}
 					</Typography>
 					<Typography variant="body2" sx={{ color: '#64748b' }}>
-						Horas aprobadas por tienda donde se trabajó. Variación frente a{' '}
-						{dayjs(antes.desde).format('DD/MM')} al{' '}
-						{dayjs(antes.hasta).format('DD/MM')}.
+						Horas aprobadas por tienda donde se trabajó.
 					</Typography>
 				</Box>
 				<Box
@@ -613,17 +576,13 @@ export default function ReporteZonaTab({ tiendasJefe }: ReporteZonaTabProps) {
 								<TableHead>
 									<TableRow>
 										<TableCell sx={head} />
-										{[
-											'Tienda',
-											'Horas',
-											'% de la zona',
-											'Personas',
-											'Variación',
-										].map((c) => (
-											<TableCell key={c} sx={head}>
-												{c}
-											</TableCell>
-										))}
+										{['Tienda', 'Horas', '% de la zona', 'Personas'].map(
+											(c) => (
+												<TableCell key={c} sx={head}>
+													{c}
+												</TableCell>
+											),
+										)}
 									</TableRow>
 								</TableHead>
 								<TableBody>{reporte.tiendas.map(filaTienda)}</TableBody>

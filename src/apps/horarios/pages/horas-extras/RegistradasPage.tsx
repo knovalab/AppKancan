@@ -38,11 +38,12 @@ type FiltroEstado = EstadoHoraExtra | 'todos';
 
 /**
  * Sub‑pestaña "Registradas" (/horarios/horas-extras/registradas) del líder de zona:
- * horas extras de las tiendas elegidas en el header, con dos formas de registrar:
+ * horas extras de sus tiendas (filtrables por tienda), con dos formas de registrar:
  * masiva (sub‑página con grilla personas × días) e individual (modal de una persona).
  */
 export default function RegistradasPage() {
-	const { tienda, acceso, irA } = useHorariosLayout();
+	const { acceso, irA } = useHorariosLayout();
+	const [tiendaId, setTiendaId] = useState<number | ''>('');
 	const [estado, setEstado] = useState<FiltroEstado>('todos');
 	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -53,21 +54,32 @@ export default function RegistradasPage() {
 	const [aperturas, setAperturas] = useState(0);
 	const [abierto, setAbierto] = useState(false);
 
-	const filtros = useMemo(
-		() => ({
-			tiendas: tienda.storeIds,
-			estados: estado === 'todos' ? undefined : [estado],
-			desde: fechaInicio?.format('YYYY-MM-DD'),
-			hasta: fechaFin?.format('YYYY-MM-DD'),
-		}),
-		[tienda.storeIds, estado, fechaInicio, fechaFin],
-	);
-	const { data = [], isLoading, error } = useHorasExtras(filtros);
-
 	const tiendasLider = useMemo(
 		() => acceso.tiendasPermitidas.map((t) => Number(t.id)),
 		[acceso.tiendasPermitidas],
 	);
+	const opcionesTienda = useMemo(
+		() =>
+			[...acceso.tiendasPermitidas].sort((a, b) =>
+				a.name.localeCompare(b.name, 'es'),
+			),
+		[acceso.tiendasPermitidas],
+	);
+	const tiendas = useMemo(
+		() => (tiendaId === '' ? tiendasLider : [tiendaId]),
+		[tiendaId, tiendasLider],
+	);
+
+	const filtros = useMemo(
+		() => ({
+			tiendas,
+			estados: estado === 'todos' ? undefined : [estado],
+			desde: fechaInicio?.format('YYYY-MM-DD'),
+			hasta: fechaFin?.format('YYYY-MM-DD'),
+		}),
+		[tiendas, estado, fechaInicio, fechaFin],
+	);
+	const { data = [], isLoading, error } = useHorasExtras(filtros);
 	// El buscador del formulario usa todos los empleados del líder, no solo la tienda del header.
 	const { data: empleados = [], isLoading: cargandoEmpleados } = useQuery({
 		queryKey: horariosKeys.empleados.tiendas(tiendasLider),
@@ -96,27 +108,62 @@ export default function RegistradasPage() {
 			elevation={0}
 			sx={{ p: 2, borderRadius: 3, border: '1px solid #e0e0e0' }}
 		>
+			<Box sx={{ mb: 2 }}>
+				<Typography variant="h6" sx={{ fontWeight: 700, color: '#004680' }}>
+					Horas extras registradas
+				</Typography>
+				<Typography variant="body2" sx={{ color: '#64748b' }}>
+					{filas.length} registro{filas.length !== 1 ? 's' : ''} ·{' '}
+					{formatoMinutos(totalMinutos)} en total
+				</Typography>
+			</Box>
+
 			<Box
 				sx={{
 					display: 'flex',
 					flexWrap: 'wrap',
 					alignItems: 'center',
 					justifyContent: 'space-between',
-					gap: 2,
+					gap: 1.5,
 					mb: 2,
 				}}
 			>
-				<Box>
-					<Typography variant="h6" sx={{ fontWeight: 700, color: '#004680' }}>
-						Horas extras registradas
-					</Typography>
-					<Typography variant="body2" sx={{ color: '#64748b' }}>
-						{filas.length} registro{filas.length !== 1 ? 's' : ''} ·{' '}
-						{formatoMinutos(totalMinutos)} en total
-					</Typography>
-				</Box>
-				<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+				<Box
+					sx={{
+						display: 'flex',
+						flexWrap: 'wrap',
+						alignItems: 'center',
+						gap: 1.5,
+					}}
+				>
+					<BuscarEmpleado
+						value={busqueda}
+						onChange={(t) => {
+							setBusqueda(t);
+							setPage(0);
+						}}
+					/>
 					<FormControl size="small" sx={{ minWidth: 200 }}>
+						<InputLabel id="he-tienda">Tienda</InputLabel>
+						<Select
+							labelId="he-tienda"
+							label="Tienda"
+							value={tiendaId}
+							onChange={(e) => {
+								// Ids de tienda nunca son 0: '' (Todas) → ''.
+								setTiendaId(Number(e.target.value) || '');
+								setPage(0);
+							}}
+						>
+							<MenuItem value="">Todas las tiendas</MenuItem>
+							{opcionesTienda.map((t) => (
+								<MenuItem key={t.id} value={t.id}>
+									{t.name}
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+					<FormControl size="small" sx={{ minWidth: 180 }}>
 						<InputLabel id="he-estado">Estado</InputLabel>
 						<Select
 							labelId="he-estado"
@@ -135,6 +182,20 @@ export default function RegistradasPage() {
 							))}
 						</Select>
 					</FormControl>
+					{/* DateRangeFilter es fullWidth: sin ancho acotado ocuparía toda la fila. */}
+					<Box sx={{ width: { xs: '100%', sm: 280 } }}>
+						<DateRangeFilter
+							fechaInicio={fechaInicio}
+							fechaFin={fechaFin}
+							onChange={(inicio, fin) => {
+								setFechaInicio(inicio);
+								setFechaFin(fin);
+								setPage(0);
+							}}
+						/>
+					</Box>
+				</Box>
+				<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
 					<Button
 						variant="outlined"
 						startIcon={<PersonAddIcon />}
@@ -157,36 +218,7 @@ export default function RegistradasPage() {
 				</Box>
 			</Box>
 
-			<Box
-				sx={{
-					display: 'flex',
-					flexWrap: 'wrap',
-					alignItems: 'center',
-					gap: 1.5,
-					mb: 2,
-				}}
-			>
-				<BuscarEmpleado
-					value={busqueda}
-					onChange={(t) => {
-						setBusqueda(t);
-						setPage(0);
-					}}
-				/>
-				<Box sx={{ width: { xs: '100%', sm: 300 } }}>
-					<DateRangeFilter
-						fechaInicio={fechaInicio}
-						fechaFin={fechaFin}
-						onChange={(inicio, fin) => {
-							setFechaInicio(inicio);
-							setFechaFin(fin);
-							setPage(0);
-						}}
-					/>
-				</Box>
-			</Box>
-
-			{tienda.storeIds.length === 0 && (
+			{tiendasLider.length === 0 && (
 				<Alert severity="info" sx={{ mb: 2 }}>
 					No tienes tiendas asignadas.
 				</Alert>
@@ -199,7 +231,7 @@ export default function RegistradasPage() {
 
 			<HorasExtrasTabla
 				filas={pagina}
-				loading={isLoading && tienda.storeIds.length > 0}
+				loading={isLoading && tiendas.length > 0}
 				vacio="Aún no hay horas extras registradas"
 			/>
 			{filas.length > 0 && (

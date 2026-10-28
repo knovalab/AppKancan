@@ -78,18 +78,18 @@ const irATiendas = async () => {
 };
 
 describe('Reportes · Horas extras por zona', () => {
-	it('jefe: Resumen (KPIs, día de la semana, top) y Tiendas (ranking de 5 columnas con variación)', async () => {
+	it('jefe: Resumen (KPIs, día de la semana, top) y Tiendas (ranking sin variación)', async () => {
 		montar([26, 30]);
 		await cargado();
 		// Abre en Resumen: sin la tabla de tiendas.
 		expect(screen.queryByRole('table', { name: 'Horas extras por tienda' })).toBeNull();
 		expect(screen.queryByLabelText('Zona')).not.toBeInTheDocument();
-		// Solo aprobadas, solo sus tiendas, mes en curso; y el rango anterior para la variación.
+		// Solo aprobadas, solo sus tiendas, mes en curso; sin consultar el rango anterior.
 		expect(agregado).toHaveBeenCalledWith(
 			{ estados: ['aprobada'], tiendas: [26, 30], desde: '2026-10-01', hasta: '2026-10-28' },
 			['store_id', 'employee_id', 'work_date'],
 		);
-		expect(agregado).toHaveBeenCalledWith({ estados: ['aprobada'], tiendas: [26, 30], desde: '2026-09-03', hasta: '2026-09-30' }, ['store_id']);
+		expect(agregado).toHaveBeenCalledTimes(1);
 
 		expect(kpi('Horas extras')).toContain('4 h 30 min');
 		expect(kpi('Personas con horas')).toContain('3');
@@ -102,9 +102,8 @@ describe('Reportes · Horas extras por zona', () => {
 
 		await irATiendas();
 		expect(screen.getByRole('tab', { name: 'Tiendas (2)' })).toHaveAttribute('aria-selected', 'true');
-		// Ipiales primero (más horas): 210 min, 78 %, 2 personas, +50 % frente a 140.
-		expect(celdas(/Ipiales/)).toEqual(['', 'Ipiales', '3 h 30 min', '78 %', '2', '+50 %']);
-		expect(celdas(/Pasto/)[5]).toBe('--'); // sin horas en el rango anterior
+		// Ipiales primero (más horas): 210 min, 78 %, 2 personas.
+		expect(celdas(/Ipiales/)).toEqual(['', 'Ipiales', '3 h 30 min', '78 %', '2']);
 	});
 
 	it('detalle: tienda (registros y por persona) → personas → días plegados', async () => {

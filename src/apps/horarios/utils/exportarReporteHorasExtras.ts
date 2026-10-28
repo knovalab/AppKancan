@@ -169,9 +169,8 @@ export async function exportarReporteZonaExcel({
 			'Registros',
 			'Personas',
 			'Horas por persona (plantilla)',
-			'Variación vs. periodo anterior',
 		],
-		[28, 14, 14, 12, 12, 26, 26],
+		[28, 14, 14, 12, 12, 26],
 	);
 	for (const t of reporte.tiendas) {
 		const r = tiendas.addRow([
@@ -181,12 +180,10 @@ export async function exportarReporteZonaExcel({
 			t.registros,
 			t.personas.length,
 			t.minutosPorPersona == null ? '' : horas(t.minutosPorPersona),
-			t.variacion ?? '',
 		]);
 		r.getCell(2).numFmt = '0.00';
 		r.getCell(3).numFmt = '0.0%';
 		r.getCell(6).numFmt = '0.00';
-		r.getCell(7).numFmt = '+0.0%;-0.0%;0.0%';
 	}
 	numero(
 		tiendas,

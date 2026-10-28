@@ -143,13 +143,20 @@ export const SECCIONES: readonly Seccion[] = [
 				label: 'Registradas',
 				roles: ['areaManager'],
 				ocultarA: ['comercial', 'nomina'],
+				selectorEnHeader: false,
 			},
 			{
 				path: 'historial',
 				label: 'Historial',
 				roles: ['comercial', 'nomina'],
+				selectorEnHeader: false,
 			},
-			{ path: 'aprobacion', label: 'Aprobación', roles: ['comercial'] },
+			{
+				path: 'aprobacion',
+				label: 'Aprobación',
+				roles: ['comercial'],
+				selectorEnHeader: false,
+			},
 			{
 				path: 'periodos',
 				label: 'Periodos',

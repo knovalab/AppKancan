@@ -95,10 +95,10 @@ function Bloque({
 					{titulo}
 				</Typography>
 				<Typography variant="body2" sx={{ color: '#475569' }}>
-					Horas extras: <strong>{filas.length}</strong>
+					Registros Vinculados: <strong>{filas.length}</strong>
 				</Typography>
 				<Typography variant="body2" sx={{ color: '#475569' }}>
-					Tiempo: <strong>{formatoMinutos(minutos)}</strong>
+					Horas extras: <strong>{formatoMinutos(minutos)}</strong>
 				</Typography>
 			</Box>
 			<HorasExtrasTabla filas={filas} vacio={vacio} />

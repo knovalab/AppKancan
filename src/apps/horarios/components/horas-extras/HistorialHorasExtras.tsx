@@ -4,6 +4,7 @@ import {
 	Box,
 	Button,
 	FormControl,
+	InputLabel,
 	MenuItem,
 	Paper,
 	Select,
@@ -26,6 +27,7 @@ import { aFilaHoraExtra, coincideEmpleado } from '../../utils/horasExtras';
 import { ReporteTiendasPagination } from '../com_time_record_store';
 import DateRangeFilter from '../reportes/DateRangeFilter';
 import { BuscarEmpleado } from './BuscarEmpleado';
+import { FiltrosZonaTienda, useFiltroZonaTienda } from './FiltrosZonaTienda';
 import { HoraExtraDetalleDialog } from './HoraExtraDetalleDialog';
 import { HorasExtrasTabla } from './HorasExtrasTabla';
 
@@ -38,15 +40,14 @@ type FiltroEstado = EstadoHoraExtra | 'todos';
 
 /**
  * Historial del comercial y de nómina (con la columna Periodo): horas extras ya revisadas (y cualquier estado que no
- * sea pendiente) de las tiendas del header, con rango de fechas y estado.
+ * sea pendiente) de las tiendas permitidas, con zona, tienda, estado y rango de fechas.
  * Filtros con el mismo calendario que "Apertura y Cierre de Tiendas" (Monitoreo).
  */
 export function HistorialHorasExtras() {
-	const { tienda, acceso } = useHorariosLayout();
-	// Por defecto, el mes en curso (igual que Monitoreo).
-	const [fechaInicio, setFechaInicio] = useState<Dayjs | null>(() =>
-		dayjs().startOf('month'),
-	);
+	const { acceso } = useHorariosLayout();
+	const filtroZT = useFiltroZonaTienda();
+	const { tiendas } = filtroZT;
+	const [fechaInicio, setFechaInicio] = useState<Dayjs | null>(() => dayjs());
 	const [fechaFin, setFechaFin] = useState<Dayjs | null>(() => dayjs());
 	const [estado, setEstado] = useState<FiltroEstado>('todos');
 	const [page, setPage] = useState(0);
@@ -56,12 +57,12 @@ export function HistorialHorasExtras() {
 
 	const filtros = useMemo(
 		() => ({
-			tiendas: tienda.storeIds,
+			tiendas,
 			desde: fechaInicio?.format('YYYY-MM-DD'),
 			hasta: fechaFin?.format('YYYY-MM-DD'),
 			estados: estado === 'todos' ? [...ESTADOS_HISTORIAL] : [estado],
 		}),
-		[tienda.storeIds, fechaInicio, fechaFin, estado],
+		[tiendas, fechaInicio, fechaFin, estado],
 	);
 	const { data = [], isLoading, error } = useHorasExtras(filtros);
 	const filas = useMemo(
@@ -98,11 +99,10 @@ export function HistorialHorasExtras() {
 						{formatoMinutos(totalMinutos)} en total
 					</Typography>
 				</Box>
-				{/* Rango y estado en una sola fila; solo en móvil pasan a dos líneas. */}
 				<Box
 					sx={{
 						display: 'flex',
-						flexWrap: { xs: 'wrap', sm: 'nowrap' },
+						flexWrap: 'wrap',
 						alignItems: 'center',
 						gap: 1.5,
 					}}
@@ -114,31 +114,16 @@ export function HistorialHorasExtras() {
 							setPage(0);
 						}}
 					/>
-					{/* DateRangeFilter es fullWidth: sin ancho acotado empujaría el estado a otra línea. */}
-					<Box sx={{ width: { xs: '100%', sm: 300 }, flexShrink: 0 }}>
-						<DateRangeFilter
-							fechaInicio={fechaInicio}
-							fechaFin={fechaFin}
-							onChange={(inicio, fin) => {
-								setFechaInicio(inicio);
-								setFechaFin(fin);
-								setPage(0);
-							}}
-						/>
-					</Box>
-					<FormControl size="small" sx={{ minWidth: 200, flexShrink: 0 }}>
+					<FiltrosZonaTienda filtro={filtroZT} onCambio={() => setPage(0)} />
+					<FormControl size="small" sx={{ minWidth: 180 }}>
+						<InputLabel id="hh-estado">Estado</InputLabel>
 						<Select
+							labelId="hh-estado"
+							label="Estado"
 							value={estado}
-							inputProps={{ 'aria-label': 'Estado' }}
 							onChange={(e) => {
 								setEstado(e.target.value as FiltroEstado);
 								setPage(0);
-							}}
-							sx={{
-								height: 38,
-								borderRadius: 2,
-								bgcolor: '#f8fafc',
-								'& .MuiSelect-select': { py: 0.75, fontSize: '0.875rem' },
 							}}
 						>
 							<MenuItem value="todos">Todos los estados</MenuItem>
@@ -149,6 +134,18 @@ export function HistorialHorasExtras() {
 							))}
 						</Select>
 					</FormControl>
+					{/* DateRangeFilter es fullWidth: sin ancho acotado ocuparía toda la fila. */}
+					<Box sx={{ width: { xs: '100%', sm: 280 } }}>
+						<DateRangeFilter
+							fechaInicio={fechaInicio}
+							fechaFin={fechaFin}
+							onChange={(inicio, fin) => {
+								setFechaInicio(inicio);
+								setFechaFin(fin);
+								setPage(0);
+							}}
+						/>
+					</Box>
 				</Box>
 			</Box>
 
@@ -163,7 +160,7 @@ export function HistorialHorasExtras() {
 
 			<HorasExtrasTabla
 				filas={pagina}
-				loading={isLoading && tienda.storeIds.length > 0}
+				loading={isLoading && tiendas.length > 0}
 				vacio="No hay horas extras en el historial con estos filtros"
 				conPeriodo={acceso.roles.has('nomina')}
 				compacta

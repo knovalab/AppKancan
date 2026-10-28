@@ -153,8 +153,6 @@ export interface TiendaZona extends Totales {
 	porcentaje: number;
 	/** Minutos por persona de plantilla; `null` si no hay plantilla. */
 	minutosPorPersona: number | null;
-	/** Variación vs. el rango anterior (0,12 = +12 %); `null` si antes no hubo horas. */
-	variacion: number | null;
 }
 
 export interface ReporteZona {
@@ -169,7 +167,6 @@ export interface ReporteZona {
 /**
  * Reporte de una zona (R2 + R4) a partir de un agregado por tienda × empleado × día.
  * `plantilla`: empleados activos por tienda, para comparar tiendas grandes y chicas.
- * `previas`: minutos por tienda del rango anterior, para la variación.
  */
 export function reporteZona(
 	filas: readonly {
@@ -179,7 +176,6 @@ export function reporteZona(
 		registros: number;
 		minutos: number;
 	}[],
-	previas: ReadonlyMap<number, number>,
 	plantilla: ReadonlyMap<number, number>,
 	topN = 10,
 ): ReporteZona {
@@ -232,14 +228,12 @@ export function reporteZona(
 		const t = cero();
 		for (const p of lista) sumar(t, p.registros, p.minutos);
 		const cupo = plantilla.get(storeId) ?? 0;
-		const antes = previas.get(storeId) ?? 0;
 		return {
 			storeId,
 			...t,
 			personas: lista,
 			porcentaje: totalMinutos ? t.minutos / totalMinutos : 0,
 			minutosPorPersona: cupo ? t.minutos / cupo : null,
-			variacion: antes ? (t.minutos - antes) / antes : null,
 		};
 	});
 	const cupoZona = [...tiendas.keys()].reduce(

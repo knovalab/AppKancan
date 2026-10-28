@@ -131,17 +131,18 @@ describe('reporteZona (R2 + R4)', () => {
 		{ storeId: 30, empleadoId: 7, fecha: '2026-10-21', registros: 2, minutos: 90 }, // rotación
 		{ storeId: 30, empleadoId: 9, fecha: '2026-10-21', registros: 1, minutos: 60 },
 	];
-	const r = reporteZona(filas, new Map([[26, 140], [30, 0]]), new Map([[26, 10], [30, 5]]));
+	const r = reporteZona(filas, new Map([[26, 10], [30, 5]]));
 
 	it('totales de la zona: horas, registros, personas distintas y por persona de plantilla', () => {
 		expect(r.total).toEqual({ registros: 6, minutos: 360, personas: 3, minutosPorPersona: 360 / 15 });
 	});
 
-	it('ranking de tiendas con %, por persona y variación vs. el rango anterior', () => {
+	it('ranking de tiendas con % y por persona de plantilla', () => {
 		const [t26, t30] = r.tiendas;
-		expect(t26).toMatchObject({ storeId: 26, minutos: 210, registros: 3, minutosPorPersona: 21, variacion: 0.5 });
+		expect(t26).toMatchObject({ storeId: 26, minutos: 210, registros: 3, minutosPorPersona: 21 });
 		expect(t26.porcentaje).toBeCloseTo(210 / 360);
-		expect(t30).toMatchObject({ storeId: 30, minutos: 150, variacion: null }); // antes 0: sin base
+		expect(t30).toMatchObject({ storeId: 30, minutos: 150 });
+		expect(t30).not.toHaveProperty('variacion');
 	});
 
 	it('detalle: personas por tienda (más horas primero) y sus días ordenados', () => {
