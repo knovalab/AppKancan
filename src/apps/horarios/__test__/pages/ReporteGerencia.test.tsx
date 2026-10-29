@@ -123,6 +123,25 @@ describe('Reportes de gerencia · escritorio', () => {
 		expect(screen.queryByRole('button', { name: /Exportar/ })).toBeNull();
 	});
 
+	it('por zona: elige por periodo (no calendario); arranca en el actual y consulta sus fechas', async () => {
+		await montar();
+		await irAZona();
+		expect(screen.queryByText('CALENDARIO')).toBeNull();
+		// Hoy (28/10) no cae en ningún periodo: toma el más reciente.
+		expect(agregadoHorasExtras).toHaveBeenCalledWith(
+			expect.objectContaining({ desde: '2026-10-11', hasta: '2026-10-25' }),
+			['store_id', 'work_date'],
+		);
+		fireEvent.mouseDown(screen.getByLabelText('Periodo'));
+		fireEvent.click(screen.getByRole('option', { name: 'Oct 1 (01/10 al 10/10)' }));
+		await waitFor(() =>
+			expect(agregadoHorasExtras).toHaveBeenCalledWith(
+				expect.objectContaining({ desde: '2026-10-01', hasta: '2026-10-10' }),
+				['store_id', 'work_date'],
+			),
+		);
+	});
+
 	it('por zona: tocar una zona la abre (solo sus tiendas, sin columna Zona)', async () => {
 		await montar();
 		await irAZona();

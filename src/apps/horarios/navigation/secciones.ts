@@ -45,6 +45,10 @@ export interface Seccion {
 	selectorEnHeader?: boolean;
 	mostrarTutorial?: boolean;
 	subsecciones?: readonly SubSeccion[];
+	/** Textos de la pestaña y el header según el rol principal. */
+	textosPorRol?: Partial<
+		Record<Rol, Pick<Seccion, 'label' | 'titulo' | 'subtitulo'>>
+	>;
 }
 
 export const SECCIONES: readonly Seccion[] = [
@@ -137,18 +141,22 @@ export const SECCIONES: readonly Seccion[] = [
 		roles: ['areaManager', 'comercial', 'nomina'],
 		tienda: 'una-o-todas',
 		mostrarNormas: false,
+		textosPorRol: {
+			nomina: {
+				label: 'PERIODOS Y HORAS',
+				titulo: 'Periodos y Horas',
+				subtitulo:
+					'Liquida periodos, revisa las horas de la semana y el historial',
+			},
+		},
+		// El orden es el de las sub‑pestañas; cada rol entra en la primera que ve
+		// (comercial: Aprobación; nómina: Periodos).
 		subsecciones: [
 			{
 				path: 'registradas',
 				label: 'Registradas',
 				roles: ['areaManager'],
 				ocultarA: ['comercial', 'nomina'],
-				selectorEnHeader: false,
-			},
-			{
-				path: 'historial',
-				label: 'Historial',
-				roles: ['comercial', 'nomina'],
 				selectorEnHeader: false,
 			},
 			{
@@ -161,6 +169,18 @@ export const SECCIONES: readonly Seccion[] = [
 				path: 'periodos',
 				label: 'Periodos',
 				roles: ['nomina'],
+				selectorEnHeader: false,
+			},
+			{
+				path: 'resumen-semanal',
+				label: 'Resumen semanal',
+				roles: ['comercial', 'nomina'],
+				selectorEnHeader: false,
+			},
+			{
+				path: 'historial',
+				label: 'Historial',
+				roles: ['comercial', 'nomina'],
 				selectorEnHeader: false,
 			},
 		],

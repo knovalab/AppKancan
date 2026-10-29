@@ -17,10 +17,13 @@ import {
 	ESTADOS_HORA_EXTRA,
 	type EstadoHoraExtra,
 	ETIQUETA_ESTADO_HORA_EXTRA,
+	ETIQUETA_ESTADO_PERIODO,
 	formatoMinutos,
+	periodoActual,
 } from '../../domain/horasExtras';
 import { useHorariosLayout } from '../../hooks/useHorariosLayout';
 import { useHorasExtras } from '../../hooks/useHorasExtras';
+import { usePeriodos } from '../../hooks/usePeriodos';
 import type { HoraExtraFila } from '../../interfaces/horasExtras';
 import { mensajeDeError } from '../../utils/errores';
 import { aFilaHoraExtra, coincideEmpleado } from '../../utils/horasExtras';
@@ -38,10 +41,12 @@ export const ESTADOS_HISTORIAL = ESTADOS_HORA_EXTRA.filter(
 
 type FiltroEstado = EstadoHoraExtra | 'todos';
 
+const fecha = (f: string) => dayjs(f).format('DD/MM/YYYY');
+
 /**
  * Historial del comercial y de nómina (con la columna Periodo): horas extras ya revisadas (y cualquier estado que no
- * sea pendiente) de las tiendas permitidas, con zona, tienda, estado y rango de fechas.
- * Filtros con el mismo calendario que "Apertura y Cierre de Tiendas" (Monitoreo).
+ * sea pendiente) de las tiendas permitidas, con zona, tienda y estado. El comercial filtra por
+ * rango de fechas (calendario de Monitoreo); nómina, por periodo (fechas de trabajo dentro del periodo).
  */
 export function HistorialHorasExtras() {
 	const { acceso } = useHorariosLayout();
@@ -54,17 +59,38 @@ export function HistorialHorasExtras() {
 	const [rowsPerPage, setRowsPerPage] = useState(10);
 	const [detalle, setDetalle] = useState<HoraExtraFila | null>(null);
 	const [busqueda, setBusqueda] = useState('');
+	// En esta sub‑pestaña rolPrincipal es comercial o nómina (accesoDeSubseccion).
+	const porPeriodo = acceso.rolPrincipal === 'nomina';
+	const periodosQ = usePeriodos(porPeriodo);
+	const periodos = useMemo(
+		() =>
+			[...(periodosQ.data ?? [])].sort((a, b) =>
+				b.start_date.localeCompare(a.start_date),
+			),
+		[periodosQ.data],
+	);
+	const [periodoId, setPeriodoId] = useState<number | ''>('');
+	const periodo =
+		periodos.find((p) => p.id === periodoId) ??
+		periodoActual(periodos, dayjs().format('YYYY-MM-DD'));
 
 	const filtros = useMemo(
 		() => ({
 			tiendas,
-			desde: fechaInicio?.format('YYYY-MM-DD'),
-			hasta: fechaFin?.format('YYYY-MM-DD'),
+			desde: porPeriodo
+				? periodo?.start_date
+				: fechaInicio?.format('YYYY-MM-DD'),
+			hasta: porPeriodo ? periodo?.end_date : fechaFin?.format('YYYY-MM-DD'),
 			estados: estado === 'todos' ? [...ESTADOS_HISTORIAL] : [estado],
 		}),
-		[tiendas, fechaInicio, fechaFin, estado],
+		[tiendas, porPeriodo, periodo, fechaInicio, fechaFin, estado],
 	);
-	const { data = [], isLoading, error } = useHorasExtras(filtros);
+	// Sin periodo elegido no se consulta: sin fechas traería toda la historia.
+	const {
+		data = [],
+		isLoading,
+		error,
+	} = useHorasExtras(filtros, !porPeriodo || periodo != null);
 	const filas = useMemo(
 		() => data.map(aFilaHoraExtra).filter((f) => coincideEmpleado(f, busqueda)),
 		[data, busqueda],
@@ -134,25 +160,52 @@ export function HistorialHorasExtras() {
 							))}
 						</Select>
 					</FormControl>
-					{/* DateRangeFilter es fullWidth: sin ancho acotado ocuparía toda la fila. */}
-					<Box sx={{ width: { xs: '100%', sm: 280 } }}>
-						<DateRangeFilter
-							fechaInicio={fechaInicio}
-							fechaFin={fechaFin}
-							onChange={(inicio, fin) => {
-								setFechaInicio(inicio);
-								setFechaFin(fin);
-								setPage(0);
-							}}
-						/>
-					</Box>
+					{porPeriodo ? (
+						<FormControl size="small" sx={{ minWidth: 280 }}>
+							<InputLabel id="hh-periodo">Periodo</InputLabel>
+							<Select
+								labelId="hh-periodo"
+								label="Periodo"
+								value={periodo?.id ?? ''}
+								onChange={(e) => {
+									setPeriodoId(Number(e.target.value) || '');
+									setPage(0);
+								}}
+							>
+								{periodos.map((p) => (
+									<MenuItem key={p.id} value={p.id}>
+										{p.name || 'Periodo'} · {fecha(p.start_date)} –{' '}
+										{fecha(p.end_date)} ({ETIQUETA_ESTADO_PERIODO[p.status]})
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+					) : (
+						// DateRangeFilter es fullWidth: sin ancho acotado ocuparía toda la fila.
+						<Box sx={{ width: { xs: '100%', sm: 280 } }}>
+							<DateRangeFilter
+								fechaInicio={fechaInicio}
+								fechaFin={fechaFin}
+								onChange={(inicio, fin) => {
+									setFechaInicio(inicio);
+									setFechaFin(fin);
+									setPage(0);
+								}}
+							/>
+						</Box>
+					)}
 				</Box>
 			</Box>
 
-			{error && (
+			{porPeriodo && periodosQ.isSuccess && periodos.length === 0 && (
+				<Alert severity="info" sx={{ mb: 2 }}>
+					Aún no hay periodos creados.
+				</Alert>
+			)}
+			{(error || periodosQ.error) && (
 				<Alert severity="error" sx={{ mb: 2 }}>
 					{mensajeDeError(
-						error,
+						error ?? periodosQ.error,
 						'Error al cargar el historial de horas extras',
 					)}
 				</Alert>

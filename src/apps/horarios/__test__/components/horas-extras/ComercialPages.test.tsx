@@ -11,11 +11,19 @@ vi.mock('@/apps/horarios/api/directus/horasExtras', () => ({
 	revisarHorasExtras: (ids: unknown, r: unknown) => revisarHorasExtras(ids, r),
 }));
 vi.mock('@/apps/horarios/hooks/useAvisos', () => ({ useAvisos: () => ({ showSnackbar }) }));
+const listarPeriodos = vi.fn();
+vi.mock('@/apps/horarios/api/directus/periodos', () => ({
+	listarPeriodos: () => listarPeriodos(),
+	totalesVinculados: async () => [],
+}));
+// Rol principal de la sub‑pestaña: comercial salvo en las pruebas de nómina.
+let rol = 'comercial';
 vi.mock('@/apps/horarios/hooks/useHorariosLayout', () => ({
 	useHorariosLayout: () => ({
 		tienda: { storeIds: [26, 30] },
 		acceso: {
-			roles: new Set(['comercial']),
+			roles: new Set([rol]),
+			rolPrincipal: rol,
 			tiendasPermitidas: [
 				{ id: 26, name: 'Ipiales' },
 				{ id: 30, name: 'Pasto' },
@@ -55,6 +63,7 @@ const historial = [
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	rol = 'comercial';
 	// Pendientes para su tabla; el historial pide los demás estados.
 	listarHorasExtras.mockImplementation(async (f: { estados?: string[] }) =>
 		f.estados?.length === 1 && f.estados[0] === 'pendiente'
@@ -133,6 +142,39 @@ describe('HistorialPage', () => {
 		await waitFor(() =>
 			expect(listarHorasExtras).toHaveBeenCalledWith(expect.objectContaining({ estados: ['descartada_comercial'] })),
 		);
+	});
+});
+
+describe('HistorialPage de nómina', () => {
+	const hoy = dayjs().format('YYYY-MM-DD');
+	beforeEach(() => {
+		rol = 'nomina';
+		listarPeriodos.mockResolvedValue([
+			{ id: 1, name: 'Quincena 1', start_date: '2026-09-01', end_date: '2026-09-15', status: 'liquidado' },
+			{ id: 2, name: '', start_date: dayjs().subtract(3, 'day').format('YYYY-MM-DD'), end_date: dayjs().add(3, 'day').format('YYYY-MM-DD'), status: 'preliquidado' },
+		]);
+	});
+
+	it('cambia el calendario por un selector de periodos y arranca en el periodo actual', async () => {
+		montarHistorial();
+		await waitFor(() =>
+			expect(listarHorasExtras).toHaveBeenCalledWith(
+				expect.objectContaining({ desde: dayjs(hoy).subtract(3, 'day').format('YYYY-MM-DD'), hasta: dayjs(hoy).add(3, 'day').format('YYYY-MM-DD') }),
+			),
+		);
+		expect(screen.queryByText('Hoy')).not.toBeInTheDocument();
+		fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Periodo' }));
+		fireEvent.click(await screen.findByRole('option', { name: /Quincena 1 · 01\/09\/2026 – 15\/09\/2026 \(Liquidado\)/ }));
+		await waitFor(() =>
+			expect(listarHorasExtras).toHaveBeenLastCalledWith(expect.objectContaining({ desde: '2026-09-01', hasta: '2026-09-15' })),
+		);
+	});
+
+	it('sin periodos no consulta y lo avisa', async () => {
+		listarPeriodos.mockResolvedValue([]);
+		montarHistorial();
+		expect(await screen.findByText('Aún no hay periodos creados.')).toBeInTheDocument();
+		expect(listarHorasExtras).not.toHaveBeenCalled();
 	});
 });
 

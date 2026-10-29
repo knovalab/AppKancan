@@ -17,17 +17,19 @@ import {
 	useTheme,
 } from '@mui/material';
 import { BarChart } from '@mui/x-charts/BarChart';
-import dayjs, { type Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { useState } from 'react';
-import DateRangeFilter from '../../../components/reportes/DateRangeFilter';
-import { DIAS_SEMANA } from '../../../domain/horasExtras';
-import { useZonasGerencia } from '../../../hooks/useReporteGerencia';
+import { DIAS_SEMANA, periodoActual } from '../../../domain/horasExtras';
+import {
+	usePeriodosGerencia,
+	useZonasGerencia,
+} from '../../../hooks/useReporteGerencia';
 import { mensajeDeError } from '../../../utils/errores';
 import { getRealColombiaTime } from '../../../utils/timeSync';
 import {
 	AZUL,
-	BORDE,
 	Bloque,
+	BORDE,
 	Cargando,
 	Filtros,
 	GRIS,
@@ -47,6 +49,8 @@ const TODAS = '';
 const TOP_TIENDAS = 10;
 const head = { fontWeight: 700, color: '#1e293b', bgcolor: '#f0f7ff' };
 const nombreZona = (z: string | null) => z ?? 'Sin zona';
+const corta = (f: string) => dayjs(f).format('DD/MM');
+const nombrePeriodo = (p: { name?: string | null }) => p.name || 'Sin nombre';
 
 /**
  * Por zona de gerencia: zonas → tiendas, **sin personas** y sin descargas. Las
@@ -58,23 +62,27 @@ export default function GerenciaPorZona() {
 	const telefono = useMediaQuery(useTheme().breakpoints.down('sm'));
 	const compacto = useCompacto();
 	const [zona, setZona] = useState(TODAS);
-	const [fechaInicio, setFechaInicio] = useState<Dayjs | null>(() =>
-		hoy.startOf('month'),
-	);
-	const [fechaFin, setFechaFin] = useState<Dayjs | null>(() => hoy);
+	const [periodoId, setPeriodoId] = useState<number | ''>('');
 	const [verTodas, setVerTodas] = useState(false);
 
-	// Sin rango ("Todo"): desde el inicio del año, para no pedir la historia entera.
-	const desde = (fechaInicio ?? hoy.startOf('year')).format('YYYY-MM-DD');
-	const hasta = (fechaFin ?? hoy).format('YYYY-MM-DD');
+	const periodosQ = usePeriodosGerencia();
+	const periodos = periodosQ.data ?? [];
+	// Por defecto, el periodo que contiene hoy (o el más reciente).
+	const periodo =
+		periodos.find((p) => p.id === periodoId) ??
+		periodoActual(periodos, hoy.format('YYYY-MM-DD'));
+	const desde = periodo?.start_date ?? '';
+	const hasta = periodo?.end_date ?? '';
 	const { zonas, reporte, antes, nombreTienda, isLoading, error } =
-		useZonasGerencia(zona, desde, hasta);
+		useZonasGerencia(zona, desde, hasta, periodo != null);
 
 	const elegirZona = (z: string) => {
 		setZona(z);
 		setVerTodas(false);
 	};
-	const rango = `${dayjs(desde).format('DD/MM')} al ${dayjs(hasta).format('DD/MM')}`;
+	const rango = periodo
+		? `${nombrePeriodo(periodo)} (${corta(desde)} al ${corta(hasta)})`
+		: 'Sin periodo';
 	const tiendas =
 		compacto && !verTodas
 			? reporte.tiendas.slice(0, TOP_TIENDAS)
@@ -110,29 +118,52 @@ export default function GerenciaPorZona() {
 						))}
 					</Select>
 				</FormControl>
-				<Box sx={{ width: { xs: '100%', sm: 280 } }}>
-					<DateRangeFilter
-						fechaInicio={fechaInicio}
-						fechaFin={fechaFin}
-						onChange={(inicio, fin) => {
-							setFechaInicio(inicio);
-							setFechaFin(fin);
+				<FormControl
+					size="small"
+					fullWidth
+					sx={{
+						minWidth: { sm: 260 },
+						width: { sm: 'auto' },
+						'& .MuiInputBase-root': { minHeight: TACTIL },
+					}}
+				>
+					<InputLabel id="gz-periodo">Periodo</InputLabel>
+					<Select
+						labelId="gz-periodo"
+						label="Periodo"
+						value={periodo?.id ?? ''}
+						onChange={(e) => {
+							setPeriodoId(Number(e.target.value) || '');
+							setVerTodas(false);
 						}}
-					/>
-				</Box>
+					>
+						{periodos.map((p) => (
+							<MenuItem key={p.id} value={p.id}>
+								{nombrePeriodo(p)} ({corta(p.start_date)} al {corta(p.end_date)}
+								)
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
 			</Filtros>
 
-			{error && (
+			{(error || periodosQ.error) && (
 				<Alert severity="error" sx={{ mb: 2 }}>
-					{mensajeDeError(error, 'Error al cargar el reporte por zona')}
+					{mensajeDeError(
+						error ?? periodosQ.error,
+						'Error al cargar el reporte por zona',
+					)}
 				</Alert>
 			)}
 
-			{isLoading ? (
+			{periodosQ.isLoading || isLoading ? (
 				<Cargando />
+			) : !periodo ? (
+				<Alert severity="info">Aún no hay periodos creados.</Alert>
 			) : reporte.tiendas.length === 0 ? (
 				<Alert severity="info">
-					No hay horas aprobadas {zona ? `en ${zona} ` : ''}del {rango}.
+					No hay horas aprobadas {zona ? `en ${zona} ` : ''}en el periodo{' '}
+					{rango}.
 				</Alert>
 			) : (
 				<>

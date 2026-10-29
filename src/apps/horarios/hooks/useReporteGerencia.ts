@@ -41,16 +41,21 @@ function useTiendasReporte() {
 	});
 }
 
-/** Tiempo real de gerencia: resumen de horas aprobadas por periodo y empresa. */
-export function useTiempoRealGerencia(empresa: string) {
-	const hoy = getRealColombiaTime().format('YYYY-MM-DD');
-	const tiendasQ = useTiendasReporte();
-	const periodosQ = useQuery({
+/** Periodos que gerencia puede leer (sin usuarios), del más reciente al más antiguo. */
+export function usePeriodosGerencia() {
+	return useQuery({
 		// Bajo `periodos`: crear o liquidar un periodo también lo refresca.
 		queryKey: [...horariosKeys.periodos, 'resumen'],
 		queryFn: listarPeriodosResumen,
 		...fresco,
 	});
+}
+
+/** Tiempo real de gerencia: resumen de horas aprobadas por periodo y empresa. */
+export function useTiempoRealGerencia(empresa: string) {
+	const hoy = getRealColombiaTime().format('YYYY-MM-DD');
+	const tiendasQ = useTiendasReporte();
+	const periodosQ = usePeriodosGerencia();
 	const vinculadasQ = useQuery({
 		queryKey: clave('vinculadas'),
 		queryFn: () =>
@@ -156,14 +161,20 @@ export function useTiempoRealGerencia(empresa: string) {
  * Por zona de gerencia: zonas → tiendas, sin personas. `zona` vacía = todas.
  * Agrega por tienda × día; la variación compara con el rango anterior.
  */
-export function useZonasGerencia(zona: string, desde: string, hasta: string) {
+export function useZonasGerencia(
+	zona: string,
+	desde: string,
+	hasta: string,
+	enabled = true,
+) {
 	const tiendasQ = useTiendasReporte();
 	const tiendas = tiendasQ.data ?? SIN_TIENDAS;
 	const zonas = useMemo(() => zonasDeTiendas(tiendas), [tiendas]);
 	const elegida = zonas.find((z) => z.id === zona);
 	// Zona elegida pero aún sin tiendas cargadas: se espera para no pedir todo.
 	const ids = elegida?.tiendas ?? [];
-	const listo = tiendasQ.isSuccess && (zona === '' || elegida != null);
+	const listo =
+		enabled && tiendasQ.isSuccess && (zona === '' || elegida != null);
 
 	const antes = rangoAnterior(desde, hasta);
 	const base = { estados: [ESTADO_HORA_EXTRA.aprobada], tiendas: ids };

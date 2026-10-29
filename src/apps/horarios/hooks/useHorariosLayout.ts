@@ -48,13 +48,33 @@ export function accesoDeSubseccion(
 }
 
 /**
+ * Textos propios de un rol si es el único de los suyos con el que se ve la sección
+ * (el rol principal no sirve: nómina sin otro rol también trae `tienda`, que va antes).
+ */
+export function conTextosDeRol<S extends Seccion | null>(
+	seccion: S,
+	roles: ReadonlySet<Rol>,
+): S {
+	const conAcceso = seccion?.roles.filter((r) => roles.has(r)) ?? [];
+	const textos =
+		conAcceso.length === 1 ? seccion?.textosPorRol?.[conAcceso[0]] : undefined;
+	return textos ? { ...seccion, ...textos } : seccion;
+}
+
+/**
  * Estado del layout. Solo lo llama `HorariosLayout`; el resto de componentes
  * usa `useHorariosLayout()` para leerlo del contexto.
  */
 export function useHorariosLayoutState(): HorariosLayoutValue {
 	const { user } = useAuth();
 	const accesoBase = useHorariosAcceso();
-	const { seccion, subseccion } = useSeccionActiva();
+	const activa = useSeccionActiva();
+	const { subseccion } = activa;
+	const { roles } = accesoBase;
+	const seccion = useMemo(
+		() => conTextosDeRol(activa.seccion, roles),
+		[activa.seccion, roles],
+	);
 	const acceso = useMemo(
 		() => accesoDeSubseccion(accesoBase, subseccion),
 		[accesoBase, subseccion],
@@ -69,8 +89,11 @@ export function useHorariosLayoutState(): HorariosLayoutValue {
 	// Las pestañas salen del acceso base: no cambian al entrar a una sub‑sección.
 	const { puede } = accesoBase;
 	const seccionesVisibles = useMemo(
-		() => SECCIONES.filter((s) => s.habilitada !== false && puede(s.roles)),
-		[puede],
+		() =>
+			SECCIONES.filter((s) => s.habilitada !== false && puede(s.roles)).map(
+				(s) => conTextosDeRol(s, roles),
+			),
+		[puede, roles],
 	);
 
 	return useMemo(
