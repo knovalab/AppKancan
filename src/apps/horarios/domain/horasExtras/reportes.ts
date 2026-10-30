@@ -253,8 +253,6 @@ export function reporteZona(
 	};
 }
 
-const variacion = (ahora: number, antes: number) =>
-	antes ? (ahora - antes) / antes : null;
 // getDay(): 0 = domingo → lunes primero. Mediodía para no cruzar de día por zona horaria.
 const diaSemana = (fecha: string) =>
 	(new Date(`${fecha}T12:00:00`).getDay() + 6) % 7;
@@ -266,18 +264,16 @@ export interface ZonaGerencia extends Totales {
 	/** Minutos por día de la semana, lunes a domingo (mapa de calor). */
 	porDiaSemana: number[];
 	porcentaje: number;
-	variacion: number | null;
 }
 
 export interface TiendaGerencia extends Totales {
 	storeId: number;
 	zona: string | null;
 	porcentaje: number;
-	variacion: number | null;
 }
 
 export interface ReporteGerencia {
-	total: Totales & { variacion: number | null };
+	total: Totales;
 	/** Más horas primero. */
 	zonas: ZonaGerencia[];
 	/** Más horas primero. */
@@ -287,7 +283,7 @@ export interface ReporteGerencia {
 
 /**
  * Vista macro de gerencia, **sin personas**: zonas y tiendas a partir de un agregado
- * por tienda × día. `previas`: minutos por tienda del rango anterior (variación).
+ * por tienda × día.
  */
 export function reporteGerencia(
 	filas: readonly {
@@ -296,22 +292,19 @@ export function reporteGerencia(
 		registros: number;
 		minutos: number;
 	}[],
-	previas: ReadonlyMap<number, number>,
 	zonaDe: (storeId: number) => string | null,
 ): ReporteGerencia {
 	const porDiaSemana = [0, 0, 0, 0, 0, 0, 0];
 	const tiendas = new Map<number, Totales>();
 	const total = cero();
-	const zonas = new Map<string | null, ZonaGerencia & { antes: number }>();
+	const zonas = new Map<string | null, ZonaGerencia>();
 	const zona = (nombre: string | null) => {
 		const z = zonas.get(nombre) ?? {
 			zona: nombre,
 			...cero(),
 			tiendas: 0,
 			porcentaje: 0,
-			variacion: null,
 			porDiaSemana: [0, 0, 0, 0, 0, 0, 0],
-			antes: 0,
 		};
 		zonas.set(nombre, z);
 		return z;
@@ -340,24 +333,13 @@ export function reporteGerencia(
 			zona: nombreZona,
 			...t,
 			porcentaje: parte(t.minutos),
-			variacion: variacion(t.minutos, previas.get(storeId) ?? 0),
 		};
 	});
-	// Lo previo cuenta para su zona aunque la tienda no tenga horas ahora.
-	let totalAntes = 0;
-	for (const [storeId, m] of previas) {
-		totalAntes += m;
-		zona(zonaDe(storeId)).antes += m;
-	}
 	return {
-		total: { ...total, variacion: variacion(total.minutos, totalAntes) },
+		total,
 		zonas: [...zonas.values()]
 			.filter((z) => z.minutos > 0)
-			.map(({ antes, ...z }) => ({
-				...z,
-				porcentaje: parte(z.minutos),
-				variacion: variacion(z.minutos, antes),
-			}))
+			.map((z) => ({ ...z, porcentaje: parte(z.minutos) }))
 			.sort(porMinutos),
 		tiendas: listaTiendas.sort(porMinutos),
 		porDiaSemana,
@@ -391,14 +373,4 @@ export function tendenciaPorPeriodo<P extends RangoPeriodo>(
 			}
 			return { periodo: r.periodo, minutos: r.total.minutos, porZona };
 		});
-}
-
-/** Rango anterior de la misma duración, justo antes de `desde` (para la variación). */
-export function rangoAnterior(desde: string, hasta: string) {
-	const dia = 24 * 60 * 60 * 1000;
-	const d = new Date(`${desde}T12:00:00Z`).getTime();
-	const h = new Date(`${hasta}T12:00:00Z`).getTime();
-	const largo = Math.round((h - d) / dia) + 1;
-	const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
-	return { desde: iso(d - largo * dia), hasta: iso(d - dia) };
 }

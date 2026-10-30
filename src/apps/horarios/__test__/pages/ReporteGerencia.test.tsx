@@ -56,7 +56,7 @@ const enRango = [
 ];
 
 beforeEach(() => {
-	agregadoHorasExtras.mockImplementation(async (f: Filtros, g: string[]) => {
+	agregadoHorasExtras.mockImplementation(async (f: Filtros) => {
 		if (f.estados[0] === 'pendiente') return [fila({ storeId: 26, registros: 1, minutos: 60 })];
 		if (f.conPeriodo === true)
 			return [
@@ -64,8 +64,6 @@ beforeEach(() => {
 				fila({ periodoId: 1, storeId: 30, fecha: '2026-09-29', registros: 1, minutos: 30 }),
 			];
 		if (f.conPeriodo === false) return [fila({ storeId: 26, fecha: '2026-10-12', registros: 2, minutos: 90 })];
-		// Rango anterior (variación): solo por tienda.
-		if (g.length === 1) return [fila({ storeId: 26, registros: 1, minutos: 60 })];
 		return enRango.filter((r) => !f.tiendas?.length || (r.storeId != null && f.tiendas.includes(r.storeId)));
 	});
 });
@@ -103,7 +101,7 @@ describe('Reportes de gerencia · escritorio', () => {
 		expect(kpi('Pendientes de aprobación')).toContain('0 min');
 	});
 
-	it('por zona: zonas con barras, ranking de tiendas con variación y sin personas', async () => {
+	it('por zona: zonas con barras, ranking de tiendas sin variación ni personas', async () => {
 		await montar();
 		await irAZona();
 		const zonas = screen.getByRole('region', { name: 'Horas por zona' });
@@ -114,10 +112,11 @@ describe('Reportes de gerencia · escritorio', () => {
 			.getAllByRole('row')
 			.map((r) => within(r).queryAllByRole('cell').map((c) => c.textContent));
 		expect(filas.slice(1)).toEqual([
-			['Ipiales', 'Narino', '2 h', '50 %', '+100 %'],
-			['Pasto', 'Narino', '1 h', '25 %', '--'],
-			['Cosmocentro', 'Sur', '1 h', '25 %', '--'],
+			['Ipiales', 'Narino', '2 h', '50 %'],
+			['Pasto', 'Narino', '1 h', '25 %'],
+			['Cosmocentro', 'Sur', '1 h', '25 %'],
 		]);
+		expect(screen.queryByText(/Variación|frente al/)).toBeNull();
 		expect(screen.getByTestId('grafica').textContent).toBe('vertical:0,2,2,0,0,0,0');
 		expect(screen.queryByText(/persona|documento/i)).toBeNull();
 		expect(screen.queryByRole('button', { name: /Exportar/ })).toBeNull();
@@ -168,6 +167,75 @@ describe('Reportes de gerencia · escritorio', () => {
 			['Narino', '--', '2 h', '1 h', '--', '--', '--', '--'],
 			['Sur', '--', '--', '1 h', '--', '--', '--', '--'],
 		]);
+	});
+
+	it('por zona: también por mes calendario o por rango libre', async () => {
+		await montar();
+		await irAZona();
+		fireEvent.click(screen.getByRole('button', { name: 'Mes' }));
+		// Mes en curso: del 1 a hoy (28/10).
+		await waitFor(() =>
+			expect(agregadoHorasExtras).toHaveBeenCalledWith(
+				expect.objectContaining({ desde: '2026-10-01', hasta: '2026-10-28' }),
+				['store_id', 'work_date'],
+			),
+		);
+		fireEvent.mouseDown(screen.getByLabelText('Mes'));
+		fireEvent.click(screen.getByRole('option', { name: 'Septiembre 2026' }));
+		await waitFor(() =>
+			expect(agregadoHorasExtras).toHaveBeenCalledWith(
+				expect.objectContaining({ desde: '2026-09-01', hasta: '2026-09-30' }),
+				['store_id', 'work_date'],
+			),
+		);
+		fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
+		expect(screen.getByText('CALENDARIO')).toBeInTheDocument();
+	});
+
+
+	it('por tienda: tabla de tienda, zona y horas; filtro de zona y periodo o mes', async () => {
+		await montar();
+		fireEvent.click(screen.getByRole('tab', { name: 'Por tienda' }));
+		const tabla = await screen.findByRole('table', { name: 'Horas extras por tienda' });
+		expect(within(tabla).getAllByRole('columnheader').map((c) => c.textContent)).toEqual(['Tienda', 'Zona', 'Horas']);
+		// De más a menos horas.
+		const filas = within(tabla)
+			.getAllByRole('row')
+			.slice(1)
+			.map((r) => within(r).getAllByRole('cell').map((c) => c.textContent));
+		expect(filas).toEqual([
+			['Ipiales', 'Narino', '2 h'],
+			['Pasto', 'Narino', '1 h'],
+			['Cosmocentro', 'Sur', '1 h'],
+		]);
+		expect(screen.queryByText(/Cantidad/)).toBeNull();
+		// Solo periodo o mes: sin rango libre ni variación.
+		expect(screen.queryByRole('button', { name: 'Rango' })).toBeNull();
+		expect(screen.queryByText(/Variación/)).toBeNull();
+		expect(screen.queryByRole('button', { name: /Exportar/ })).toBeNull();
+
+		fireEvent.mouseDown(screen.getByLabelText('Zona'));
+		fireEvent.click(screen.getByRole('option', { name: 'Sur' }));
+		await waitFor(() =>
+			expect(agregadoHorasExtras).toHaveBeenCalledWith(expect.objectContaining({ tiendas: [15] }), ['store_id', 'work_date']),
+		);
+		fireEvent.click(screen.getByRole('button', { name: 'Mes' }));
+		await waitFor(() =>
+			expect(agregadoHorasExtras).toHaveBeenCalledWith(
+				expect.objectContaining({ tiendas: [15], desde: '2026-10-01', hasta: '2026-10-28' }),
+				['store_id', 'work_date'],
+			),
+		);
+	});
+
+	it('tendencia: solo por periodo, sin interruptor de meses ni calendario', async () => {
+		await montar();
+		fireEvent.click(screen.getByRole('tab', { name: 'Tendencia' }));
+		await screen.findByTestId('tendencia');
+		expect(screen.queryByRole('button', { name: 'Meses' })).toBeNull();
+		expect(screen.queryByRole('button', { name: 'Mes' })).toBeNull();
+		expect(screen.queryByText('CALENDARIO')).toBeNull();
+		expect(screen.getByLabelText('Periodo')).toBeInTheDocument();
 	});
 
 	it('nunca agrupa por persona (la política de gerencia no lee employee_id)', async () => {

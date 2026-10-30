@@ -3,7 +3,6 @@ import {
 	periodoActual,
 	periodosVencidos,
 	type RangoPeriodo,
-	rangoAnterior,
 	reporteZona,
 	reporteGerencia,
 	resumenPorPeriodo,
@@ -79,23 +78,20 @@ describe('reporteGerencia (sin personas)', () => {
 		{ storeId: 99, fecha: '2026-10-21', registros: 1, minutos: 60 }, // sin zona
 	];
 	const zonas: Record<number, string> = { 26: 'Narino', 30: 'Narino', 15: 'Sur', 40: 'Sur' };
-	// La 40 tuvo horas antes y ahora no: cuenta en la variación de su zona.
-	const previas = new Map([[26, 60], [40, 120]]);
-	const r = reporteGerencia(filas, previas, (id) => zonas[id] ?? null);
+	const r = reporteGerencia(filas, (id) => zonas[id] ?? null);
 
-	it('total con variación frente al rango anterior', () => {
-		expect(r.total).toEqual({ registros: 5, minutos: 300, variacion: (300 - 180) / 180 });
+	it('total sin variación', () => {
+		expect(r.total).toEqual({ registros: 5, minutos: 300 });
 	});
 
-	it('zonas: horas, %, nº de tiendas y variación (incluye lo previo de tiendas sin horas ahora)', () => {
+	it('zonas: horas, % y nº de tiendas', () => {
 		expect(r.zonas.map((z) => [z.zona, z.minutos, z.tiendas])).toEqual([
 			['Narino', 180, 2],
 			['Sur', 60, 1],
 			[null, 60, 1],
 		]);
-		expect(r.zonas[0]).toMatchObject({ porcentaje: 180 / 300, variacion: 2 });
-		expect(r.zonas[1].variacion).toBe(-0.5);
-		expect(r.zonas[2].variacion).toBeNull();
+		expect(r.zonas[0]).toMatchObject({ porcentaje: 180 / 300 });
+		expect(r.zonas[0]).not.toHaveProperty('variacion');
 	});
 
 	it('mapa de calor: minutos por día de la semana de cada zona', () => {
@@ -103,9 +99,9 @@ describe('reporteGerencia (sin personas)', () => {
 		expect(r.zonas.find((z) => z.zona === 'Sur')?.porDiaSemana).toEqual([0, 0, 60, 0, 0, 0, 0]);
 	});
 
-	it('tiendas con zona, % y variación; día de la semana', () => {
-		expect(r.tiendas[0]).toMatchObject({ storeId: 26, zona: 'Narino', minutos: 120, porcentaje: 0.4, variacion: 1 });
-		expect(r.tiendas.find((t) => t.storeId === 30)?.variacion).toBeNull();
+	it('tiendas con zona y %; día de la semana', () => {
+		expect(r.tiendas[0]).toMatchObject({ storeId: 26, zona: 'Narino', minutos: 120, porcentaje: 0.4 });
+		expect(r.tiendas[0]).not.toHaveProperty('variacion');
 		expect(r.porDiaSemana).toEqual([0, 180, 120, 0, 0, 0, 0]);
 	});
 });
@@ -157,10 +153,6 @@ describe('reporteZona (R2 + R4)', () => {
 		expect(r.topPersonas[0]).toEqual({ empleadoId: 7, registros: 4, minutos: 270, tiendas: [26, 30] });
 	});
 
-	it('rango anterior de la misma duración', () => {
-		expect(rangoAnterior('2026-10-01', '2026-10-31')).toEqual({ desde: '2026-08-31', hasta: '2026-09-30' });
-		expect(rangoAnterior('2026-10-20', '2026-10-20')).toEqual({ desde: '2026-10-19', hasta: '2026-10-19' });
-	});
 });
 
 describe('tendenciaPorPeriodo', () => {
@@ -181,3 +173,4 @@ describe('tendenciaPorPeriodo', () => {
 		expect(tendenciaPorPeriodo(resumen, () => null, 1).map((p) => p.periodo.id)).toEqual([2]);
 	});
 });
+

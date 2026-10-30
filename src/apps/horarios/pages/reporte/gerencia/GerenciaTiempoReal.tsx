@@ -21,8 +21,8 @@ import { useTiempoRealGerencia } from '../../../hooks/useReporteGerencia';
 import { TODAS_EMPRESAS } from '../../../hooks/useReporteHorasExtras';
 import { mensajeDeError } from '../../../utils/errores';
 import {
-	BORDE,
 	Bloque,
+	BORDE,
 	Cargando,
 	Filtros,
 	GRIS,

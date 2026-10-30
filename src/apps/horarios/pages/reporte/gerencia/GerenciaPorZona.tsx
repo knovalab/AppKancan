@@ -17,15 +17,10 @@ import {
 	useTheme,
 } from '@mui/material';
 import { BarChart } from '@mui/x-charts/BarChart';
-import dayjs from 'dayjs';
 import { useState } from 'react';
-import { DIAS_SEMANA, periodoActual } from '../../../domain/horasExtras';
-import {
-	usePeriodosGerencia,
-	useZonasGerencia,
-} from '../../../hooks/useReporteGerencia';
+import { DIAS_SEMANA } from '../../../domain/horasExtras';
+import { useZonasGerencia } from '../../../hooks/useReporteGerencia';
 import { mensajeDeError } from '../../../utils/errores';
-import { getRealColombiaTime } from '../../../utils/timeSync';
 import {
 	AZUL,
 	Bloque,
@@ -41,16 +36,14 @@ import {
 	Tarjeta,
 	Tarjetas,
 	useCompacto,
-	Variacion,
 } from './bloques';
+import { SelectorTiempo, useSelectorTiempo } from './SelectorTiempo';
 
 const TODAS = '';
 /** Tiendas visibles en teléfono y tablet antes de "Ver todas". */
 const TOP_TIENDAS = 10;
 const head = { fontWeight: 700, color: '#1e293b', bgcolor: '#f0f7ff' };
 const nombreZona = (z: string | null) => z ?? 'Sin zona';
-const corta = (f: string) => dayjs(f).format('DD/MM');
-const nombrePeriodo = (p: { name?: string | null }) => p.name || 'Sin nombre';
 
 /**
  * Por zona de gerencia: zonas → tiendas, **sin personas** y sin descargas. Las
@@ -58,31 +51,24 @@ const nombrePeriodo = (p: { name?: string | null }) => p.name || 'Sin nombre';
  * tiendas, como tarjetas en teléfono y tablet, y como tabla en escritorio.
  */
 export default function GerenciaPorZona() {
-	const hoy = getRealColombiaTime();
 	const telefono = useMediaQuery(useTheme().breakpoints.down('sm'));
 	const compacto = useCompacto();
 	const [zona, setZona] = useState(TODAS);
-	const [periodoId, setPeriodoId] = useState<number | ''>('');
 	const [verTodas, setVerTodas] = useState(false);
-
-	const periodosQ = usePeriodosGerencia();
-	const periodos = periodosQ.data ?? [];
 	// Por defecto, el periodo que contiene hoy (o el más reciente).
-	const periodo =
-		periodos.find((p) => p.id === periodoId) ??
-		periodoActual(periodos, hoy.format('YYYY-MM-DD'));
-	const desde = periodo?.start_date ?? '';
-	const hasta = periodo?.end_date ?? '';
-	const { zonas, reporte, antes, nombreTienda, isLoading, error } =
-		useZonasGerencia(zona, desde, hasta, periodo != null);
+	const tiempo = useSelectorTiempo(['periodo', 'mes', 'rango']);
+	const { desde, hasta, etiqueta: rango } = tiempo;
+	const { zonas, reporte, nombreTienda, isLoading, error } = useZonasGerencia(
+		zona,
+		desde,
+		hasta,
+		tiempo.listo,
+	);
 
 	const elegirZona = (z: string) => {
 		setZona(z);
 		setVerTodas(false);
 	};
-	const rango = periodo
-		? `${nombrePeriodo(periodo)} (${corta(desde)} al ${corta(hasta)})`
-		: 'Sin periodo';
 	const tiendas =
 		compacto && !verTodas
 			? reporte.tiendas.slice(0, TOP_TIENDAS)
@@ -118,66 +104,36 @@ export default function GerenciaPorZona() {
 						))}
 					</Select>
 				</FormControl>
-				<FormControl
-					size="small"
-					fullWidth
-					sx={{
-						minWidth: { sm: 260 },
-						width: { sm: 'auto' },
-						'& .MuiInputBase-root': { minHeight: TACTIL },
-					}}
-				>
-					<InputLabel id="gz-periodo">Periodo</InputLabel>
-					<Select
-						labelId="gz-periodo"
-						label="Periodo"
-						value={periodo?.id ?? ''}
-						onChange={(e) => {
-							setPeriodoId(Number(e.target.value) || '');
-							setVerTodas(false);
-						}}
-					>
-						{periodos.map((p) => (
-							<MenuItem key={p.id} value={p.id}>
-								{nombrePeriodo(p)} ({corta(p.start_date)} al {corta(p.end_date)}
-								)
-							</MenuItem>
-						))}
-					</Select>
-				</FormControl>
+				<SelectorTiempo selector={tiempo} onCambio={() => setVerTodas(false)} />
 			</Filtros>
 
-			{(error || periodosQ.error) && (
+			{(error || tiempo.error) && (
 				<Alert severity="error" sx={{ mb: 2 }}>
 					{mensajeDeError(
-						error ?? periodosQ.error,
+						error ?? tiempo.error,
 						'Error al cargar el reporte por zona',
 					)}
 				</Alert>
 			)}
 
-			{periodosQ.isLoading || isLoading ? (
+			{tiempo.cargando || isLoading ? (
 				<Cargando />
-			) : !periodo ? (
+			) : tiempo.sinPeriodos ? (
 				<Alert severity="info">Aún no hay periodos creados.</Alert>
 			) : reporte.tiendas.length === 0 ? (
 				<Alert severity="info">
-					No hay horas aprobadas {zona ? `en ${zona} ` : ''}en el periodo{' '}
-					{rango}.
+					No hay horas aprobadas {zona ? `en ${zona} ` : ''}en {rango}.
 				</Alert>
 			) : (
 				<>
 					<Typography variant="body2" sx={{ color: GRIS, mb: 1.5 }}>
-						Solo horas aprobadas, por tienda donde se trabajó. Variación frente
-						al {dayjs(antes.desde).format('DD/MM')} al{' '}
-						{dayjs(antes.hasta).format('DD/MM')}.
+						Solo horas aprobadas, por tienda donde se trabajó · {rango}.
 					</Typography>
 					<Kpis>
 						<Kpi
 							principal
 							titulo={`Horas extras · ${zona || 'todas las zonas'}`}
 							valor={horasCortas(reporte.total.minutos)}
-							extra={<Variacion valor={reporte.total.variacion} />}
 						/>
 						<Kpi
 							titulo="Registros"
@@ -217,7 +173,6 @@ export default function GerenciaPorZona() {
 												>
 													{horasCortas(z.minutos)}
 												</Typography>
-												<Variacion valor={z.variacion} />
 											</Box>
 											<Typography variant="caption" sx={{ color: GRIS }}>
 												{z.tiendas} {z.tiendas === 1 ? 'tienda' : 'tiendas'}
@@ -251,7 +206,7 @@ export default function GerenciaPorZona() {
 												</Typography>
 											</Box>
 											<Typography variant="body2" sx={{ color: GRIS }}>
-												{pct(t.porcentaje)} · <Variacion valor={t.variacion} />
+												{pct(t.porcentaje)}
 												{zona === TODAS && ` · ${nombreZona(t.zona)}`}
 											</Typography>
 										</Tarjeta>
@@ -281,7 +236,6 @@ export default function GerenciaPorZona() {
 												...(zona === TODAS ? ['Zona'] : []),
 												'Horas',
 												'% del total',
-												'Variación',
 											].map((c) => (
 												<TableCell key={c} sx={head}>
 													{c}
@@ -302,9 +256,6 @@ export default function GerenciaPorZona() {
 													{horasCortas(t.minutos)}
 												</TableCell>
 												<TableCell>{pct(t.porcentaje)}</TableCell>
-												<TableCell>
-													<Variacion valor={t.variacion} />
-												</TableCell>
 											</TableRow>
 										))}
 									</TableBody>

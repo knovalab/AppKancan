@@ -35,28 +35,6 @@ export const horasCortas = (minutos: number) =>
 
 export const pct = (n: number) => `${Math.round(n * 100)} %`;
 
-/** Variación con signo y color (rojo = más horas). `null`: antes no hubo horas. */
-export function Variacion({ valor }: { valor: number | null }) {
-	if (valor == null)
-		return (
-			<Typography component="span" variant="body2" sx={{ color: GRIS }}>
-				--
-			</Typography>
-		);
-	const n = Math.round(valor * 100);
-	const color = n > 0 ? '#dc2626' : n < 0 ? '#16a34a' : GRIS;
-	return (
-		<Typography
-			component="span"
-			variant="body2"
-			sx={{ color, fontWeight: 700, whiteSpace: 'nowrap' }}
-		>
-			{n > 0 ? '+' : ''}
-			{n} %
-		</Typography>
-	);
-}
-
 export function Kpi({
 	titulo,
 	valor,

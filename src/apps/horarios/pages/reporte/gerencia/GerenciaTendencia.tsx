@@ -12,9 +12,8 @@ import {
 	useTheme,
 } from '@mui/material';
 import { LineChart } from '@mui/x-charts/LineChart';
-import dayjs, { type Dayjs } from 'dayjs';
-import { useMemo, useState } from 'react';
-import DateRangeFilter from '../../../components/reportes/DateRangeFilter';
+import dayjs from 'dayjs';
+import { useMemo } from 'react';
 import { DIAS_SEMANA, tendenciaPorPeriodo } from '../../../domain/horasExtras';
 import {
 	useTiempoRealGerencia,
@@ -22,11 +21,10 @@ import {
 } from '../../../hooks/useReporteGerencia';
 import { TODAS_EMPRESAS } from '../../../hooks/useReporteHorasExtras';
 import { mensajeDeError } from '../../../utils/errores';
-import { getRealColombiaTime } from '../../../utils/timeSync';
 import {
 	AZUL,
-	BORDE,
 	Bloque,
+	BORDE,
 	Cargando,
 	Filtros,
 	GRIS,
@@ -35,6 +33,7 @@ import {
 	Tarjetas,
 	useCompacto,
 } from './bloques';
+import { SelectorTiempo, useSelectorTiempo } from './SelectorTiempo';
 
 /** Periodos que muestra la tendencia. */
 const PERIODOS = 8;
@@ -52,23 +51,18 @@ const enHoras = (m: number) => Math.round((m / 60) * 10) / 10;
 
 /**
  * Tendencia de gerencia (RP4): ¿va subiendo? Horas por periodo (total y por zona)
- * y mapa de calor día de la semana × zona del rango. En teléfono y tablet, la
+ * y mapa de calor día de la semana × zona del periodo elegido. En teléfono y tablet, la
  * línea solo lleva el total y el mapa se ve como tarjetas con el día más cargado.
  */
 export default function GerenciaTendencia() {
-	const hoy = getRealColombiaTime();
 	const telefono = useMediaQuery(useTheme().breakpoints.down('sm'));
 	const compacto = useCompacto();
-	const [fechaInicio, setFechaInicio] = useState<Dayjs | null>(() =>
-		hoy.startOf('month'),
-	);
-	const [fechaFin, setFechaFin] = useState<Dayjs | null>(() => hoy);
-	const desde = (fechaInicio ?? hoy.startOf('year')).format('YYYY-MM-DD');
-	const hasta = (fechaFin ?? hoy).format('YYYY-MM-DD');
-	const rango = `${dayjs(desde).format('DD/MM')} al ${dayjs(hasta).format('DD/MM')}`;
+	// Solo por periodo: arranca en el periodo actual.
+	const tiempo = useSelectorTiempo(['periodo']);
+	const rango = tiempo.etiqueta;
 
 	const periodos = useTiempoRealGerencia(TODAS_EMPRESAS);
-	const zonas = useZonasGerencia('', desde, hasta);
+	const zonas = useZonasGerencia('', tiempo.desde, tiempo.hasta, tiempo.listo);
 	const tendencia = useMemo(
 		() => tendenciaPorPeriodo(periodos.resumen, periodos.zonaDe, PERIODOS),
 		[periodos.resumen, periodos.zonaDe],
@@ -82,21 +76,12 @@ export default function GerenciaTendencia() {
 	);
 	const calor = zonas.reporte.zonas;
 	const maxCalor = Math.max(1, ...calor.flatMap((z) => z.porDiaSemana));
-	const error = periodos.error ?? zonas.error;
+	const error = periodos.error ?? zonas.error ?? tiempo.error;
 
 	return (
 		<Box>
 			<Filtros resumen={`Mapa de calor · ${rango}`}>
-				<Box sx={{ width: { xs: '100%', sm: 280 } }}>
-					<DateRangeFilter
-						fechaInicio={fechaInicio}
-						fechaFin={fechaFin}
-						onChange={(inicio, fin) => {
-							setFechaInicio(inicio);
-							setFechaFin(fin);
-						}}
-					/>
-				</Box>
+				<SelectorTiempo selector={tiempo} />
 			</Filtros>
 
 			{error && (
@@ -161,12 +146,12 @@ export default function GerenciaTendencia() {
 				</Bloque>
 			)}
 
-			{zonas.isLoading ? (
+			{tiempo.cargando || zonas.isLoading ? (
 				<Cargando />
 			) : (
 				<Bloque titulo="¿Qué días y dónde se concentran las horas?">
 					{calor.length === 0 ? (
-						<Alert severity="info">No hay horas aprobadas del {rango}.</Alert>
+						<Alert severity="info">No hay horas aprobadas en {rango}.</Alert>
 					) : compacto ? (
 						<Tarjetas>
 							{calor.map((z) => {
@@ -184,7 +169,7 @@ export default function GerenciaTendencia() {
 											</Box>
 										</Typography>
 										<Typography variant="caption" sx={{ color: '#94a3b8' }}>
-											{horasCortas(z.minutos)} en el rango
+											{horasCortas(z.minutos)} en {rango}
 										</Typography>
 									</Tarjeta>
 								);

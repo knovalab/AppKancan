@@ -10,7 +10,6 @@ import {
 import {
 	ESTADO_HORA_EXTRA,
 	periodoActual,
-	rangoAnterior,
 	reporteGerencia,
 	resumenPorPeriodo,
 } from '../domain/horasExtras';
@@ -159,7 +158,7 @@ export function useTiempoRealGerencia(empresa: string) {
 
 /**
  * Por zona de gerencia: zonas → tiendas, sin personas. `zona` vacía = todas.
- * Agrega por tienda × día; la variación compara con el rango anterior.
+ * Agrega por tienda × día.
  */
 export function useZonasGerencia(
 	zona: string,
@@ -176,20 +175,11 @@ export function useZonasGerencia(
 	const listo =
 		enabled && tiendasQ.isSuccess && (zona === '' || elegida != null);
 
-	const antes = rangoAnterior(desde, hasta);
 	const base = { estados: [ESTADO_HORA_EXTRA.aprobada], tiendas: ids };
 	const actualQ = useQuery({
 		queryKey: clave(`zona|${ids.join(',')}|${desde}|${hasta}`),
 		queryFn: () =>
 			agregadoHorasExtras({ ...base, desde, hasta }, ['store_id', 'work_date']),
-		enabled: listo,
-		...fresco,
-	});
-	const previoQ = useQuery({
-		queryKey: clave(
-			`zona-previo|${ids.join(',')}|${antes.desde}|${antes.hasta}`,
-		),
-		queryFn: () => agregadoHorasExtras({ ...base, ...antes }, ['store_id']),
 		enabled: listo,
 		...fresco,
 	});
@@ -202,22 +192,16 @@ export function useZonasGerencia(
 		() =>
 			reporteGerencia(
 				actualQ.data ?? [],
-				new Map(
-					(previoQ.data ?? [])
-						.filter((f) => f.storeId != null)
-						.map((f) => [f.storeId as number, f.minutos]),
-				),
 				(id) => porId.get(id)?.zone?.trim() || null,
 			),
-		[actualQ.data, previoQ.data, porId],
+		[actualQ.data, porId],
 	);
 
 	return {
 		zonas,
 		reporte,
-		antes,
 		nombreTienda: (id: number) => porId.get(id)?.name ?? `Tienda ${id}`,
-		isLoading: tiendasQ.isLoading || actualQ.isLoading || previoQ.isLoading,
-		error: tiendasQ.error ?? actualQ.error ?? previoQ.error,
+		isLoading: tiendasQ.isLoading || actualQ.isLoading,
+		error: tiendasQ.error ?? actualQ.error,
 	};
 }
